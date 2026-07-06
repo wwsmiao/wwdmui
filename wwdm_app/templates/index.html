@@ -1,0 +1,1646 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>薇薇的猫-模型插件管理器</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="banner">
+  <div class="banner-wrap" id="bannerWrap">
+    <span class="banner-text">&#x1F431; 当前薇薇的猫已更新插件 <em id="bCntP">...</em> 个，模型 <em id="bCntM">...</em> 个</span>
+    <span class="banner-text">&#x1F431; 当前薇薇的猫已更新插件 <em id="bCntP2">...</em> 个，模型 <em id="bCntM2">...</em> 个</span>
+  </div>
+</div>
+<div class="layout">
+
+<!-- ====== SIDEBAR ====== -->
+<div id="sidebar">
+  <div id="sidebar-hd">
+    <button id="sidebar-btn" onclick="toggleSidebar()">&#9776;</button>
+    <span>薇薇的猫-comfyui</span>
+  </div>
+  <div class="nav">
+    <div class="mi active" data-page="launcher" onclick="switchPage(event,'launcher')"><span class="mi-icon">&#128640;</span><span class="mt">wwdmc启动器</span></div>
+    <div class="mi" data-page="models" onclick="switchPage(event,'models')"><span class="mi-icon">&#128230;</span><span class="mt">模型管理</span></div>
+    <div class="mi" data-page="plugins" onclick="switchPage(event,'plugins')"><span class="mi-icon">&#128187;</span><span class="mt">插件管理</span></div>
+    <div class="mi" data-page="output" onclick="switchPage(event,'output')"><span class="mi-icon">&#128193;</span><span class="mt">输出管理</span></div>
+    <div class="mi" data-page="settings" onclick="switchPage(event,'settings')"><span class="mi-icon">&#9881;&#65039;</span><span class="mt">全局设置</span></div>
+    <div class="mi" data-page="repair" onclick="switchPage(event,'repair')"><span class="mi-icon">&#128736;</span><span class="mt">修复安装</span></div>
+    <div class="mi" data-page="help" onclick="switchPage(event,'help')"><span class="mi-icon">&#10067;</span><span class="mt">帮助</span></div>
+    <div class="mi" data-page="about" onclick="switchPage(event,'about')"><span class="mi-icon">&#8505;&#65039;</span><span class="mt">关于</span></div>
+  </div>
+  <div id="sidebar-ft">v2.9 &copy; 薇薇的猫</div>
+</div>
+
+<!-- ====== MAIN ====== -->
+<div id="main">
+
+<!-- ====== wwdmc启动器 ====== -->
+<div id="page-launcher" class="page active">
+  <h1 class="ptitle"><span class="mi-icon">&#128640;</span>wwdmc 启动器</h1>
+  <div class="card">
+    <div class="dlbar" style="margin-bottom:12px">
+      <button class="btn btn1" id="cuiStartBtn" onclick="cuiStart()">&#9654; 启动 ComfyUI</button>
+      <button class="btn btn3" id="cuiStopBtn" onclick="cuiStop()" disabled>&#9632; 停止 ComfyUI</button>
+      <span style="flex:1"></span>
+      <span id="cuiStatus" style="color:var(--text2);font-size:12.5px">准备就绪</span>
+    </div>
+    <div style="margin-bottom:10px;font-size:10px;color:var(--cyan);word-break:break-all;line-height:1.5" id="cuiCmdPreview2"></div>
+    <div style="background:#050810;border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;max-height:520px;overflow-y:auto;font-family:var(--font);font-size:11.5px;line-height:1.65;color:var(--text2);white-space:pre-wrap;word-break:break-all" id="cuiLog">等待启动 ComfyUI ...</div>
+  </div>
+</div>
+
+<!-- ====== 模型管理（含下载） ====== -->
+<div id="page-models" class="page">
+  <h1 class="ptitle"><span class="mi-icon">&#128230;</span>模型管理</h1>
+  <div class="dlbar">
+    <div class="a2stat"><span class="a2dot off" id="a2dot"></span><span id="a2text" style="font-size:12.5px">aria2c 未运行</span></div>
+    <button class="btn btn2 btn-sm" onclick="a2Start()">&#9654; 启动</button>
+    <button class="btn btn3 btn-sm" onclick="a2Stop()">&#9632; 停止</button>
+    <span style="flex:1"></span>
+    <input type="text" id="sinput" placeholder="搜索模型..." onkeydown="if(event.key==='Enter'){mPage=1;loadModels()}" style="width:200px">
+    <button class="btn btn1 btn-sm" onclick="mPage=1;loadModels()">搜索</button>
+  </div>
+  <div class="sbar" style="margin-bottom:12px">
+    <select id="ssort" onchange="mPage=1;loadModels()" style="width:160px">
+      <option value="id_asc">ID 升序</option><option value="id_desc">ID 降序</option>
+      <option value="name_asc">名称 A-Z</option><option value="name_desc">名称 Z-A</option>
+    </select>
+    <button class="btn btn6 btn-sm" onclick="resetModels()" title="重置搜索与排序">↺ 重置</button>
+    <button class="btn btn2" onclick="openModal()">+ 新增</button>
+    <div class="bbar" style="margin:0 0 0 0;flex:1">
+      <button class="btn btn2 btn-sm" onclick="batchDl(false)">批量下载</button>
+      <button class="btn btn5 btn-sm" onclick="batchDl(true)">&#127760; 国内批量</button>
+      <span style="flex:1"></span>
+      <span style="font-size:11.5px;color:var(--text3)">并发: <strong id="mcd" style="color:var(--cyan)">3</strong></span>
+      <span id="mcount" style="color:var(--text3);font-size:12px"></span>
+    </div>
+  </div>
+  <div class="card"><div class="twrap">
+    <table><thead><tr><th class="cb-cell"><input type="checkbox" onchange="dlSelAll(this.checked)"></th><th>ID</th><th>名称</th><th>路径</th><th>下载链接</th><th>大小</th><th>进度</th><th>状态</th><th>操作</th></tr></thead>
+    <tbody id="mtbody"></tbody></table>
+  </div>
+    <div class="paginate" id="mpag" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border);margin-top:8px;flex-wrap:wrap">
+      <button class="btn btn6 btn-xs" id="mprev" onclick="mPage--;loadModels()" disabled>← 上一页</button>
+      <span id="minfo" style="font-size:12px;color:var(--text2)"></span>
+      <button class="btn btn6 btn-xs" id="mnext" onclick="mPage++;loadModels()" disabled>下一页 →</button>
+      <span style="margin-left:12px;font-size:11.5px;color:var(--text3)">每页</span>
+      <select id="mps" onchange="mPageSize=+this.value;mPage=1;loadModels()" style="width:auto;padding:3px 6px;background:var(--card);color:var(--text1);border:1px solid var(--border);border-radius:4px;font-size:11.5px">
+        <option value="20" selected>20</option><option value="50">50</option><option value="100">100</option><option value="200">200</option>
+      </select>
+    </div>
+  </div>
+  <div class="card pcard" id="pcard" style="display:none"><h3>&#9200; 下载进度</h3><div id="plist_dl"></div></div>
+  <div class="card pcard" id="qcard" style="display:none"><h3>&#9776; 下载队列</h3><div id="qlist"></div></div>
+</div>
+
+<!-- ====== 插件管理（含克隆） ====== -->
+<div id="page-plugins" class="page">
+  <h1 class="ptitle"><span class="mi-icon">&#128187;</span>插件管理</h1>
+  <div class="dlbar">
+    <div class="a2stat"><span class="a2dot off" id="gitdot"></span><span id="gittext" style="font-size:12.5px">Git 状态</span></div>
+    <button class="btn btn6 btn-sm" onclick="checkGit()">检测 Git</button>
+    <span style="flex:1"></span>
+    <input type="text" id="ps" placeholder="搜索插件..." onkeydown="if(event.key==='Enter'){plPage=1;loadPlugins()}" style="width:200px">
+    <button class="btn btn1 btn-sm" onclick="plPage=1;loadPlugins()">搜索</button>
+  </div>
+  <div class="sbar" style="margin-bottom:12px">
+    <button class="btn btn6 btn-sm" onclick="openPluginDir()" title="打开插件文件夹" style="font-size:15px;padding:2px 7px">&#128193;</button>
+    <select id="plsort" onchange="plPage=1;loadPlugins()" style="width:160px">
+      <option value="id_asc">ID 升序</option><option value="id_desc">ID 降序</option>
+      <option value="name_asc">名称 A-Z</option><option value="name_desc">名称 Z-A</option>
+      <option value="installed">已安装插件</option>
+    </select>
+    <button class="btn btn6 btn-sm" onclick="resetPlugins()" title="重置搜索与排序">↺ 重置</button>
+    <button class="btn btn2" onclick="openPluginModal()">+ 新增</button>
+    <div class="bbar" style="margin:0 0 0 0;flex:1">
+      <button class="btn btn-teal btn-sm" onclick="batchClone(false)">批量克隆</button>
+      <button class="btn btn5 btn-sm" onclick="batchClone(true)">&#127760; 国内批量</button>
+      <span style="flex:1"></span>
+      <span style="font-size:11.5px;color:var(--text3)">并发: <strong id="cld" style="color:var(--teal)">2</strong></span>
+      <span id="plmcount" style="color:var(--text3);font-size:12px"></span>
+    </div>
+  </div>
+  <div class="card"><div class="twrap">
+    <table><thead><tr><th class="cb-cell"><input type="checkbox" onchange="plSelAll(this.checked)"></th><th>ID</th><th>名称</th><th>仓库地址</th><th>描述</th><th>状态</th><th>操作</th></tr></thead>
+    <tbody id="pltbody"></tbody></table>
+  </div>
+    <div class="paginate" id="plpag" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border);margin-top:8px;flex-wrap:wrap">
+      <button class="btn btn6 btn-xs" id="plprev" onclick="plPage--;loadPlugins()" disabled>← 上一页</button>
+      <span id="plinfo" style="font-size:12px;color:var(--text2)"></span>
+      <button class="btn btn6 btn-xs" id="plnext" onclick="plPage++;loadPlugins()" disabled>下一页 →</button>
+      <span style="margin-left:12px;font-size:11.5px;color:var(--text3)">每页</span>
+      <select id="plps" onchange="plPageSize=+this.value;plPage=1;loadPlugins()" style="width:auto;padding:3px 6px;background:var(--card);color:var(--text1);border:1px solid var(--border);border-radius:4px;font-size:11.5px">
+        <option value="20" selected>20</option><option value="50">50</option><option value="100">100</option><option value="200">200</option>
+      </select>
+    </div>
+  </div>
+  <div class="card pcard" id="plpcard" style="display:none"><h3>&#9200; 克隆进度</h3><div id="plplist"></div></div>
+  <div class="card pcard" id="plqcard" style="display:none"><h3>&#9776; 克隆队列</h3><div id="plqlist"></div></div>
+</div>
+
+<!-- ====== 帮助 ====== -->
+<div id="page-help" class="page center-page">
+  <div class="center-wrap">
+    <h1 class="ptitle"><span class="mi-icon">&#10067;</span>使用帮助</h1>
+    <div class="card" style="line-height:2">
+      <div style="max-width:800px;margin:0 auto">
+        <div style="font-size:16px;font-weight:700;color:var(--cyan);margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid var(--border)">薇薇的猫 ComfyUI 整合包 · 使用指南</div>
+
+        <div style="margin-bottom:36px">
+          <h3 style="color:var(--cyan);font-size:14px;margin-bottom:12px">1. 解压到根目录</h3>
+          <p style="color:var(--text2);font-size:13px">解压后，保证路径没有英文，最好放在磁盘根目录。如 <code>C:/ComfyUI</code></p>
+          <img src="https://i2.wp.com/wx1.sinaimg.cn/large/006dp3hUgy1ieu1j0v1kyj30fe0930sv.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="解压位置">
+        </div>
+
+        <div style="margin-bottom:36px">
+          <h3 style="color:var(--cyan);font-size:14px;margin-bottom:12px">2. 启动 ComfyUI</h3>
+          <p style="color:var(--text2);font-size:13px">双击 <strong>comfyui启动器</strong> 即可启动，网页会自动打开7860端口，如果没有打开，可以手动复制到浏览器打开。</p>
+          <img src="https://i2.wp.com/wx2.sinaimg.cn/large/006dp3hUgy1ieu1j83ncxj30fe082aa6.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="启动器">
+          <img src="https://i2.wp.com/wx2.sinaimg.cn/large/006dp3hUgy1ieu1jfmlb5j30fe07imxt.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:8px" alt="浏览器打开">
+        </div>
+
+        <div style="margin-bottom:36px">
+          <h3 style="color:var(--cyan);font-size:14px;margin-bottom:12px">3. 首次配置路径 &#9888;&#65039;</h3>
+          <p style="color:var(--text2);font-size:13px">第一次打开 <strong>「薇薇的猫-comfyui管理器」</strong> 页面，务必请在 <a href="javascript:switchPage(null,'settings')" style="color:var(--cyan);text-decoration:underline">全局设置</a> 中配置 <strong>Python</strong>、<strong>Git</strong>、<strong>ComfyUI</strong> 等路径。<span style="color:var(--amber)">这个很重要，决定着你的插件和模型能否正常安装下载和管理。</span></p>
+          <img src="https://i2.wp.com/wx2.sinaimg.cn/large/006dp3hUgy1ieu9vtziv5j30tf0gzq3w.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="全局设置">
+        </div>
+
+        <div style="margin-bottom:36px">
+          <h3 style="color:var(--cyan);font-size:14px;margin-bottom:12px">4. 启动 ComfyUI</h3>
+          <p style="color:var(--text2);font-size:13px">点击 <strong>启动comfyui</strong> 即可启动。</p>
+          <img src="https://i2.wp.com/wx4.sinaimg.cn/large/006dp3hUgy1ieu1jkgreyj30fd08iaab.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="启动ComfyUI">
+        </div>
+
+        <div style="margin-bottom:36px">
+          <h3 style="color:var(--cyan);font-size:14px;margin-bottom:12px">5. NVIDIA 显卡驱动</h3>
+          <p style="color:var(--text2);font-size:13px">NVIDIA 显卡驱动请更新到 <strong>12.8 以上</strong>。可以在命令提示符中使用 <code>nvidia-smi</code> 查看 NVIDIA 驱动版本。</p>
+          <img src="https://i2.wp.com/wx2.sinaimg.cn/large/006dp3hUgy1ieu1jrbi6nj30fe04oweu.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="NVIDIA驱动">
+        </div>
+
+        <div style="margin-bottom:36px">
+          <h3 style="color:var(--cyan);font-size:14px;margin-bottom:12px">6. 安装 Visual Studio 依赖</h3>
+          <p style="color:var(--text2);font-size:13px">如 ComfyUI 存在其他问题，需要先安装 Visual 依赖：</p>
+          <p style="margin:8px 0"><a href="https://visualstudio.microsoft.com/zh-hans/downloads/" target="_blank" style="color:var(--cyan)">https://visualstudio.microsoft.com/zh-hans/downloads/</a></p>
+          <p style="color:var(--text2);font-size:13px">选择 <strong>社区版本 Community</strong> 下载，然后选择安装<strong>桌面C++</strong>、<strong>CMake</strong> 等插件，注意勾选需要的依赖。</p>
+          <img src="https://i2.wp.com/wx1.sinaimg.cn/large/006dp3hUgy1ieu1jyo0w8j30fe07iwer.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="VS安装">
+          <img src="https://i2.wp.com/wx4.sinaimg.cn/large/006dp3hUgy1ieu1k3rpkqj30fe07qjrv.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:8px" alt="VS组件">
+        </div>
+
+        <div style="margin-bottom:16px">
+          <h3 style="color:var(--cyan);font-size:14px;margin-bottom:12px">7. ComfyUI 启动命令 · 额外参数说明</h3>
+          <p style="color:var(--text2);font-size:13px">在 <a href="javascript:switchPage(null,'settings')" style="color:var(--cyan);text-decoration:underline">全局设置</a> 的「ComfyUI 启动命令」中，可在<strong>额外命令行参数</strong>填入更多选项：</p>
+          <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:12px;line-height:1.6">
+            <tr style="background:rgba(0,212,255,0.08)"><th style="padding:6px 10px;text-align:left;color:var(--cyan);border:1px solid var(--border)">参数</th><th style="padding:6px 10px;text-align:left;color:var(--cyan);border:1px solid var(--border)">说明</th></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--force-fp16</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">强制 fp16 推理（适合低显存）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--force-fp32</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">强制 fp32 推理（提高画质，需要更多显存）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--bf16-vae</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">VAE 用 bf16 精度（减少显存，某些显卡可能黑图）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--fp16-vae</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">VAE 用 fp16 精度（注意可能导致黑图）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--cpu-vae</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">VAE 放 CPU 运行（极致省显存但慢）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--fp16-unet</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">扩散模型用 fp16（降低显存）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--bf16-unet</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">扩散模型用 bf16（40系/50系推荐）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--fp8_e4m3fn-unet</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">UNet 权重用 fp8_e4m3fn（极致省显存）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--fp16-intermediates</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">中间张量用 fp16（实验性，降低显存）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--verbose DEBUG</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">日志级别设为 DEBUG（调试用，输出详细信息）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--use-split-cross-attention</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">Split 交叉注意力优化（不使用 xformers 时）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--use-pytorch-cross-attention</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">PyTorch 2.0 交叉注意力（推荐）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--use-sage-attention</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">Sage 注意力加速（需安装 sageattention）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--use-flash-attention</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">FlashAttention（需安装 flash-attn）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--force-channels-last</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">强制 channels-last 内存格式（可能加速）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--disable-xformers</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">禁用 xformers（某些兼容性问题时使用）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--fast</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">启用实验性加速优化（可能降低画质或崩溃）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--reserve-vram 2</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">为系统保留 2GB 显存（数字可调）</td></tr>
+            <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--disable-smart-memory</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">强制主动释放显存到内存</td></tr>
+          </table>
+          <p style="color:var(--text3);font-size:11.5px;margin-top:12px">多个参数用空格分隔，如 <code>--force-fp16 --bf16-vae --use-pytorch-cross-attention</code></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 输出管理 ====== -->
+<div id="page-output" class="page center-page">
+  <div class="center-wrap">
+    <h1 class="ph">&#128193; 输出管理</h1>
+
+    <!-- 面包屑 + 工具栏 -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <span id="outBread" style="color:var(--cyan);font-size:13px"></span>
+      <span style="flex:1"></span>
+      <select id="outViewSel" class="sinput" style="width:140px" onchange="outViewChange()">
+        <option value="grid">&#9630; 网格</option><option value="masonry">&#9630; 瀑布流</option><option value="list">&#9776; 列表</option>
+      </select>
+    </div>
+
+    <!-- 搜索 + 排序 + 分页控制 -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn btn6" onclick="outOpenFolder()" title="在资源管理器中打开输出文件夹" style="font-size:18px;padding:4px 8px">&#128193;</button>
+      <input type="text" id="outSearch" class="sinput" placeholder="搜索文件名/文件夹..." style="width:180px" onkeydown="if(event.key==='Enter')outSearch()">
+      <button class="btn btn6" onclick="outClearSearch()" title="清除搜索" style="font-size:14px;padding:4px 8px;min-width:28px">&#8634;</button>
+      <button class="btn btn6" onclick="outSearch()" style="font-size:12px">&#128269; 搜索</button>
+      <select id="outSort" class="sinput" style="width:120px" onchange="outDoBrowse()">
+        <option value="name_asc">名称 ↑</option><option value="name_desc">名称 ↓</option>
+        <option value="date_desc">最新优先</option><option value="date_asc">最旧优先</option>
+      </select>
+      <select id="outPS" class="sinput" style="width:80px" onchange="outDoBrowse()">
+        <option value="12">12条</option><option value="20" selected>20条</option><option value="40">40条</option><option value="60">60条</option>
+      </select>
+      <span id="outPageInfo" style="color:var(--text2);font-size:13px;margin-left:8px"></span>
+    </div>
+
+    <!-- 内容区域 -->
+    <div id="outGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;min-height:200px"></div>
+
+    <!-- 分页 -->
+    <div id="outPager" style="display:flex;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap"></div>
+  </div>
+</div>
+
+<!-- ====== 全局设置 ====== -->
+<div id="page-settings" class="page center-page">
+  <div class="center-wrap">
+    <h1 class="ptitle"><span class="mi-icon">&#9881;&#65039;</span>全局设置</h1>
+    <div class="card scard">
+      <div class="sg sg-wide"><div class="sg-title">路径配置</div>
+        <div class="srow srow-full">
+          <div class="slabel-block"><div class="slabel">ComfyUI 根目录</div><div class="shint">模型下载到此目录下的对应子目录</div></div>
+          <input type="text" id="scd" class="sinput-wide" placeholder="如 D:\ComfyUI 或 /home/user/ComfyUI">
+        </div>
+        <div class="srow srow-full" style="margin-top:12px">
+          <div class="slabel-block"><div class="slabel">Python 路径</div><div class="shint">项目驱动使用的 Python 解释器路径</div></div>
+          <div style="display:flex;gap:10px;align-items:center"><input type="text" id="spy" class="sinput-wide" placeholder="如 C:\python312\python.exe"><button class="btn btn6" style="min-width:80px" onclick="detectPy()">检测</button></div>
+          <div id="pyr"></div>
+        </div>
+        <div class="srow srow-full" style="margin-top:12px">
+          <div class="slabel-block"><div class="slabel">Git 路径</div><div class="shint">用于克隆 ComfyUI 插件的 git 可执行文件路径</div></div>
+          <div style="display:flex;gap:10px;align-items:center"><input type="text" id="sgp" class="sinput-wide" placeholder="git"><button class="btn btn6" style="min-width:80px" onclick="detectGit()">检测</button></div>
+          <div id="gtr"></div>
+        </div>
+        <div class="srow srow-full" style="margin-top:12px">
+          <div class="slabel-block"><div class="slabel">aria2c 路径</div><div class="shint">Windows: C:\aria2\aria2c.exe | Linux: /usr/bin/aria2c</div></div>
+          <div style="display:flex;gap:10px;align-items:center"><input type="text" id="sap" class="sinput-wide" placeholder="aria2c 路径"><button class="btn btn6" style="min-width:80px" onclick="detectA2()">检测</button></div>
+          <div id="adr"></div>
+        </div>
+      </div>
+
+      <div class="sg sg-wide"><div class="sg-title">ComfyUI 启动命令 <button class="btn btn6 btn-xs" onclick="cuiCmdReset()" style="margin-left:12px">重置为默认</button><span id="cuiCmdPreview" style="margin-left:12px;font-size:10px;color:var(--cyan);word-break:break-all"></span></div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">监听 IP</div><div class="shint">--listen，默认 127.0.0.1 (仅本机)。设为 0.0.0.0 监听所有网络接口，可局域网访问</div></div>
+          <input type="text" class="sinput" id="scli" placeholder="留空=127.0.0.1">
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">端口</div><div class="shint">--port，ComfyUI Web 服务端口，默认 8188</div></div>
+          <input type="text" class="sinput" id="sclp" placeholder="留空=8188">
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">自动打开浏览器</div><div class="shint">--auto-launch，启动后自动打开默认浏览器访问 WebUI</div></div>
+          <input type="checkbox" id="scla" checked>
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">VRAM 模式</div><div class="shint">显存管理策略。高显存=模型常驻GPU；低显存=编码器放CPU；极低=极限省显存；仅GPU=全部放GPU；CPU=纯CPU慢速</div></div>
+          <select class="sinput" id="sclv"><option value="default">默认 (Dynamic VRAM)</option><option value="highvram">高显存 (--highvram)</option><option value="lowvram">低显存 (--lowvram)</option><option value="novram">极低显存 (--novram)</option><option value="gpu_only">仅GPU (--gpu-only)</option><option value="cpu">纯CPU (--cpu)</option></select>
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">预览方式</div><div class="shint">--preview-method，采样器节点的默认预览方式。auto=自动选择；latent2rgb=潜空间转RGB；taesd=TAESD快速解码；none=不预览</div></div>
+          <select class="sinput" id="sclpm"><option value="default">默认 (auto)</option><option value="auto">auto (自动)</option><option value="latent2rgb">latent2rgb (潜空间转RGB)</option><option value="taesd">taesd (TAESD)</option><option value="none">none (关闭)</option></select>
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">启用 CORS</div><div class="shint">--enable-cors-header，允许跨域资源共享。填入允许的域名，留空=禁用。设为 * 允许所有来源</div></div>
+          <input type="text" class="sinput" id="sclc" placeholder="留空禁用，* = 允许所有">
+        </div>
+        <div class="srow srow-full">
+          <div class="slabel-block"><div class="slabel">额外命令行参数</div><div class="shint">其他 main.py 参数，用空格分隔，如: --force-fp16 --bf16-vae --verbose DEBUG</div></div>
+          <input type="text" class="sinput-wide" id="sclx" placeholder="如 --force-fp16 --bf16-vae">
+        </div>
+      </div>
+
+      <div class="sg"><div class="sg-title">下载队列</div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">最大同时下载</div><div class="shint">aria2c 同时下载 (1-10)</div></div><input type="number" class="sinput" id="smc" min="1" max="10" value="3"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">最大同时克隆</div><div class="shint">Git clone 并发数 (1-5)</div></div><input type="number" class="sinput" id="scl" min="1" max="5" value="2"></div>
+      </div>
+
+      <div class="sg"><div class="sg-title">连接参数</div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">单服务器最大连接</div><div class="shint">(1-16)</div></div><input type="number" class="sinput" id="smcs" min="1" max="16" value="8"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">文件分片数</div><div class="shint">(1-16)</div></div><input type="number" class="sinput" id="sspl" min="1" max="16" value="8"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">最小分片大小</div><div class="shint">如 10M, 1M</div></div><input type="text" class="sinput" id="smss" value="10M"></div>
+      </div>
+
+      <div class="sg sg-wide"><div class="sg-title">超时与重试</div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">连接超时(秒)</div></div><input type="number" class="sinput" id="sct" min="10" value="60"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">下载超时(秒)</div></div><input type="number" class="sinput" id="sto" min="10" value="60"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">最低速度</div></div><input type="text" class="sinput" id="sls" value="1K"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">重试等待(秒)</div></div><input type="number" class="sinput" id="srw" min="1" value="3"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">最大重试次数</div><div class="shint">0=无限</div></div><input type="number" class="sinput" id="smt" min="0" value="0"></div>
+      </div>
+
+      <div class="sg sg-wide"><div class="sg-title">高级</div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">文件预分配</div></div><select class="sinput" id="sfa"><option value="none">none</option><option value="falloc">falloc</option><option value="prealloc">prealloc</option></select></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">验证HTTPS证书</div></div><input type="checkbox" id="scc"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">启动时自动运行aria2c</div></div><input type="checkbox" id="sas" checked></div>
+      </div>
+
+      <div class="sg"><div class="sg-title">其他</div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">输出预览文件夹</div><div class="shint">文件管理预览的根目录，默认为 ComfyUI 目录下的 output 文件夹</div></div>
+          <input type="text" class="sinput sinput-wide" id="soutd" placeholder="C:\ComfyUI\ComfyUI\output">
+        </div>
+      </div>
+
+      <div class="sacts"><button class="btn btn6" onclick="resetS()">恢复默认</button><button class="btn btn1" onclick="saveS()">保存设置</button><button class="btn btn5" onclick="saveSRestart()">保存并重启 aria2c</button></div>
+      <div class="snote">设置保存后需重启 aria2c 生效</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 修复安装 ====== -->
+<div id="page-repair" class="page center-page"><div class="center-wrap">
+  <h1 class="ptitle"><span class="mi-icon">&#128736;</span>修复安装</h1>
+  <div class="card" style="border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.03)">
+    <div style="font-size:16px;font-weight:700;color:var(--amber);margin-bottom:8px">&#9888; 请先配置全局设置</div>
+    <div style="color:var(--text2);line-height:1.6">在使用以下功能前，请务必在 <a href="javascript:switchPage(null,'settings')" style="color:var(--cyan);text-decoration:underline">全局设置</a> 中正确配置 <strong>Python 路径</strong>、<strong>Git 路径</strong> 和 <strong>ComfyUI 根目录</strong>。</div>
+  </div>
+
+  <!-- ====== 安装区域 ====== -->
+  <div class="section-title"><span class="mi-icon">&#128640;</span> 安装区域</div>
+
+  <div class="card">
+    <div class="card-title"><span class="mi-icon">&#128187;</span> 克隆 ComfyUI 仓库</div>
+    <div class="srow"><span class="sl">安装目录</span><input id="rclone_dir" class="sinput sinput-wide" placeholder="如 C:\ComfyUI\ComfyUI2" style="width:100%"></div>
+    <div class="srow" style="flex-direction:row;align-items:center;gap:12px"><span class="sl">使用镜像</span><label class="sw"><input type="checkbox" id="rclone_mirror" checked><span class="st">国内镜像 (api.gitproxy.dev)</span></label></div>
+    <div id="rclone_warn" style="margin-bottom:10px;display:none"></div>
+    <button class="btn btn2" id="rclone_btn" onclick="repairClone()">&#128187; 克隆 ComfyUI</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="mi-icon">&#128295;</span> 安装 requirements.txt 依赖</div>
+    <div style="color:var(--text2);margin-bottom:10px">基于 ComfyUI 根目录，执行 <code>pip install -r requirements.txt</code></div>
+    <button class="btn btn1" id="rreq_btn" onclick="repairRequirements()">&#128295; 安装 requirements.txt</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="mi-icon">&#127754;</span> 安装 PyTorch</div>
+    <div style="color:var(--text2);margin-bottom:6px">基于 static/info/pytorch.txt，选择版本与计算平台</div>
+    <div class="srow"><span class="sl">PyTorch 版本</span><select id="rpt_ver" class="sinput sinput-wide" onchange="repairUpdateVariants()" style="width:100%"><option value="">加载中...</option></select></div>
+    <div class="srow"><span class="sl">计算平台</span><select id="rpt_var" class="sinput sinput-wide" style="width:100%" onchange="repairUpdateCmd()"><option value="">请先选择版本</option></select></div>
+    <div class="srow"><span class="sl">安装命令</span><code id="rpt_cmd" style="background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-size:12px;word-break:break-all;min-height:38px;display:flex;align-items:center;width:100%;box-sizing:border-box">等待选择...</code></div>
+    <button class="btn btn5" id="rpt_btn" onclick="repairPytorch()">&#127754; 安装 PyTorch</button>
+  </div>
+
+  <!-- ====== 修复区域 ====== -->
+  <div class="section-title"><span class="mi-icon">&#128736;</span> 修复区域</div>
+
+  <div class="card">
+    <div class="card-title"><span class="mi-icon">&#128230;</span> 安装依赖</div>
+    <div style="color:var(--text2);margin-bottom:10px">使用全局设置中的 Python 路径安装 pip 依赖包。多个包名用空格分隔。</div>
+    <div class="srow"><span class="sl">包名</span><input id="rpip_pkgs" class="sinput sinput-wide" placeholder="例如: numpy pandas torch==2.1.0" style="width:100%"></div>
+    <div class="srow"><span class="sl">镜像源</span><select id="rpip_mirror" class="sinput sinput-wide" style="width:100%"><option value="official">官方源 (pypi.org)</option><option value="tsinghua">清华源 (tuna.tsinghua.edu.cn)</option><option value="aliyun">阿里源 (mirrors.aliyun.com)</option></select></div>
+    <button class="btn btn1" id="rpip_btn" onclick="repairPipInstall()">&#128230; 安装依赖</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="mi-icon">&#128229;</span> 下载文件</div>
+    <div style="color:var(--text2);margin-bottom:10px">使用 aria2c 下载远程文件。如不填保存路径，默认保存到 ComfyUI\models 目录。</div>
+    <div class="srow"><span class="sl">下载链接</span><input id="rdl_url" class="sinput sinput-wide" placeholder="https://huggingface.co/.../model.safetensors" style="width:100%"></div>
+    <div class="srow"><span class="sl">保存路径</span><input id="rdl_path" class="sinput sinput-wide" placeholder="留空则默认：ComfyUI 根目录\models" style="width:100%"></div>
+    <button class="btn btn2" id="rdl_btn" onclick="repairDownload()">&#128229; 下载文件</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="mi-icon">&#128193;</span> 修复单个插件</div>
+    <div style="color:var(--text2);margin-bottom:10px">输入 custom_nodes 中的插件文件夹名，执行 <strong>git pull</strong> 更新 + 安装 requirements.txt 依赖</div>
+    <div class="srow"><span class="sl">插件名称</span><input id="rplugin_name" class="sinput sinput-wide" placeholder="例如: ComfyUI-Manager" style="width:100%"></div>
+    <button class="btn btn1" id="rplugin_btn" onclick="repairPlugin()">&#128193; 修复此插件</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="mi-icon">&#128194;</span> 修复所有插件</div>
+    <div style="color:var(--text2);margin-bottom:10px">扫描 custom_nodes 下所有 Git 插件，逐个执行 <strong>git pull</strong> + requirements.txt 依赖安装</div>
+    <button class="btn btn1" id="rall_btn" onclick="repairAllPlugins()">&#128194; 批量修复全部插件</button>
+  </div>
+
+  <div class="card" style="border-color:rgba(239,68,68,0.5);background:rgba(239,68,68,0.04)">
+    <div class="card-title" style="color:var(--red)"><span class="mi-icon">&#9888;</span> 强制进程控制</div>
+    <div style="color:rgba(239,68,68,0.85);margin-bottom:12px;padding:10px 14px;background:rgba(239,68,68,0.08);border-radius:6px;line-height:1.6">
+      <strong>&#9888; 危险操作</strong>：以下按钮将强制结束所有相关进程，可能丢失未保存数据，请谨慎使用。
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn3" id="rkill_cui" onclick="repairKillComfyUI()">&#128163; 结束所有 ComfyUI 进程</button>
+      <button class="btn btn3" id="rkill_a2" onclick="repairKillAria2()">&#128163; 结束所有 aria2 进程</button>
+    </div>
+  </div>
+
+  <!-- ====== 日志 + 控制 ====== -->
+  <div class="card">
+    <div class="card-title"><span class="mi-icon">&#128220;</span> 运行日志 <span id="rlog_status" style="font-size:12px;font-weight:400;color:var(--text2);margin-left:12px">空闲</span></div>
+    <pre id="rlog" style="background:rgba(0,0,0,0.5);border:1px solid var(--border);border-radius:8px;padding:14px;max-height:420px;overflow-y:auto;font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-all;font-family:'Cascadia Code','Consolas','Courier New',monospace">等待操作...</pre>
+    <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+      <button class="btn btn3" id="rstop_btn" onclick="repairStop()" disabled>&#9209; 停止操作</button>
+      <button class="btn btn4" id="rpurge_btn" onclick="repairPurgeCache()">&#128465; 清除 pip 缓存</button>
+    </div>
+  </div>
+</div></div>
+
+<!-- ====== 关于 ====== -->
+<div id="page-about" class="page center-page" style="padding-bottom:60px"><div class="center-wrap">
+  <h1 class="ptitle"><span class="mi-icon">&#8505;&#65039;</span>关于</h1>
+
+  <!-- 软件简介 -->
+  <div class="card" style="text-align:center;padding:48px 40px;margin-bottom:24px">
+    <div style="font-size:72px;margin-bottom:20px;filter:drop-shadow(0 0 32px rgba(250,180,200,0.4));animation:float 3s ease-in-out infinite">&#128049;</div>
+    <div style="font-size:28px;font-weight:800;margin-bottom:6px;background:linear-gradient(135deg,#f9a8d4,var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent">薇薇的猫</div>
+    <div style="font-size:13px;color:var(--cyan);margin-bottom:28px;font-weight:500;letter-spacing:2px">COMFYUI MODEL MANAGER</div>
+    <div style="font-size:14px;color:var(--text2);line-height:2.2;max-width:460px;margin:0 auto 8px">
+      便捷的 ComfyUI 模型管理工具<br>
+      模型 CRUD &middot; 模型下载 &middot; 插件克隆 &middot; 队列管理<br>
+      aria2c 引擎 + Git 支持 &middot; 跨平台
+    </div>
+  </div>
+
+  <!-- 作者信息 -->
+  <div class="card" style="padding:40px;margin-bottom:24px">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px">
+      <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#f9a8d4,var(--cyan));display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">&#128049;</div>
+      <div>
+        <div style="font-size:20px;font-weight:700;color:var(--text)">薇薇的猫</div>
+        <div style="font-size:12px;color:var(--text3)">作者</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px">
+      <a class="olink" href="https://space.bilibili.com/472768517" target="_blank" style="padding:12px 20px;flex:1;min-width:200px">
+        <span style="font-size:20px;color:#fb7299">&#9655;</span>
+        <span>Bilibili <span style="color:var(--text3);font-size:12px">薇薇的猫66</span></span>
+      </a>
+      <a class="olink" href="https://www.runninghub.cn/user-center/1955362264149782530/webapp?inviteCode=twxvsxx8" target="_blank" style="padding:12px 20px;flex:1;min-width:200px">
+        <span style="font-size:20px;color:#10b981">&#9733;</span>
+        <span>RunningHub <span style="color:var(--text3);font-size:12px">主页</span></span>
+      </a>
+      <a class="olink" href="https://www.liblib.art/userpage/2d3db99d7822404bb7d3d55a0b917ff0" target="_blank" style="padding:12px 20px;flex:1;min-width:200px">
+        <span style="font-size:20px;color:var(--amber)">&#127912;</span>
+        <span>LiblibArt <span style="color:var(--text3);font-size:12px">主页</span></span>
+      </a>
+      <a class="olink" href="https://v.douyin.com/Dnx6ZoeMjqk" target="_blank" style="padding:12px 20px;flex:1;min-width:200px">
+        <span style="font-size:20px">&#127925;</span>
+        <span>抖音 <span style="color:var(--text3);font-size:12px">薇薇的猫</span></span>
+      </a>
+      <div class="olink" style="cursor:default;padding:12px 20px;flex:1;min-width:200px">
+        <span style="font-size:20px;color:#f9a8d4">&#128235;</span>
+        <span>微信 <span style="color:var(--text3);font-size:12px">weiweismiao</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 打赏 -->
+  <div class="card" style="padding:40px;margin-bottom:24px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+      <span style="font-size:22px">&#128176;</span>
+      <span style="font-size:16px;font-weight:700;color:var(--text)">支持作者</span>
+    </div>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:24px;line-height:1.8">如果这个工具帮到了你，欢迎请作者喝杯奶茶 &#129483;</p>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;justify-content:center">
+      <div style="text-align:center;flex:1;min-width:180px;max-width:260px">
+        <img src="https://i2.wp.com/wx2.sinaimg.cn/large/006dp3hUgy1ic5ef0x4ydj30eu0euwfs.jpg" style="width:100%;border-radius:var(--radius-sm);border:1px solid var(--border)" alt="微信打赏" loading="lazy">
+        <div style="margin-top:10px;font-size:13px;color:var(--text2)"><span style="color:#07c160">&#9673;</span> 微信</div>
+      </div>
+      <div style="text-align:center;flex:1;min-width:180px;max-width:260px">
+        <img src="https://i2.wp.com/wx1.sinaimg.cn/large/006dp3hUgy1ic5ef0vri9j30j40j4dha.jpg" style="width:100%;border-radius:var(--radius-sm);border:1px solid var(--border)" alt="支付宝打赏" loading="lazy">
+        <div style="margin-top:10px;font-size:13px;color:var(--text2)"><span style="color:#1677ff">&#9673;</span> 支付宝</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 版本更新 -->
+  <div class="card" style="padding:40px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
+      <span style="font-size:22px">&#128640;</span>
+      <span style="font-size:16px;font-weight:700;color:var(--text)">版本更新</span>
+    </div>
+    <div style="position:relative;padding-left:32px">
+      <div style="position:absolute;left:11px;top:8px;bottom:8px;width:2px;background:linear-gradient(180deg,var(--cyan),rgba(0,212,255,0.15))"></div>
+
+      <div style="position:relative;margin-bottom:32px">
+        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px rgba(0,212,255,0.5)"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(0,212,255,0.05));color:var(--cyan);font-weight:700;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid rgba(0,212,255,0.25)">v2.9</span>
+          <span style="font-size:12px;color:var(--text3)">最新</span>
+        </div>
+        <div style="color:var(--text2);font-size:13px;line-height:1.8;padding-left:4px">
+          支持模型智能搜索与批量管理；新增队列管理与进度监控面板；优化 UI 交互与暗色主题；修复多项稳定性问题。
+        </div>
+      </div>
+
+      <div style="position:relative;margin-bottom:32px">
+        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--text3);box-shadow:0 0 8px rgba(0,212,255,0.2)"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;background:rgba(0,212,255,0.08);color:var(--text2);font-weight:600;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">v2.5</span>
+        </div>
+        <div style="color:var(--text2);font-size:13px;line-height:1.8;padding-left:4px">
+          引入 aria2c 下载引擎，支持多线程加速下载；插件一键克隆与 Git 集成；新增全局设置面板。
+        </div>
+      </div>
+
+      <div style="position:relative">
+        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--text3);box-shadow:0 0 8px rgba(0,212,255,0.15)"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;background:rgba(0,212,255,0.05);color:var(--text3);font-weight:600;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">v1.0</span>
+        </div>
+        <div style="color:var(--text2);font-size:13px;line-height:1.8;padding-left:4px">
+          首个正式版本发布，支持 ComfyUI 模型 CRUD、插件管理、基础文件浏览与设置。
+        </div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+</div><!-- /#main -->
+</div><!-- /.layout -->
+
+<!-- ====== 模型模态框 ====== -->
+<div class="modal-bg" id="mbg"><div class="modal">
+  <h3 id="mtitle">新增模型</h3><input type="hidden" id="eid">
+  <div class="fg"><label>模型名称</label><input type="text" id="fname" placeholder="例如: model.safetensors"></div>
+  <div class="fg"><label>存放路径</label><input type="text" id="fpath" placeholder="models/diffusion_models" list="plist"><datalist id="plist"></datalist></div>
+  <div class="fg"><label>下载链接</label><input type="url" id="furl" placeholder="https://huggingface.co/..."></div>
+  <div class="fact"><button class="btn btn6" onclick="closeModal()">取消</button><button class="btn btn1" onclick="saveModel()">保存</button></div>
+</div></div>
+
+<!-- ====== 插件模态框 ====== -->
+<div class="modal-bg" id="pmbg"><div class="modal">
+  <h3 id="pmtitle">新增插件</h3><input type="hidden" id="peid">
+  <div class="fg"><label>插件名称</label><input type="text" id="pfname" placeholder="如: ComfyUI-Manager"></div>
+  <div class="fg"><label>Git 仓库地址</label><input type="url" id="pfurl" placeholder="https://github.com/user/repo.git"></div>
+  <div class="fg"><label>描述</label><input type="text" id="pfdesc" placeholder="简短描述"></div>
+  <div class="fact"><button class="btn btn6" onclick="closePluginModal()">取消</button><button class="btn btn1" onclick="savePlugin()">保存</button></div>
+</div></div>
+
+<button id="btnTop" title="回到顶部">&#9650;</button>
+
+<!-- ====== SCRIPTS ====== -->
+<script>
+// ============================================================
+// 横幅
+// ============================================================
+function updateBanner(){
+  Promise.all([
+    fetch('/api/models?page_size=1').then(function(r){return r.json()}),
+    fetch('/api/plugins?page_size=1').then(function(r){return r.json()})
+  ]).then(function(arr){
+    var mc=arr[0].total||0, pc=arr[1].total||0;
+    document.querySelectorAll('#bCntM,#bCntM2').forEach(function(e){e.textContent=mc});
+    document.querySelectorAll('#bCntP,#bCntP2').forEach(function(e){e.textContent=pc});
+  }).catch(function(){});
+}
+updateBanner();setInterval(updateBanner,30000);
+
+// ============================================================
+// 通用
+// ============================================================
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed')}
+function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+
+function switchPage(e,p){
+  document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active')});
+  document.querySelectorAll('.mi').forEach(function(x){x.classList.remove('active')});
+  var t=document.getElementById('page-'+p);if(t)t.classList.add('active');
+  if(e&&e.currentTarget)e.currentTarget.classList.add('active');
+  else{var mi=document.querySelector('.mi[data-page="'+p+'"]');if(mi)mi.classList.add('active')}
+  sessionStorage.setItem('lastPage',p);
+  if(p==='launcher'){cuiCheckStatus()}
+  if(p==='models'){checkA2();loadModels();restoreDlState()}
+  if(p==='plugins'){checkGit();loadPlugins();restoreCloneState()}
+  if(p==='output')browseOutput('')
+  if(p==='settings')loadSF()
+  if(p==='repair'){repairLoadPytorch();repairCheckStatus()}
+}
+
+
+
+
+// ============================================================
+
+// ============================================================
+
+// ============================================================
+// ============================================================
+// ============================================================
+// 输出管理
+// ============================================================
+var outPath='',outData=null,outView='grid',outRendered=null,outItemMap={};
+var _outState=null,_outZoom=1,_outPanX=0,_outPanY=0,_outDragging=false,_outDragSX=0,_outDragSY=0,_outDragPX=0,_outDragPY=0;
+var _clipboard={action:'',paths:[]};
+
+function escHtml(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+async function browseOutput(path,page){
+  page=page||1;
+  outPath=path||'';
+  var ps=+document.getElementById('outPS').value||20;
+  var sort=document.getElementById('outSort').value||'name_asc';
+  var search=(document.getElementById('outSearch').value||'').trim();
+  var q='path='+encodeURIComponent(outPath)+'&page='+page+'&page_size='+ps+'&sort='+sort;
+  if(search)q+='&search='+encodeURIComponent(search);
+  try{
+    var r=await fetch('/api/output/browse?'+q);
+    var d=await r.json();
+    outData=d;
+    if(!d.ok){alert(d.msg);return}
+    outInitView();
+    outItemMap={};d.items.forEach(function(it){outItemMap[it.path]=it});
+    outRender(d,page);
+  }catch(e){}
+}
+
+function outDoBrowse(){browseOutput(outPath,1)}
+function outSearch(){browseOutput('',1)}
+function outClearSearch(){
+  document.getElementById('outSearch').value='';
+  browseOutput('',1);
+}
+function outOpenFolder(){
+  fetch('/api/output/open_dir').then(function(r){return r.json()}).then(function(d){if(!d.ok)alert(d.msg)});
+}
+
+var _viewTimer=null;
+function outViewChange(){
+  outView=document.getElementById('outViewSel').value||'grid';
+  localStorage.setItem('outputViewMode',outView);
+  clearTimeout(_viewTimer);
+  _viewTimer=setTimeout(function(){outApplyView()},50);
+}
+function outInitView(){
+  var v=localStorage.getItem('outputViewMode')||'grid';
+  outView=v;
+  var sel=document.getElementById('outViewSel');
+  if(sel)sel.value=v;
+}
+function outApplyView(){
+  var g=document.getElementById('outGrid');
+  if(!g||!outData)return;
+  var wasList=outRendered==='list',isList=outView==='list';
+  if(wasList!==isList){outRender(outData,outData.page);return}
+  if(!isList){
+    var cls=outView==='grid'?'out-grid-regular':'out-grid-masonry';
+    g.className=cls;g.style.display=outView==='grid'?'grid':'block';
+    if(outView==='grid')g.style.gridTemplateColumns='repeat(4,1fr)';
+    outRendered=outView;
+  }
+}
+
+function outRender(d,pg){
+  var bc=document.getElementById('outBread');
+  var h='<a href="javascript:browseOutput(\'\')" style="color:var(--cyan);text-decoration:none">&#128193;</a>';
+  if(d.breadcrumbs)for(var i=0;i<d.breadcrumbs.length;i++){
+    var b=d.breadcrumbs[i];
+    h+=' / <a href="javascript:browseOutput(\''+b.path.replace(/'/g,"\\'")+'\')" style="color:var(--cyan);text-decoration:none">'+escHtml(b.name)+'</a>';
+  }
+  bc.innerHTML=h;
+
+  document.getElementById('outPageInfo').textContent=d.total>0?'共 '+d.total+' 项 | 第 '+d.page+'/'+d.total_pages+' 页':'无内容';
+
+  var g=document.getElementById('outGrid');
+  if(!d.items||!d.items.length){
+    g.innerHTML='<div style="text-align:center;color:var(--text2);padding:40px">&#128194; 此目录下无可预览的媒体文件</div>';
+    g.style.display='block';g.className='';outRendered='empty';
+    outRenderPager(d);return;
+  }
+
+  requestAnimationFrame(function(){
+    if(outView==='list'){
+      g.style.display='block';g.className='';
+      g.innerHTML='<table style="width:100%;border-collapse:collapse;color:var(--text)"><thead><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:8px">名称</th><th style="width:80px;text-align:center;padding:8px">类型</th><th style="width:100px;text-align:right;padding:8px">大小</th><th style="width:140px;text-align:right;padding:8px">修改时间</th></tr></thead><tbody>'+d.items.map(outListRow).join('')+'</tbody></table>';
+      outRendered='list';
+    }else if(outView==='grid'){
+      g.style.display='grid';g.style.gridTemplateColumns='repeat(4,1fr)';
+      g.className='out-grid-regular';
+      g.innerHTML=d.items.map(outGridItem).join('');
+      outRendered='grid';
+    }else{
+      g.style.display='block';g.className='out-grid-masonry';
+      g.innerHTML=d.items.map(outGridItem).join('');
+      outRendered='masonry';
+    }
+    outRenderPager(d);
+  });
+}
+
+function outGridItem(it){
+  var icon=outIcon(it),nm=escHtml(it.name);
+  var disp=nm.length>20?nm.substring(0,18)+'...':nm;
+  var src='/api/output/file?path='+encodeURIComponent(it.path);
+  var err=' onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'<div class=out-fb style=font-size:48px>'+icon.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>\'"';
+  var dpA=escHtml(it.path);
+  var dpJ=outPathJoin(it.path);
+  var isd=it.is_dir?'1':'0';
+  if(it.is_dir)
+    return '<div class="out-item" data-path="'+dpA+'" data-is-dir="1" onclick="browseOutput(\''+dpJ+'\')"><div class="out-thumb"><span style="font-size:48px">'+icon+'</span></div><div class="out-name" title="'+nm+'">'+disp+'</div></div>';
+  if(it.type==='image')
+    return '<div class="out-item" data-path="'+dpA+'" data-is-dir="0" onclick="outOpenFile(\''+dpJ+'\')"><div class="out-thumb is-file"><img src="'+src+'" loading="lazy"'+err+'></div><div class="out-name" title="'+nm+'">'+disp+'</div></div>';
+  if(it.type==='video')
+    return '<div class="out-item" data-path="'+dpA+'" data-is-dir="0" onclick="outOpenFile(\''+dpJ+'\')"><div class="out-thumb is-file"><video src="'+src+'" preload="metadata" muted'+err+'></video></div><div class="out-name" title="'+nm+'">'+disp+'</div></div>';
+  return '<div class="out-item" data-path="'+dpA+'" data-is-dir="0" onclick="outOpenFile(\''+dpJ+'\')"><div class="out-thumb is-file"><span style="font-size:48px">'+icon+'</span></div><div class="out-name" title="'+nm+'">'+disp+'</div></div>';
+}
+
+function outListRow(it){
+  var icon=outIcon(it),nm=escHtml(it.name);
+  var type=it.is_dir?'文件夹':{image:'图片',video:'视频',audio:'音频'}[it.type]||it.type;
+  var sz=it.size?outFmtSize(it.size):'';var mt=it.modified?outFmtTime(it.modified):'';
+  var dpA=escHtml(it.path);
+  var dpJ=outPathJoin(it.path);
+  var isd=it.is_dir?'1':'0';
+  if(it.is_dir)
+    return '<tr data-path="'+dpA+'" data-is-dir="1" style="border-bottom:1px solid var(--border)"><td style="padding:8px"><a onclick="browseOutput(\''+dpJ+'\')" style="cursor:pointer;color:var(--cyan)">'+icon+' '+nm+'</a></td><td style="text-align:center;padding:8px;color:var(--text2)">'+escHtml(type)+'</td><td style="text-align:right;padding:8px;color:var(--text2)">'+sz+'</td><td style="text-align:right;padding:8px;color:var(--text2);font-size:12px">'+mt+'</td></tr>';
+  return '<tr data-path="'+dpA+'" data-is-dir="0" style="border-bottom:1px solid var(--border)"><td style="padding:8px"><a onclick="outOpenFile(\''+dpJ+'\')" style="cursor:pointer;color:var(--text)">'+icon+' '+nm+'</a></td><td style="text-align:center;padding:8px;color:var(--text2)">'+escHtml(type)+'</td><td style="text-align:right;padding:8px;color:var(--text2)">'+sz+'</td><td style="text-align:right;padding:8px;color:var(--text2);font-size:12px">'+mt+'</td></tr>';
+}
+
+function outIcon(it){if(it.is_dir)return'&#128193;';if(it.type==='video')return'&#127910;';if(it.type==='audio')return'&#127925;';return'&#128247;'}
+function outPathJoin(p){return p.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+function outFmtSize(b){if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';if(b<1073741824)return(b/1048576).toFixed(1)+' MB';return(b/1073741824).toFixed(1)+' GB'}
+function outFmtTime(ts){var d=new Date(ts*1000);var pad=function(n){return n<10?'0'+n:n};return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())}
+
+function outRenderPager(d){
+  var pgEl=document.getElementById('outPager');
+  if(d.total_pages<=1){pgEl.innerHTML='';return}
+  var h='<button class="btn btn6" style="font-size:12px;padding:4px 8px"'+(d.page<=1?' disabled':' onclick="browseOutput(outPath,'+(d.page-1)+')"')+'>◀ 上一页</button>';
+  for(var i=Math.max(1,d.page-2),e=Math.min(d.total_pages,d.page+2);i<=e;i++)
+    h+='<button class="btn '+(i===d.page?'btn1':'btn6')+'" style="font-size:12px;padding:4px 8px;min-width:32px" onclick="browseOutput(outPath,'+i+')">'+i+'</button>';
+  h+='<button class="btn btn6" style="font-size:12px;padding:4px 8px"'+(d.page>=d.total_pages?' disabled':' onclick="browseOutput(outPath,'+(d.page+1)+')"')+'>▶ 下一页</button>';
+  pgEl.innerHTML=h;
+}
+
+// ============================================================
+// 右键菜单
+// ============================================================
+var _ctxTarget=null;
+function hideCtxMenu(){
+  var m=document.getElementById('ctxMenu');if(m)m.style.display='none';
+  _ctxTarget=null;
+}
+function showCtxMenu(el,x,y,path,isDir){
+  var m=document.getElementById('ctxMenu');
+  if(!m)return;
+  _ctxTarget={el:el,path:path||'',is_dir:isDir==='1'||isDir===true,is_blank:!path};
+
+  var copyEl=document.getElementById('ctxCopy'),moveEl=document.getElementById('ctxMove');
+  var pasteEl=document.getElementById('ctxPaste'),s1=document.getElementById('ctxSep1'),s2=document.getElementById('ctxSep2');
+  var delEl=document.getElementById('ctxDelete'),renEl=document.getElementById('ctxRename'),s3=document.getElementById('ctxSep3');
+  var mkEl=document.getElementById('ctxNewFolder');
+
+  if(_ctxTarget.is_blank){
+    if(copyEl)copyEl.style.display='none';
+    if(moveEl)moveEl.style.display='none';
+    if(delEl)delEl.style.display='none';
+    if(renEl)renEl.style.display='none';
+    if(s1)s1.style.display='none';
+    if(s3)s3.style.display='none';
+    if(pasteEl)pasteEl.style.display=_clipboard.paths.length>0?'':'none';
+    if(s2)s2.style.display=_clipboard.paths.length>0?'':'none';
+    if(mkEl)mkEl.style.display='';
+  }else{
+    if(copyEl)copyEl.style.display='';
+    if(moveEl)moveEl.style.display='';
+    if(delEl)delEl.style.display='';
+    if(renEl)renEl.style.display='';
+    if(s1)s1.style.display='';
+    if(s3)s3.style.display='';
+    if(pasteEl)pasteEl.style.display=_clipboard.paths.length>0?'':'none';
+    if(s2)s2.style.display=_clipboard.paths.length>0?'':'none';
+    if(mkEl)mkEl.style.display='';
+  }
+
+  m.style.left=Math.min(x,window.innerWidth-180)+'px';
+  m.style.top=Math.min(y,window.innerHeight-m.offsetHeight-10)+'px';
+  m.style.display='block';
+}
+
+function ctxCopy(){
+  if(!_ctxTarget||_ctxTarget.is_blank)return;
+  _clipboard={action:'copy',paths:[_ctxTarget.path]};
+  hideCtxMenu();
+}
+function ctxMove(){
+  if(!_ctxTarget||_ctxTarget.is_blank)return;
+  _clipboard={action:'move',paths:[_ctxTarget.path]};
+  hideCtxMenu();
+}
+async function ctxPaste(){
+  if(!_ctxTarget||_clipboard.paths.length===0)return;
+  var dest=_ctxTarget.is_dir?_ctxTarget.path:outPath;
+  var args=_clipboard.action==='move'?['/api/output/move',{paths:_clipboard.paths,dest:dest}]:
+    ['/api/output/copy',{paths:_clipboard.paths,dest:dest}];
+  var r=await fetch(args[0],{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(args[1])});
+  var d=await r.json();
+  if(d.ok||(d.results&&d.results.length)){
+    var errs=d.results?d.results.filter(function(x){return!x.ok}):[];
+    if(errs.length)alert('失败: '+errs.map(function(x){return x.path+': '+x.msg}).join('\n'));
+    if(_clipboard.action==='move')_clipboard={action:'',paths:[]};
+    browseOutput(outPath,outData?outData.page:1);
+  }else{alert(d.msg)}
+  hideCtxMenu();
+}
+async function ctxDelete(){
+  if(!_ctxTarget||_ctxTarget.is_blank)return;
+  var name=_ctxTarget.path.split('/').pop();
+  if(!confirm('确认删除 "'+name+'"?\n此操作不可撤销！')){hideCtxMenu();return}
+  var r=await fetch('/api/output/delete',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({paths:[_ctxTarget.path]})});
+  var d=await r.json();
+  if(d.ok||d.results)browseOutput(outPath,outData?outData.page:1);
+  else alert(d.msg||'删除失败');
+  hideCtxMenu();
+}
+function ctxRename(){
+  if(!_ctxTarget||_ctxTarget.is_blank)return;
+  var old=_ctxTarget.path.split('/').pop();
+  var nm=prompt('重命名:',old);
+  if(!nm||nm===old){hideCtxMenu();return;}
+  var p=_ctxTarget.path;
+  hideCtxMenu();
+  fetch('/api/output/rename',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({path:p,new_name:nm})}).then(function(r){return r.json()}).then(function(d){
+      if(d.ok)browseOutput(outPath,outData?outData.page:1);
+      else alert(d.msg||'重命名失败');
+    });
+}
+function ctxNewFolder(){
+  var nm=prompt('新建文件夹名称:');
+  hideCtxMenu();
+  if(!nm)return;
+  var p=outPath?outPath+'/'+nm:nm;
+  fetch('/api/output/mkdir',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({path:p})}).then(function(r){return r.json()}).then(function(d){
+      if(d.ok)browseOutput(outPath,outData?outData.page:1);
+      else alert(d.msg||'创建失败');
+    });
+}
+
+// 全局右键监听
+(function(){
+  var grid=document.getElementById('outGrid');
+  if(grid)grid.addEventListener('contextmenu',function(e){
+    var el=e.target.closest('[data-path]');
+    if(el){
+      e.preventDefault();
+      showCtxMenu(el,e.clientX,e.clientY,el.getAttribute('data-path'),el.getAttribute('data-is-dir'));
+    }else if(e.target.closest('#outGrid')||e.target.closest('#page-output')){
+      e.preventDefault();
+      showCtxMenu(null,e.clientX,e.clientY,'',false);
+    }
+  });
+})();
+
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#ctxMenu'))hideCtxMenu();
+});
+
+// ============================================================
+// 预览弹窗
+// ============================================================
+function outOpenFile(path){
+  var item=outItemMap[path],info=item||{};
+  var src='/api/output/file?path='+encodeURIComponent(path);
+  var fn=decodeURIComponent(path.split('/').pop()||path);
+  var type=info.type||'image';
+
+  var browseList=[];
+  if(outData&&outData.items)outData.items.forEach(function(it){if(!it.is_dir)browseList.push(it)});
+  var curIdx=-1;
+  browseList.forEach(function(it,i){if(it.path===path)curIdx=i});
+
+  _outZoom=1;_outPanX=0;_outPanY=0;_outDragging=false;
+
+  var existing=document.getElementById('outOverlay');
+  if(existing){_outUpdateContent(existing,{src:src,fn:fn,type:type,info:info,browseList:browseList,curIdx:curIdx});return}
+
+  var overlay=document.createElement('div');
+  overlay.className='out-overlay';overlay.id='outOverlay';
+  overlay.onclick=function(e){if(e.target===overlay)_outClose()};
+  _outBuildOverlay(overlay,{src:src,fn:fn,type:type,info:info,browseList:browseList,curIdx:curIdx});
+  document.body.appendChild(overlay);
+
+  var onKey=function(e){
+    if(e.key==='ArrowLeft'){e.preventDefault();_outNavigate(-1)}
+    if(e.key==='ArrowRight'){e.preventDefault();_outNavigate(1)}
+    if(e.key==='Escape'){e.preventDefault();_outClose()}
+  };
+  document.addEventListener('keydown',onKey);overlay._keyHandler=onKey;
+}
+
+function _outClose(){
+  var o=document.getElementById('outOverlay');
+  if(o){if(o._keyHandler)document.removeEventListener('keydown',o._keyHandler);document.body.removeChild(o)}
+  if(window._outVid){window._outVid.pause();window._outVid=null}
+  _outState=null;try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}
+}
+
+function _outBuildOverlay(overlay,st){
+  var arrows=st.browseList.length>1?
+    '<button class="out-arrow out-arrow-l" onclick="_outNavigate(-1)" title="上一张">◀</button>'+
+    '<button class="out-arrow out-arrow-r" onclick="_outNavigate(1)" title="下一张">▶</button>':'';
+
+  var topBar='<div style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0;margin-bottom:6px">'+
+    '<span style="color:var(--text);font-size:14px;word-break:break-all;max-width:55%;margin:0 auto" id="outTitle">'+escHtml(st.fn)+'</span>'+
+    '<div style="display:flex;gap:6px;flex-shrink:0">'+
+    '<button class="btn btn6" onclick="outToggleFullscreen()" title="全屏" style="font-size:12px;padding:4px 10px">⛴ 全屏</button>'+
+    '<button class="btn btn5" onclick="_outClose()" style="font-size:12px">✕ 关闭</button></div></div>';
+
+  var content;
+  if(st.type==='image'){
+    content='<div class="out-fs-wrap" id="outFsWrap">'+
+      '<img id="outFsImg" class="out-fs-nav-img" src="'+st.src+'" style="max-width:100%;max-height:100%;object-fit:contain;opacity:0;transition:opacity 0.2s" onload="outImgReady()">'+
+      '</div>'+
+      '<div id="outInfoBar" style="display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 10px;background:rgba(0,0,0,0.5);border-radius:7px;font-size:12px;color:var(--text2);flex-shrink:0;flex-wrap:wrap">'+
+      '<span id="outInfoRes"></span>'+
+      '<span>|</span><span>'+outFmtSize(st.info.size||0)+'</span>'+
+      '<span>|</span><span>'+outFmtTime(st.info.modified||0)+'</span>'+
+      '<span style="margin-left:auto;display:flex;align-items:center;gap:6px">'+
+      '<button class="btn btn6" onclick="outZoomReset()" style="font-size:11px;padding:2px 8px" title="重置">↴ 重置</button>'+
+      '<span style="margin-left:4px;opacity:0.5;font-size:10px" id="outTotalInfo">'+(st.curIdx+1)+'/'+st.browseList.length+'</span></span></div>';
+  }else if(st.type==='video'){
+    content='<div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:0">'+
+      '<video id="outVid" src="'+st.src+'" controls autoplay style="max-width:100%;max-height:100%" onplay="window._outVid=this" onpause="window._outVid=null"></video></div>'+
+      '<div id="outInfoBar" style="display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:rgba(0,0,0,0.5);border-radius:7px;font-size:12px;color:var(--text2);flex-shrink:0">'+
+      '<span>'+outFmtSize(st.info.size||0)+' '+outFmtTime(st.info.modified||0)+'</span>'+
+      '<span style="margin-left:auto;opacity:0.5;font-size:10px" id="outTotalInfo">'+(st.curIdx+1)+'/'+st.browseList.length+'</span></div>';
+  }else{
+    content='<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0">'+
+      '<audio id="outVid" src="'+st.src+'" controls autoplay style="max-width:100%" onplay="window._outVid=this" onpause="window._outVid=null"></audio>'+
+      '<div style="font-size:64px;margin:16px">🎵</div></div>'+
+      '<div id="outInfoBar" style="display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:rgba(0,0,0,0.5);border-radius:7px;font-size:12px;color:var(--text2);flex-shrink:0">'+
+      '<span>'+outFmtSize(st.info.size||0)+' '+outFmtTime(st.info.modified||0)+'</span></div>';
+  }
+
+  overlay.innerHTML=arrows+'<div class="out-modal">'+topBar+content+'</div>';
+  _outState=st;
+}
+
+function _outUpdateContent(overlay,st){
+  _outZoom=1;_outPanX=0;_outPanY=0;_outDragging=false;
+  _outState=st;
+
+  var t=document.getElementById('outTitle');if(t)t.textContent=st.fn;
+  var ti=document.getElementById('outTotalInfo');if(ti&&st.browseList.length)ti.textContent=(st.curIdx+1)+'/'+st.browseList.length;
+
+  var arrows=overlay.querySelectorAll('.out-arrow');
+  arrows.forEach(function(a){a.style.display=st.browseList.length>1?'':'none'});
+
+  if(st.type==='image'){
+    var img=document.getElementById('outFsImg');
+    if(img){
+      img.style.opacity='0';
+      img.src=st.src;
+      _applyZoom();
+      var bar=document.getElementById('outInfoBar');
+      if(bar)bar.innerHTML='<span id="outInfoRes"></span>'+
+        '<span>|</span><span>'+outFmtSize(st.info.size||0)+'</span>'+
+        '<span>|</span><span>'+outFmtTime(st.info.modified||0)+'</span>'+
+        '<span style="margin-left:auto;display:flex;align-items:center;gap:6px">'+
+        '<button class="btn btn6" onclick="outZoomReset()" style="font-size:11px;padding:2px 8px" title="重置">↴ 重置</button>'+
+        '<span style="margin-left:4px;opacity:0.5;font-size:10px">'+(st.curIdx+1)+'/'+st.browseList.length+'</span></span>';
+    }
+  }else if(st.type==='video'){
+    var modal=overlay.querySelector('.out-modal');
+    if(modal){
+      while(modal.children.length>1)modal.removeChild(modal.lastChild);
+      var nc='<div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:0">'+
+        '<video id="outVid" src="'+st.src+'" controls autoplay style="max-width:100%;max-height:100%" onplay="window._outVid=this" onpause="window._outVid=null"></video></div>'+
+        '<div id="outInfoBar" style="display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:rgba(0,0,0,0.5);border-radius:7px;font-size:12px;color:var(--text2);flex-shrink:0">'+
+        '<span>'+outFmtSize(st.info.size||0)+' '+outFmtTime(st.info.modified||0)+'</span>'+
+        '<span style="margin-left:auto;opacity:0.5;font-size:10px">'+(st.curIdx+1)+'/'+st.browseList.length+'</span></div>';
+      var tmpDiv=document.createElement('div');tmpDiv.innerHTML=nc;
+      while(tmpDiv.firstChild)modal.appendChild(tmpDiv.firstChild);
+    }
+  }
+}
+
+function _outNavigate(dir){
+  if(!_outState||_outState.browseList.length<2)return;
+  _outState.curIdx=(_outState.curIdx+dir+_outState.browseList.length)%_outState.browseList.length;
+  var it=_outState.browseList[_outState.curIdx];
+  _outUpdateContent(document.getElementById('outOverlay'),{
+    src:'/api/output/file?path='+encodeURIComponent(it.path),
+    fn:decodeURIComponent(it.path.split('/').pop()||it.path),
+    type:it.type||'image',info:it,
+    browseList:_outState.browseList,curIdx:_outState.curIdx
+  });
+}
+
+function outImgReady(){
+  var img=document.getElementById('outFsImg');
+  if(!img)return;
+  var res=document.getElementById('outInfoRes');
+  if(res)res.textContent=(img.naturalWidth||'?')+' × '+(img.naturalHeight||'?')+' px';
+  img.style.opacity='1';
+  _outZoom=1;
+  var wrap=document.getElementById('outFsWrap');
+  if(wrap){
+    var wr=wrap.getBoundingClientRect();
+    _outPanX=(wr.width-img.naturalWidth)/2;
+    _outPanY=(wr.height-img.naturalHeight)/2;
+  }
+  _applyZoom();
+}
+
+function outToggleFullscreen(){
+  var o=document.getElementById('outOverlay');
+  if(!o)return;
+  if(document.fullscreenElement||document.webkitFullscreenElement){
+    try{document.exitFullscreen()}catch(e){}
+  }else{
+    try{o.requestFullscreen?o.requestFullscreen():o.webkitRequestFullscreen()}catch(e){}
+  }
+}
+
+function _onFsChange(){
+  _outZoom=1;
+  var img=document.getElementById('outFsImg');
+  var wrap=document.getElementById('outFsWrap');
+  if(img&&wrap){
+    var wr=wrap.getBoundingClientRect();
+    _outPanX=(wr.width-img.naturalWidth)/2;
+    _outPanY=(wr.height-img.naturalHeight)/2;
+  }else{
+    _outPanX=0;_outPanY=0;
+  }
+  _applyZoom();
+  var bar=document.getElementById('outInfoBar');
+  if(bar)bar.style.display=document.fullscreenElement||document.webkitFullscreenElement?'none':'';
+}
+document.addEventListener('fullscreenchange',_onFsChange);
+document.addEventListener('webkitfullscreenchange',_onFsChange);
+
+function _applyZoom(){
+  var img=document.getElementById('outFsImg');
+  if(!img)return;
+  img.style.maxWidth='none';
+  img.style.maxHeight='none';
+  img.style.objectFit='none';
+  img.style.transformOrigin='0 0';
+  img.style.transform='translate('+_outPanX+'px,'+_outPanY+'px) scale('+_outZoom+')';
+}
+
+function outZoomReset(){
+  _outZoom=1;
+  var img=document.getElementById('outFsImg');
+  var wrap=document.getElementById('outFsWrap');
+  if(img&&wrap){
+    var wr=wrap.getBoundingClientRect();
+    _outPanX=(wr.width-img.naturalWidth)/2;
+    _outPanY=(wr.height-img.naturalHeight)/2;
+  }else{
+    _outPanX=0;_outPanY=0;
+  }
+  _applyZoom();
+  if(wrap)wrap.style.cursor='grab';
+}
+
+// 滚轮缩放 + 左键拖动
+(function(){
+  document.addEventListener('wheel',function(e){
+    var wrap=document.getElementById('outFsWrap'),img=document.getElementById('outFsImg');
+    if(!wrap||!img||_outDragging)return;
+    var r=wrap.getBoundingClientRect();
+    if(e.clientX<r.left||e.clientY<r.top||e.clientX>r.right||e.clientY>r.bottom)return;
+    e.preventDefault();
+    var old=_outZoom;
+    _outZoom=Math.max(0.3,Math.min(10,_outZoom-(e.deltaY>0?0.15:-0.15)));
+    var rt=_outZoom/old;
+    var mx=e.clientX-r.left,my=e.clientY-r.top;
+    _outPanX=mx-rt*(mx-_outPanX);
+    _outPanY=my-rt*(my-_outPanY);
+    _applyZoom();
+  },{passive:false});
+
+  document.addEventListener('mousedown',function(e){
+    if(e.button!==0)return;
+    var wrap=document.getElementById('outFsWrap');
+    if(!wrap)return;
+    var r=wrap.getBoundingClientRect();
+    if(e.clientX<r.left||e.clientY<r.top||e.clientX>r.right||e.clientY>r.bottom)return;
+    e.preventDefault();e.stopPropagation();
+    _outDragging=true;_outDragSX=e.clientX;_outDragSY=e.clientY;
+    _outDragPX=_outPanX;_outDragPY=_outPanY;
+    wrap.style.cursor='grabbing';
+  });
+
+  document.addEventListener('mousemove',function(e){
+    if(!_outDragging)return;
+    _outPanX=_outDragPX+(e.clientX-_outDragSX)/_outZoom;
+    _outPanY=_outDragPY+(e.clientY-_outDragSY)/_outZoom;
+    _applyZoom();
+  });
+
+  document.addEventListener('mouseup',function(){
+    if(!_outDragging)return;
+    _outDragging=false;
+    var wrap=document.getElementById('outFsWrap');if(wrap)wrap.style.cursor='grab';
+  });
+})();
+// 模型管理（CRUD + 下载）
+// ============================================================
+var mData=[],mPage=1,mPageSize=20,mTotalPages=1,mTotal=0;
+var dlActiveIds=new Set(),dlQueuedIds=new Set(),dlSelIds=new Set(),dlProgTimer=null,dlLastStates={},dlPrevActive=new Set();
+
+async function loadModels(){
+  var q=document.getElementById('sinput').value.trim(),sort=document.getElementById('ssort').value;
+  var p=new URLSearchParams();if(q)p.set('q',q);p.set('sort',sort);p.set('page',mPage);p.set('page_size',mPageSize);
+  var r,ok=true;try{r=await fetch('/api/models?'+p.toString())}catch(e){ok=false}
+  if(!ok||!r||!r.ok){document.getElementById('mtbody').innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--red);padding:24px">加载失败</td></tr>';return}
+  var j=await r.json();mData=j.items||[];mTotal=j.total||0;mPage=j.page||1;mTotalPages=j.total_pages||1;renderModels();updateMPagination()
+}
+function renderModels(){
+  var tb=document.getElementById('mtbody');tb.innerHTML='';
+  if(mData.length===0){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:24px">暂无数据</td></tr>'}
+  mData.forEach(function(m){
+    var ch=dlSelIds.has(m.id)?'checked':'';
+    var st=dlLastStates[m.id]||{},stat=st.status||'none';
+    var sz=st.completed?(st.completed/1048576).toFixed(1)+'/'+(st.total?(st.total/1048576).toFixed(1):'?'):'-';
+    var us=m.download_url.length>60?m.download_url.substring(0,57)+'...':m.download_url;
+    var actions='<div style="display:flex;gap:3px;flex-wrap:wrap">'+
+      '<button class="btn btn4 btn-xs" onclick="editModel('+m.id+')">编辑</button>'+
+      '<button class="btn btn3 btn-xs" onclick="delModel('+m.id+')">删除</button>'+
+      dlBtns(m.id,stat)+'</div>';
+    tb.innerHTML+='<tr id="dlr-'+m.id+'"><td class="cb-cell"><input type="checkbox" class="dlcb" value="'+m.id+'" '+ch+' onchange="dlOnSel('+m.id+',this.checked)"></td><td>'+m.id+'</td><td>'+esc(m.name)+'</td><td><code>'+esc(m.save_path)+'</code></td><td><a href="'+m.download_url+'" target="_blank" title="'+esc(m.download_url)+'">'+esc(us)+'</a></td><td id="dsz-'+m.id+'">'+sz+' MB</td><td id="dpg-'+m.id+'">'+renderMiniBar(st.progress||0)+'</td><td id="dst-'+m.id+'">'+dlBadge(stat)+'</td><td class="acts">'+actions+'</td></tr>'
+  });
+  dlUpCnt();
+  document.getElementById('mcount').textContent='共 '+mTotal+' 条'
+}
+function updateMPagination(){
+  document.getElementById('minfo').textContent='第 '+mPage+' / '+mTotalPages+' 页';
+  document.getElementById('mprev').disabled=mPage<=1;
+  document.getElementById('mnext').disabled=mPage>=mTotalPages
+}
+async function loadPaths(){try{var r=await fetch('/api/paths');var p=await r.json();document.getElementById('plist').innerHTML=p.map(function(x){return '<option value="'+x+'">'}).join('')}catch(e){}}
+function openModal(){document.getElementById('mtitle').textContent='新增模型';document.getElementById('eid').value='';document.getElementById('fname').value='';document.getElementById('fpath').value='';document.getElementById('furl').value='';document.getElementById('mbg').classList.add('show')}
+async function editModel(id){try{var r=await fetch('/api/models/'+id);var m=await r.json();if(!m||!m.id)return;document.getElementById('mtitle').textContent='编辑 #'+id;document.getElementById('eid').value=id;document.getElementById('fname').value=m.name;document.getElementById('fpath').value=m.save_path;document.getElementById('furl').value=m.download_url;document.getElementById('mbg').classList.add('show')}catch(e){alert('加载失败')}}
+function closeModal(){document.getElementById('mbg').classList.remove('show');loadModels()}
+function resetModels(){
+  document.getElementById('sinput').value='';
+  document.getElementById('ssort').value='id_asc';
+  mPage=1;loadModels();
+}
+async function saveModel(){
+  var id=document.getElementById('eid').value,b={name:document.getElementById('fname').value.trim(),save_path:document.getElementById('fpath').value.trim(),download_url:document.getElementById('furl').value.trim()};
+  if(!b.name||!b.save_path||!b.download_url){alert('请填写完整');return}
+  try{if(id){await fetch('/api/models/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}else{var r=await fetch('/api/models',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});var j=await r.json();if(!j.ok){alert(j.msg);return}}closeModal()}catch(e){alert('保存失败: '+e.message)}
+}
+async function delModel(id){if(!confirm('确认删除 #'+id+'？'))return;try{await fetch('/api/models/'+id,{method:'DELETE'});loadModels()}catch(e){alert('删除失败')}}
+
+// ---- 下载控制 ----
+function renderMiniBar(pct){if(!pct||pct<=0)return '<span style="color:var(--text3);font-size:11px">-</span>';return '<div class="minibar"><div class="minibar-bg"><div class="minibar-fill" style="width:'+pct+'%"></div></div></div><span style="font-size:10px;color:var(--text2);margin-left:4px">'+pct.toFixed(1)+'%</span>'}
+function dlBadge(s){var m={active:'bg-on|下载中',paused:'bg-pause|已暂停',waiting:'bg-wait|等待中',complete:'bg-done|已完成',error:'bg-err|错误',removed:'bg-err|已移除',retrying:'bg-stale|重连中',stale:'bg-stale|同步中',queue:'bg-q|排队中'},p=(m[s]||'bg-off|未开始').split('|');return '<span class="badge '+p[0]+'">'+p[1]+'</span>'}
+function dlBtns(id,s){var complete=s==='complete';return'<button class="btn btn2 btn-xs" id="bstart-'+id+'" onclick="dlStart('+id+',false)"'+(complete?' disabled':'')+'>'+(complete?'已完成':'下载')+'</button><button class="btn btn5 btn-xs" id="bmirr-'+id+'" onclick="dlStart('+id+',true)"'+(complete?' disabled':'')+'>国内</button><button class="btn btn4 btn-xs bpause" id="bpause-'+id+'" onclick="dlPause('+id+')" style="'+(s==='active'?'':'display:none')+'">暂停</button><button class="btn btn4 btn-xs bresume" id="bresume-'+id+'" onclick="dlResume('+id+')" style="'+(s==='paused'?'':'display:none')+'">恢复</button><button class="btn btn3 btn-xs" id="bcancel-'+id+'" onclick="dlCancel('+id+')"'+(s==='active'||s==='paused'||s==='queue'?'':' disabled')+'>取消</button>'}
+function dlOnSel(id,c){if(c)dlSelIds.add(id);else dlSelIds.delete(id);dlUpCnt()}
+function dlSelAll(c){if(c){mData.forEach(function(m){dlSelIds.add(m.id)})}else{dlSelIds.clear()}renderModels()}
+function dlUpCnt(){var e=document.getElementById('bcnt');if(e)e.textContent='已选 '+dlSelIds.size}
+
+async function checkA2(){try{var r=await fetch('/api/aria2/status');var d=await r.json();var dot=document.getElementById('a2dot'),t=document.getElementById('a2text');if(d.running){dot.className='a2dot on';t.textContent='aria2c v'+d.version}else{dot.className='a2dot off';t.textContent='aria2c 未运行'}return d.running}catch(e){return false}}
+async function a2Start(){try{var r=await fetch('/api/aria2/start',{method:'POST'});var d=await r.json();alert(d.msg);checkA2()}catch(e){alert('启动失败')}}
+async function a2Stop(){try{await fetch('/api/aria2/stop',{method:'POST'});checkA2();clearInterval(dlProgTimer);dlProgTimer=null}catch(e){}}
+async function a2Restart(){await a2Stop();await new Promise(function(r){setTimeout(r,1500)});await a2Start()}
+async function detectA2(){var d=document.getElementById('adr');d.innerHTML='<span style="color:var(--text3);font-size:12px">检测中...</span>';try{var r=await fetch('/api/aria2/detect');var j=await r.json();if(j.found){document.getElementById('sap').value=j.path;d.innerHTML='<span class="db db-ok">'+esc(j.version||j.path)+' ['+j.platform+']</span>'}else{d.innerHTML='<span class="db db-fail">未找到 aria2c</span>'}}catch(e){d.innerHTML='<span class="db db-fail">检测失败</span>'}}
+async function batchDl(mir){if(dlSelIds.size===0){alert('请先勾选模型');return}if(!await checkA2()){alert('请先启动 aria2c');return}var ids=Array.from(dlSelIds);try{var r=await fetch('/api/download/batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids,mirror:mir})});var j=await r.json();if(!j.ok)return;var s=0,q=0;j.results.forEach(function(x){x.ok&&(x.msg.indexOf('队列')>=0?q++:s++)});alert('批量下载: 开始 '+s+' 队列 '+q);dlSelIds.clear();renderModels();dlStartTimer();await restoreDlState()}catch(e){alert('批量下载失败: '+e.message)}}
+async function dlStart(id,mir){if(!await checkA2()){alert('请先启动 aria2c');return}try{var r=await fetch('/api/download/start/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mirror:!!mir})});var j=await r.json();if(!j.ok){alert(j.msg);return}if(j.msg.indexOf('队列')>=0){dlQueuedIds.add(id)}else{dlActiveIds.add(id)}dlLastStates[id]={status:j.msg.indexOf('队列')>=0?'queue':'waiting',progress:0};renderModels();dlStartTimer()}catch(e){alert('下载失败: '+e.message)}}
+async function dlPause(id){try{await fetch('/api/download/pause/'+id,{method:'POST'});dlLastStates[id]={status:'paused',progress:dlLastStates[id]?dlLastStates[id].progress||0:0};renderModels()}catch(e){}}
+async function dlResume(id){try{await fetch('/api/download/resume/'+id,{method:'POST'});dlLastStates[id]={status:'active',progress:dlLastStates[id]?dlLastStates[id].progress||0:0};renderModels()}catch(e){}}
+async function dlCancel(id){if(!confirm('确认取消？'))return;if(dlQueuedIds.has(id)){try{await fetch('/api/download/cancel_queue/'+id,{method:'POST'});dlQueuedIds.delete(id);delete dlLastStates[id];renderModels()}catch(e){}return}try{var r=await fetch('/api/download/cancel/'+id,{method:'POST'});var j=await r.json();j.ok&&(dlActiveIds.delete(id),delete dlLastStates[id],renderModels())}catch(e){}}
+
+function dlStartTimer(){if(!dlProgTimer)dlProgTimer=setInterval(fetchDlAllStatus,2000)}
+async function fetchDlAllStatus(){
+  try{var r=await fetch('/api/download/all_status');var d=await r.json(),any=false,nowActive=new Set();
+    d.active.forEach(function(x){
+      nowActive.add(x.id);any=true;
+      var last=dlLastStates[x.id],prevPct=last?last.progress||0:0;
+      if((x.stale||x.status==='retrying')&&prevPct>0){
+        x.progress=prevPct;
+        if(last.completed) x.completed=last.completed;
+        if(last.total) x.total=last.total;
+        if(last.speed) x.speed=last.speed;
+      }
+      dlLastStates[x.id]={status:x.status,progress:x.progress||0,total:x.total,completed:x.completed,speed:x.speed,mirror:x.mirror,name:x.name,stale:x.stale||false};
+      dlUpdateCell(x.id,x)
+    });
+    dlPrevActive.forEach(function(id){if(!nowActive.has(id)&&!dlQueuedIds.has(id)){dlActiveIds.delete(id);dlLastStates[id]={status:'complete',progress:100};renderModels()}});
+    dlPrevActive=new Set(nowActive);
+    d.queue&&d.queue.length>0&&(any=true);
+    dlUpdateCards(d.active);dlUpdateQueue(d.queue);
+    if(!any){clearInterval(dlProgTimer);dlProgTimer=null}
+  }catch(e){}
+}
+function dlUpdateCell(id,s){var zc=document.getElementById('dsz-'+id),pc=document.getElementById('dpg-'+id),sc=document.getElementById('dst-'+id);if(!zc||!pc||!sc)return;var pct=s.progress||0,cm=s.completed?(s.completed/1048576).toFixed(1):'0',tm=s.total?(s.total/1048576).toFixed(1):'?';zc.textContent=cm+'/'+tm+' MB';pc.innerHTML=renderMiniBar(pct)+(s.stale?' <span style="font-size:10px;color:var(--text3);animation:pulse 1s infinite">⟳</span>':'');sc.innerHTML=dlBadge(s.stale?'stale':s.status);var bs=document.getElementById('bstart-'+id),bm=document.getElementById('bmirr-'+id),bp=document.getElementById('bpause-'+id),br=document.getElementById('bresume-'+id),bc=document.getElementById('bcancel-'+id);if(!bs)return;var isStale=s.stale||s.status==='retrying';
+if(s.status==='active'||isStale){bs.disabled=true;bs.textContent=isStale?'重连中':'下载中';bm.disabled=true;bm.textContent='国内';bp.style.display='';bp.disabled=isStale;br.style.display='none';bc.disabled=false}else if(s.status==='paused'){bs.disabled=true;bm.disabled=true;bp.style.display='none';br.style.display='';br.disabled=false;bc.disabled=false}else if(s.status==='complete'){bs.disabled=true;bs.textContent='已完成';bm.disabled=true;bm.textContent='已完成';bp.style.display='';bp.disabled=true;br.style.display='none';bc.disabled=true}else if(s.status==='error'||s.status==='removed'){bs.disabled=false;bs.textContent='重试';bm.disabled=false;bm.textContent='国内';bp.style.display='';bp.disabled=true;br.style.display='none';bc.disabled=true}}
+function dlUpdateCards(active){var con=document.getElementById('plist_dl'),cel=document.getElementById('pcard');con.innerHTML='';if(!active||active.length===0){cel.style.display='none'}else{cel.style.display='block';active.forEach(function(s){var pct=s.progress||0,cm=s.completed?(s.completed/1048576).toFixed(1):'0',tm=s.total?(s.total/1048576).toFixed(1):'?',sm=s.speed?(s.speed/1048576).toFixed(2):'0',staleMark=s.stale?'<span style="font-size:10px;color:var(--amber);animation:pulse 1s infinite;margin-left:4px">⟳ 信号弱</span>':'',card=document.createElement('div');card.className='pitem';card.innerHTML='<div class="phd"><span class="pname">'+esc(s.name||'#'+s.id)+(s.mirror?' <span style="color:var(--purple);font-size:11px">[镜像]</span>':'')+'</span><span style="font-size:11px;color:var(--text2)">'+(s.stale?'重连中':s.status)+staleMark+'</span></div><div class="pbar-bg"><div class="pbar-fill" style="width:'+Math.max(pct,3)+'%">'+pct.toFixed(1)+'%</div></div><div class="pinfo"><span><span>'+cm+'</span> / '+tm+' MB</span><span>'+sm+' MB/s</span></div>';con.appendChild(card)})}}
+function dlUpdateQueue(queue){var con=document.getElementById('qlist'),cel=document.getElementById('qcard');if(!queue||queue.length===0){cel.style.display='none';return}cel.style.display='block';con.innerHTML='';queue.forEach(function(q){var div=document.createElement('div');div.className='qitem';div.innerHTML='<div class="qpos">'+q.queue_position+'</div><span style="flex:1;font-size:12.5px">'+esc(q.name||'#'+q.id)+'</span><span style="font-size:11px;color:var(--text2)"><code>'+esc(q.save_path)+'</code></span>'+'<button class="btn btn3 btn-xs" onclick="dlCancel('+q.id+')">取消</button>';con.appendChild(div)})}
+async function restoreDlState(){
+  try{var r=await fetch('/api/download/all_status');var d=await r.json();dlActiveIds.clear();dlQueuedIds.clear();dlLastStates={};dlPrevActive=new Set();
+    d.active.forEach(function(x){dlActiveIds.add(x.id);dlPrevActive.add(x.id);dlLastStates[x.id]={status:x.status,progress:x.progress||0,total:x.total,completed:x.completed,speed:x.speed,mirror:x.mirror,name:x.name}});
+    d.queue.forEach(function(x){dlQueuedIds.add(x.id);dlLastStates[x.id]={status:'queue',progress:0,name:x.name,mirror:x.mirror}});
+    renderModels();dlUpdateCards(d.active);dlUpdateQueue(d.queue);if(d.active.length>0||d.queue.length>0)dlStartTimer()
+  }catch(e){}
+}
+
+// ============================================================
+// 插件管理（CRUD + 克隆）
+// ============================================================
+var plData=[],plPage=1,plPageSize=20,plTotalPages=1,plTotal=0;
+var plActiveIds=new Set(),plQueuedIds=new Set(),plSelIds=new Set(),plProgTimer=null,plLastStates={},plPrevActive=new Set();
+
+async function loadPlugins(){var q=document.getElementById('ps').value.trim(),sort=document.getElementById('plsort').value;var params='?page='+plPage+'&page_size='+plPageSize+'&sort='+sort;if(sort==='installed')params+='&installed=1';if(q)params+='&q='+encodeURIComponent(q);try{var r=await fetch('/api/plugins'+params);var j=await r.json();plData=j.items||[];plTotal=j.total||0;plPage=j.page||1;plTotalPages=j.total_pages||1;renderPlugins();updatePlPagination();document.getElementById('plmcount').textContent='共 '+plTotal+' 条'}catch(e){}}
+function renderPlugins(){
+  var tb=document.getElementById('pltbody');tb.innerHTML='';
+  plData.forEach(function(p){
+    var ch=plSelIds.has(p.id)?'checked':'',st=plLastStates[p.id]||{},stat=st.status||'none';
+    var inst=p.installed?'<span class="badge bg-inst" style="margin-left:4px">已安装</span>':'';
+    var urlDisp=p.repo_url.substring(0,40)+(p.repo_url.length>40?'...':'');
+    var actions='<div style="display:flex;gap:3px;flex-wrap:wrap">'+
+      '<button class="btn btn4 btn-xs" onclick="editPlugin('+p.id+')">编辑</button>'+
+      '<button class="btn btn3 btn-xs" onclick="delPlugin('+p.id+')">删除</button>'+
+      clBtns(p.id,stat,p.installed)+'</div>';
+    tb.innerHTML+='<tr id="plr-'+p.id+'"><td class="cb-cell"><input type="checkbox" class="plcb" value="'+p.id+'" '+ch+' onchange="plOnSel('+p.id+',this.checked)"></td><td>'+p.id+'</td><td>'+esc(p.name)+inst+'</td><td><a href="'+p.repo_url+'" target="_blank" style="font-size:11px">'+esc(urlDisp)+'</a></td><td style="color:var(--text2);font-size:11.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(p.desc||'')+'">'+esc(p.desc||'')+'</td><td id="plst-'+p.id+'">'+clBadge(stat)+'</td><td class="acts">'+actions+'</td></tr>'
+  });
+  plUpCnt()
+}
+function updatePlPagination(){document.getElementById('plinfo').textContent='第 '+plPage+' / '+plTotalPages+' 页';document.getElementById('plprev').disabled=plPage<=1;document.getElementById('plnext').disabled=plPage>=plTotalPages}
+function openPluginModal(){document.getElementById('pmtitle').textContent='新增插件';document.getElementById('peid').value='';document.getElementById('pfname').value='';document.getElementById('pfurl').value='';document.getElementById('pfdesc').value='';document.getElementById('pmbg').classList.add('show')}
+async function editPlugin(id){try{var r=await fetch('/api/plugins/'+id);var p=await r.json();if(!p||!p.id)return;document.getElementById('pmtitle').textContent='编辑 #'+id;document.getElementById('peid').value=id;document.getElementById('pfname').value=p.name;document.getElementById('pfurl').value=p.repo_url||p.url;document.getElementById('pfdesc').value=p.desc||p.description||'';document.getElementById('pmbg').classList.add('show')}catch(e){alert('加载失败')}}
+function closePluginModal(){document.getElementById('pmbg').classList.remove('show');loadPlugins()}
+function resetPlugins(){
+  document.getElementById('ps').value='';
+  document.getElementById('plsort').value='id_asc';
+  plPage=1;loadPlugins();
+}
+async function openPluginDir(){
+  try{await fetch('/api/plugins/open_dir')}catch(e){}
+}
+async function savePlugin(){
+  var id=document.getElementById('peid').value,b={name:document.getElementById('pfname').value.trim(),url:document.getElementById('pfurl').value.trim(),description:document.getElementById('pfdesc').value.trim()};
+  if(!b.name||!b.url){alert('请填写完整');return}
+  try{if(id){await fetch('/api/plugins/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}else{var r=await fetch('/api/plugins',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});var j=await r.json();if(!j.ok){alert(j.msg);return}}closePluginModal()}catch(e){alert('保存失败: '+e.message)}
+}
+async function delPlugin(id){if(!confirm('确认删除插件 #'+id+'？'))return;try{await fetch('/api/plugins/'+id,{method:'DELETE'});loadPlugins()}catch(e){alert('删除失败')}}
+
+// ---- 克隆控制 ----
+function clBadge(s){var m={cloning:'bg-cloning|克隆中',complete:'bg-done|已完成',error:'bg-err|错误',queue:'bg-q|排队中'},p=(m[s]||'bg-off|未开始').split('|');return'<span class="badge '+p[0]+'">'+p[1]+'</span>'}
+function clBtns(id,s,installed){var done=s==='complete'||installed;return'<button class="btn btn-teal btn-xs" id="cbclone-'+id+'" onclick="clStart('+id+',false)"'+(done?' disabled':'')+'>'+(installed?'已安装':s==='complete'?'已完成':'克隆')+'</button><button class="btn btn5 btn-xs" id="cbmirr-'+id+'" onclick="clStart('+id+',true)"'+(done?' disabled':'')+'>国内</button><button class="btn btn3 btn-xs" id="cbcancel-'+id+'" onclick="clCancel('+id+')"'+(s==='cloning'||s==='queue'?'':' disabled')+'>取消</button>'}
+function plOnSel(id,c){if(c)plSelIds.add(id);else plSelIds.delete(id);plUpCnt()}
+function plSelAll(c){if(c){plData.forEach(function(p){plSelIds.add(p.id)})}else{plSelIds.clear()}renderPlugins()}
+function plUpCnt(){var e=document.getElementById('pbcnt');if(e)e.textContent='已选 '+plSelIds.size}
+
+async function checkGit(){try{var r=await fetch('/api/git/detect');var d=await r.json();var dot=document.getElementById('gitdot'),t=document.getElementById('gittext');if(d.found){dot.className='a2dot on';t.textContent='Git '+esc(d.version||'')}else{dot.className='a2dot off';t.textContent='Git 未找到'}return d.found}catch(e){return false}}
+async function detectGit(){var d=document.getElementById('gtr');d.innerHTML='<span style="color:var(--text3);font-size:12px">检测中...</span>';try{var r=await fetch('/api/git/detect');var j=await r.json();if(j.found){document.getElementById('sgp').value=j.path;d.innerHTML='<span class="db db-ok">'+esc(j.version||j.path)+'</span>'}else{d.innerHTML='<span class="db db-fail">未找到 Git</span>'}}catch(e){d.innerHTML='<span class="db db-fail">检测失败</span>'}}
+async function detectPy(){var d=document.getElementById('pyr');d.innerHTML='<span style="color:var(--text3);font-size:12px">检测中...</span>';try{var r=await fetch('/api/python/detect');var j=await r.json();if(j.found){document.getElementById('spy').value=j.path;d.innerHTML='<span class="db db-ok">'+esc(j.version||j.path)+'</span>'}else{d.innerHTML='<span class="db db-fail">未找到 Python</span>'}}catch(e){d.innerHTML='<span class="db db-fail">检测失败</span>'}}
+async function batchClone(mir){if(plSelIds.size===0){alert('请先勾选插件');return}if(!await checkGit()){alert('Git 未找到，请在设置中配置');return}var ids=Array.from(plSelIds);try{var r=await fetch('/api/plugins/clone_batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids,mirror:!!mir})});var j=await r.json();if(!j.ok)return;var s=0,q=0;j.results.forEach(function(x){x.ok&&(x.msg.indexOf('队列')>=0?q++:s++)});alert('批量克隆: 开始 '+s+' 队列 '+q);plSelIds.clear();renderPlugins();plStartTimer();await restoreCloneState()}catch(e){alert('批量克隆失败: '+e.message)}}
+async function clStart(id,mir){if(!await checkGit()){alert('Git 未找到');return}try{var r=await fetch('/api/plugins/clone/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mirror:!!mir})});var j=await r.json();if(!j.ok){alert(j.msg);return}if(j.msg.indexOf('队列')>=0){plQueuedIds.add(id)}else{plActiveIds.add(id)}plLastStates[id]={status:j.msg.indexOf('队列')>=0?'queue':'cloning',progress:0,mirror:!!mir};renderPlugins();plStartTimer()}catch(e){alert('克隆失败')}}
+async function clCancel(id){if(!confirm('确认取消？'))return;if(plQueuedIds.has(id)){try{await fetch('/api/plugins/clone_cancel_queue/'+id,{method:'POST'});plQueuedIds.delete(id);delete plLastStates[id];renderPlugins()}catch(e){}return}try{var r=await fetch('/api/plugins/clone_cancel/'+id,{method:'POST'});var j=await r.json();j.ok&&(plActiveIds.delete(id),delete plLastStates[id],renderPlugins())}catch(e){}}
+function plStartTimer(){if(!plProgTimer)plProgTimer=setInterval(fetchClAllStatus,2000)}
+async function fetchClAllStatus(){
+  try{var r=await fetch('/api/plugins/clone_all_status');var d=await r.json(),any=false,nowActive=new Set();
+    d.active.forEach(function(x){nowActive.add(x.id);any=true;plLastStates[x.id]={status:x.status,progress:x.progress||0,phase:x.phase,msg:x.msg};clUpdateCell(x.id,x)});
+    plPrevActive.forEach(function(id){if(!nowActive.has(id)&&!plQueuedIds.has(id)){plActiveIds.delete(id);if(!plLastStates[id]||plLastStates[id].status!=='error'){plLastStates[id]={status:'complete',progress:100}}renderPlugins()}});
+    plPrevActive=new Set(nowActive);
+    d.queue&&d.queue.length>0&&(any=true);
+    clUpdateCards(d.active);clUpdateQueue(d.queue);
+    if(!any){clearInterval(plProgTimer);plProgTimer=null}
+  }catch(e){}
+}
+function clUpdateCell(id,s){var sc=document.getElementById('plst-'+id);if(!sc)return;sc.innerHTML=clBadge(s.status)+(s.status==='cloning'?'<span style="font-size:10px;color:var(--text2);margin-left:4px">'+esc(s.phase)+' '+s.progress+'%</span>':'');var bc=document.getElementById('cbclone-'+id),bm=document.getElementById('cbmirr-'+id),bn=document.getElementById('cbcancel-'+id);if(!bc)return;if(s.status==='cloning'){bc.disabled=true;bc.textContent='克隆中';bm.disabled=true;bm.textContent='国内';bn.disabled=false}else if(s.status==='complete'){bc.disabled=true;bc.textContent='已完成';bm.disabled=true;bm.textContent='已完成';bn.disabled=true}else if(s.status==='error'){bc.disabled=false;bc.textContent='克隆';bm.disabled=false;bm.textContent='国内';bn.disabled=true}}
+function clUpdateCards(active){var con=document.getElementById('plplist'),cel=document.getElementById('plpcard');con.innerHTML='';if(!active||active.length===0){cel.style.display='none'}else{cel.style.display='block';active.forEach(function(s){var pct=s.progress||0,card=document.createElement('div');card.className='pitem';card.innerHTML='<div class="phd"><span class="pname">'+esc(s.name||'#'+s.id)+(s.mirror?' <span style="color:var(--purple);font-size:11px">[镜像]</span>':'')+'</span><span style="font-size:11px;color:var(--text2)">'+s.status+'</span></div><div class="pbar-bg"><div class="pbar-fill pbar-fill-clone" style="width:'+Math.max(pct,3)+'%">'+pct+'%</div></div><div class="pinfo"><span>'+esc(s.phase||'')+'</span><span>'+esc(s.msg||'')+'</span></div>';con.appendChild(card)})}}
+function clUpdateQueue(queue){var con=document.getElementById('plqlist'),cel=document.getElementById('plqcard');if(!queue||queue.length===0){cel.style.display='none';return}cel.style.display='block';con.innerHTML='';queue.forEach(function(q){var div=document.createElement('div');div.className='qitem';div.innerHTML='<div class="qpos">'+q.queue_position+'</div><span style="flex:1;font-size:12.5px">'+esc(q.name||'#'+q.id)+'</span><span style="font-size:11px;color:var(--text2)"><code>'+esc(q.repo_url.substring(0,40))+'</code></span><button class="btn btn3 btn-xs" onclick="clCancel('+q.id+')">取消</button>';con.appendChild(div)})}
+async function restoreCloneState(){
+  try{var r=await fetch('/api/plugins/clone_all_status');var d=await r.json();plActiveIds.clear();plQueuedIds.clear();plLastStates={};plPrevActive=new Set();
+    d.active.forEach(function(x){plActiveIds.add(x.id);plPrevActive.add(x.id);plLastStates[x.id]={status:x.status,progress:x.progress||0,phase:x.phase,msg:x.msg,mirror:x.mirror}});
+    d.queue.forEach(function(x){plQueuedIds.add(x.id);plLastStates[x.id]={status:'queue',progress:0}});
+    renderPlugins();clUpdateCards(d.active);clUpdateQueue(d.queue);if(d.active.length>0||d.queue.length>0)plStartTimer()
+  }catch(e){}
+}
+
+// ============================================================
+// ComfyUI 启动器
+// ============================================================
+var cuiLogIdx=0,cuiPollTimer=null;
+async function cuiCheckStatus(){
+  try{var r=await fetch('/api/comfyui/status');var d=await r.json();
+    var sb=document.getElementById('cuiStartBtn'),stb=document.getElementById('cuiStopBtn'),
+        st=document.getElementById('cuiStatus');
+    if(d.running){sb.disabled=true;stb.disabled=false;st.innerHTML='<span style="color:var(--green)">&#9673; 运行中</span> (PID '+d.pid+')';
+      if(!cuiPollTimer){cuiPollTimer=setInterval(cuiPollLogs,600);cuiPollLogs()}
+    }else{sb.disabled=false;stb.disabled=true;
+      if(cuiLogIdx>0){st.textContent='已停止'}else{st.textContent='准备就绪'}
+      if(cuiPollTimer){clearInterval(cuiPollTimer);cuiPollTimer=null}}
+  }catch(e){}
+}
+async function cuiStart(){
+  var log=document.getElementById('cuiLog');log.textContent='正在启动 ComfyUI ...\n';
+  cuiLogIdx=0;
+  try{var r=await fetch('/api/comfyui/start',{method:'POST'});
+    var d=await r.json();
+    if(d.ok){cuiCmdPreview2();cuiPollLogs();cuiCheckStatus()}else{alert(d.msg)}
+  }catch(e){alert('启动失败: '+e.message)}
+}
+async function cuiStop(){
+  try{await fetch('/api/comfyui/stop',{method:'POST'});cuiCheckStatus()}catch(e){alert('停止失败: '+e.message)}
+}
+async function cuiPollLogs(){
+  try{var r=await fetch('/api/comfyui/logs?since='+cuiLogIdx);var d=await r.json();
+    if(d.lines&&d.lines.length>0){var log=document.getElementById('cuiLog');
+      d.lines.forEach(function(l){log.textContent+=l+'\n'});
+      log.scrollTop=log.scrollHeight;cuiLogIdx=d.next_index}
+  }catch(e){}
+}
+cuiCheckStatus();async function cuiCmdPreview2(){
+  try{var r=await fetch('/api/comfyui/cmd_preview');var j=await r.json();
+    var e=document.getElementById('cuiCmdPreview2');if(e)e.textContent='启动命令: '+j.cmd_str
+  }catch(e){}}
+cuiCmdPreview2();
+
+// ============================================================
+// 设置
+// ============================================================
+async function loadSF(){
+  try{var r=await fetch('/api/settings');var s=await r.json();
+    setVal('sap',s.aria2c_path);setVal('scd',s.comfyui_dir);setVal('spy',s.python_path);setVal('sgp',s.git_path);
+    setVal('smc',s.max_concurrent_downloads);setVal('scl',s.max_concurrent_clones);
+    setVal('smcs',s.max_connection_per_server);setVal('sspl',s.split);setVal('smss',s.min_split_size);
+    setVal('sct',s.connect_timeout);setVal('sto',s.timeout);setVal('sls',s.lowest_speed_limit);
+    setVal('srw',s.retry_wait);setVal('smt',s.max_tries);setVal('sfa',s.file_allocation);
+    document.getElementById('scc').checked=s.check_certificate;document.getElementById('sas').checked=s.auto_start_aria2;
+    document.getElementById('mcd').textContent=s.max_concurrent_downloads;document.getElementById('cld').textContent=s.max_concurrent_clones;
+    // ComfyUI 启动命令
+    setVal('scli',s.comfyui_listen);setVal('sclp',s.comfyui_port);
+    document.getElementById('scla').checked=s.comfyui_auto_launch!==false;
+    setVal('sclv',s.comfyui_vram||'default');setVal('sclpm',s.comfyui_preview_method||'default');
+    setVal('sclc',s.comfyui_cors_origin);setVal('sclx',s.comfyui_extra_args);
+    setVal('soutd',s.output_dir||s.comfyui_dir+'\\output');
+    cuiCmdPreview()
+  }catch(e){}
+}
+function setVal(id,v){var e=document.getElementById(id);if(e)e.value=v||''}
+async function saveS(){
+  var d={aria2c_path:gv('sap'),comfyui_dir:gv('scd'),python_path:gv('spy'),git_path:gv('sgp'),
+    max_concurrent_downloads:gvi('smc',3),max_concurrent_clones:gvi('scl',2),
+    max_connection_per_server:gvi('smcs',8),split:gvi('sspl',8),min_split_size:gv('smss')||'10M',
+    connect_timeout:gvi('sct',60),timeout:gvi('sto',60),lowest_speed_limit:gv('sls')||'1K',
+    retry_wait:gvi('srw',3),max_tries:gvi('smt',0),file_allocation:gv('sfa'),
+    check_certificate:document.getElementById('scc').checked,auto_start_aria2:document.getElementById('sas').checked,
+    comfyui_listen:gv('scli'),comfyui_port:gv('sclp'),
+    comfyui_auto_launch:document.getElementById('scla').checked,
+    comfyui_vram:gv('sclv')||'default',comfyui_preview_method:gv('sclpm')||'default',
+    comfyui_cors_origin:gv('sclc'),comfyui_extra_args:gv('sclx'),
+    output_dir:gv('soutd')};
+  try{var r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});var j=await r.json();
+    if(j.ok){document.getElementById('mcd').textContent=d.max_concurrent_downloads;document.getElementById('cld').textContent=d.max_concurrent_clones;cuiCmdPreview();alert(j.msg)}else{alert('保存失败: '+j.msg)}}catch(e){alert('保存失败: '+e.message)}
+}
+function gv(id){return document.getElementById(id).value.trim()}
+function gvi(id,d){return parseInt(document.getElementById(id).value)||d}
+async function saveSRestart(){await saveS();await new Promise(function(r){setTimeout(r,600)});await a2Restart()}
+async function resetS(){if(!confirm('确认恢复默认？'))return;try{var r=await fetch('/api/settings/reset',{method:'POST'});var j=await r.json();j.ok&&(alert(j.msg),loadSF())}catch(e){}}
+async function cuiCmdReset(){if(!confirm('确认重置 ComfyUI 启动命令为最简单的默认模式？(python main.py --auto-launch)'))return;
+  try{var r=await fetch('/api/comfyui/cmd_reset',{method:'POST'});var j=await r.json();j.ok&&(alert(j.msg),loadSF())}catch(e){}}
+async function cuiCmdPreview(){
+  try{var r=await fetch('/api/comfyui/cmd_preview');var j=await r.json();
+    var e=document.getElementById('cuiCmdPreview');if(e)e.textContent='命令: '+j.cmd_str
+  }catch(e){}}
+
+// ============================================================
+// 修复安装
+// ============================================================
+var rlogIdx=0,rlogTimer=null;
+
+async function repairCheckDir(){
+  var d=document.getElementById('rclone_dir').value.trim();
+  var w=document.getElementById('rclone_warn');
+  if(!d){w.style.display='none';return}
+  try{var r=await fetch('/api/repair/clone_check?dir='+encodeURIComponent(d));
+    var j=await r.json();
+    if(j.exists){w.innerHTML='<span style="color:var(--green)">ComfyUI 已存在: '+d+'</span>';w.style.display='block'}
+    else{w.style.display='none'}
+  }catch(e){}
+}
+
+function repairLogPoll(){
+  fetch('/api/repair/logs?since='+rlogIdx).then(function(r){return r.json()}).then(function(d){
+    if(d.lines&&d.lines.length>0){
+      var el=document.getElementById('rlog');
+      d.lines.forEach(function(l){el.textContent+=l+'\n'});
+      el.scrollTop=el.scrollHeight;rlogIdx=d.next_index
+    }
+    // check if finished
+    fetch('/api/repair/status').then(function(r){return r.json()}).then(function(s){
+      if(!s.running){
+        clearInterval(rlogTimer);rlogTimer=null;
+        document.getElementById('rlog_status').textContent=s.action?'完成: '+s.action:'空闲';
+        document.getElementById('rstop_btn').disabled=true;
+        repairEnableBtns(true)
+      }
+    }).catch(function(){})
+  }).catch(function(){})
+}
+
+function repairStartTimer(){
+  if(!rlogTimer){rlogTimer=setInterval(repairLogPoll,800)}
+}
+
+function repairEnableBtns(en){
+  var ids=['rclone_btn','rreq_btn','rpt_btn','rpurge_btn'];
+  ids.forEach(function(id){var e=document.getElementById(id);if(e)e.disabled=!en})
+}
+
+async function repairClone(){
+  var dir=document.getElementById('rclone_dir').value.trim();
+  if(!dir){alert('请填写安装目录');return}
+  var mir=document.getElementById('rclone_mirror').checked;
+  var log=document.getElementById('rlog');log.textContent='正在克隆 ComfyUI ...\n';
+  rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
+  document.getElementById('rlog_status').textContent='运行中: 克隆';
+  repairEnableBtns(false);
+  try{var r=await fetch('/api/repair/clone',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target_dir:dir,mirror:mir})});
+    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    repairStartTimer()
+  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+}
+
+async function repairRequirements(){
+  var log=document.getElementById('rlog');log.textContent='正在安装 requirements.txt ...\n';
+  rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
+  document.getElementById('rlog_status').textContent='运行中: requirements';
+  repairEnableBtns(false);
+  try{var r=await fetch('/api/repair/requirements',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    repairStartTimer()
+  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+}
+
+async function repairPytorch(){
+  var cmd=document.getElementById('rpt_cmd').textContent.trim();
+  if(!cmd||cmd==='等待选择...'){alert('请先选择 PyTorch 版本和计算平台');return}
+  if(!cmd.startsWith('pip install')){alert('无效命令');return}
+  var log=document.getElementById('rlog');log.textContent='正在安装 PyTorch ...\n';
+  rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
+  document.getElementById('rlog_status').textContent='运行中: PyTorch';
+  repairEnableBtns(false);
+  try{var r=await fetch('/api/repair/pytorch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cmd:cmd})});
+    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    repairStartTimer()
+  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+}
+
+async function repairStop(){
+  try{var r=await fetch('/api/repair/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    var j=await r.json();if(rlogTimer){clearInterval(rlogTimer);rlogTimer=null}
+    document.getElementById('rlog_status').textContent=j.ok?'已停止':'空闲';
+    document.getElementById('rstop_btn').disabled=true;repairEnableBtns(true);
+  }catch(e){}
+}
+
+async function repairPurgeCache(){
+  if(!confirm('确认清除 pip 缓存？这将删除所有已下载的 wheel 文件。'))return;
+  var log=document.getElementById('rlog');log.textContent='正在清除 pip 缓存 ...\n';
+  rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
+  document.getElementById('rlog_status').textContent='运行中: 清除缓存';
+  repairEnableBtns(false);
+  try{var r=await fetch('/api/repair/purge_cache',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    repairStartTimer()
+  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+}
+
+async function repairLoadPytorch(){
+  try{var r=await fetch('/api/repair/pytorch_options');rptData=await r.json();
+    var vs=document.getElementById('rpt_ver');vs.innerHTML='';
+    if(!rptData||rptData.length===0){vs.innerHTML='<option value="">无法加载 pytorch信息.txt</option>';return}
+    rptData.forEach(function(o){vs.innerHTML+='<option value="'+o.version+'">torch v'+o.version+'</option>'});
+    repairUpdateVariants()
+  }catch(e){document.getElementById('rpt_ver').innerHTML='<option value="">加载失败</option>'}
+}
+
+var rptData=[];
+function repairUpdateVariants(){
+  var ver=document.getElementById('rpt_ver').value;
+  var varsEl=document.getElementById('rpt_var');varsEl.innerHTML='';
+  if(!ver){varsEl.innerHTML='<option value="">请先选择版本</option>';document.getElementById('rpt_cmd').textContent='等待选择...';return}
+  var found=rptData.find(function(o){return o.version===ver});
+  if(!found){varsEl.innerHTML='<option value="">无变体</option>';return}
+  found.variants.forEach(function(v,i){varsEl.innerHTML+='<option value="'+i+'">'+v.label+'</option>'});
+  repairUpdateCmd()
+}
+
+function repairUpdateCmd(){
+  var ver=document.getElementById('rpt_ver').value;
+  var idx=document.getElementById('rpt_var').value;
+  var cmdEl=document.getElementById('rpt_cmd');
+  if(!ver||idx===''||idx===null){cmdEl.textContent='等待选择...';return}
+  var found=rptData.find(function(o){return o.version===ver});
+  var v=found ? found.variants[parseInt(idx)] : null;
+  cmdEl.textContent = v ? v.cmd : '未知变体';
+}
+
+// ---- 插件修复 ----
+async function repairPipInstall(){
+  var pkgs=document.getElementById('rpip_pkgs').value.trim();
+  if(!pkgs){alert('请填写要安装的包名');return}
+  var mir=document.getElementById('rpip_mirror').value;
+  var log=document.getElementById('rlog');log.textContent='正在安装: '+pkgs+' (镜像: '+mir+')...\n';
+  rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
+  document.getElementById('rlog_status').textContent='运行中: pip install';
+  repairEnableBtns(false);
+  try{var r=await fetch('/api/repair/pip_install',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packages:pkgs,mirror:mir})});
+    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    repairStartTimer()
+  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+}
+
+async function repairDownload(){
+  var url=document.getElementById('rdl_url').value.trim();
+  if(!url){alert('请填写下载链接');return}
+  var sp=document.getElementById('rdl_path').value.trim();
+  var log=document.getElementById('rlog');log.textContent='正在下载: '+url+'\n';
+  rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
+  document.getElementById('rlog_status').textContent='运行中: 下载文件';
+  repairEnableBtns(false);
+  try{var r=await fetch('/api/repair/download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url,save_path:sp})});
+    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    repairStartTimer()
+  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+}
+
+async function repairPlugin(){
+  var nm=document.getElementById('rplugin_name').value.trim();
+  if(!nm){alert('请填写插件名称');return}
+  var log=document.getElementById('rlog');log.textContent='正在修复插件: '+nm+'\n';
+  rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
+  document.getElementById('rlog_status').textContent='运行中: 修复插件 '+nm;
+  repairEnableBtns(false);
+  try{var r=await fetch('/api/repair/plugin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plugin_name:nm})});
+    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    repairStartTimer()
+  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+}
+
+async function repairAllPlugins(){
+  if(!confirm('确认批量修复所有插件？这将依次 git pull 并安装依赖，可能耗时较长。'))return;
+  var log=document.getElementById('rlog');log.textContent='正在扫描 custom_nodes 并批量修复所有插件...\n';
+  rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
+  document.getElementById('rlog_status').textContent='运行中: 批量修复插件';
+  repairEnableBtns(false);
+  try{var r=await fetch('/api/repair/all_plugins',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    repairStartTimer()
+  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+}
+
+async function repairKillComfyUI(){
+  if(!confirm('&#9888; 确认强制结束所有 ComfyUI Python 进程？\n\n这将关闭所有正在运行的 ComfyUI 实例，可能导致未保存的工作丢失。'))return;
+  try{var r=await fetch('/api/repair/kill_comfyui',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    var j=await r.json();alert(j.msg)
+  }catch(e){alert('失败: '+e.message)}
+}
+
+async function repairKillAria2(){
+  if(!confirm('&#9888; 确认强制结束所有 aria2c 进程？\n\n正在下载的任务将被中断。'))return;
+  try{var r=await fetch('/api/repair/kill_aria2',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    var j=await r.json();alert(j.msg)
+  }catch(e){alert('失败: '+e.message)}
+}
+
+// ---- 恢复状态 ----
+async function repairCheckStatus(){
+  try{var r=await fetch('/api/repair/status');var s=await r.json();
+    if(!s.running)return;
+    document.getElementById('rlog_status').textContent='运行中: '+s.action;
+    document.getElementById('rstop_btn').disabled=false;
+    repairEnableBtns(false);
+    // reload logs
+    r=await fetch('/api/repair/logs?since=0');var d=await r.json();
+    document.getElementById('rlog').textContent=d.lines.join('\n');
+    rlogIdx=d.next_index;repairStartTimer()
+  }catch(e){}
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadPaths();loadSF();
+var lastPage=sessionStorage.getItem('lastPage');
+if(lastPage&&lastPage!=='launcher'){switchPage(null,lastPage)}
+else{cuiCheckStatus()}
+// back-to-top
+var btnTop=document.getElementById('btnTop'),mainEl=document.getElementById('main');
+mainEl.addEventListener('scroll',function(){btnTop.style.display=mainEl.scrollTop>400?'flex':'none'});
+btnTop.addEventListener('click',function(){mainEl.scrollTo({top:0,behavior:'smooth'})});
+</script>
+
+<!-- 右键菜单 -->
+<div id="ctxMenu" class="ctx-menu" style="display:none">
+  <div class="ctx-item" id="ctxCopy" onclick="ctxCopy()">&#128203; 复制</div>
+  <div class="ctx-item" id="ctxMove" onclick="ctxMove()">&#9986; 移动</div>
+  <div class="ctx-sep" id="ctxSep1"></div>
+  <div class="ctx-item" id="ctxPaste" onclick="ctxPaste()" style="display:none">&#128206; 粘贴</div>
+  <div class="ctx-sep" id="ctxSep2" style="display:none"></div>
+  <div class="ctx-item" id="ctxDelete" onclick="ctxDelete()">&#128465; 删除</div>
+  <div class="ctx-item" id="ctxRename" onclick="ctxRename()">&#9999; 重命名</div>
+  <div class="ctx-sep" id="ctxSep3"></div>
+  <div class="ctx-item" id="ctxNewFolder" onclick="ctxNewFolder()">&#128193; 新建文件夹</div>
+</div>
+
+</body>
+</html>
