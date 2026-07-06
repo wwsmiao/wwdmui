@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# 运行时数据
+models.db
+settings.json
+*.db
+
+# 缓存与临时文件
+_new_output.js
+_repair_html.py
+
+# 二进制 / 工具
+aria2-137-win64/
+
+# 杂项
+other/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统
+Thumbs.db
+.DS_Store
