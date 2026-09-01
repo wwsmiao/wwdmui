@@ -38,6 +38,52 @@ def register(app):
         rid = db.db_add(d["name"].strip(), d["save_path"].strip(), d["download_url"].strip())
         return jsonify({"ok": True, "id": rid}) if rid else (jsonify({"ok": False, "msg": "URL已存在"}), 400)
 
+    @app.route("/api/models/extract_names", methods=["POST"])
+    def api_extract_names():
+        d = request.get_json(force=True, silent=True)
+        if not d or not isinstance(d.get("urls"), str):
+            return jsonify({"ok": False, "msg": "请提供urls"}), 400
+        urls = [l.strip() for l in d["urls"].splitlines() if l.strip()]
+        regex = d.get("regex", "").strip()
+        if not urls:
+            return jsonify({"ok": False, "msg": "请至少输入一个链接"}), 400
+        results = []
+        import re as _re
+        _pattern = None
+        if regex:
+            try:
+                _pattern = _re.compile(regex, _re.IGNORECASE)
+            except _re.error as e:
+                return jsonify({"ok": False, "msg": f"正则表达式错误: {e}"}), 400
+        for url in urls:
+            name = ""
+            if _pattern:
+                m = _pattern.search(url)
+                if m:
+                    name = m.group(1) if m.lastindex and m.lastindex >= 1 else m.group(0)
+            results.append({"url": url, "name": name})
+        return jsonify({"ok": True, "results": results})
+
+    @app.route("/api/models/batch", methods=["POST"])
+    def api_batch_add():
+        d = request.get_json(force=True, silent=True)
+        if not d or not isinstance(d.get("items"), list) or len(d["items"]) == 0:
+            return jsonify({"ok": False, "msg": "未提供模型数据"}), 400
+        save_path = d.get("save_path", "").strip()
+        if not save_path:
+            return jsonify({"ok": False, "msg": "请填写存放路径"}), 400
+        items = []
+        for entry in d["items"]:
+            url = entry.get("url", "").strip()
+            name = entry.get("name", "").strip()
+            if not url or not name:
+                continue
+            items.append({"name": name, "save_path": save_path, "download_url": url})
+        if not items:
+            return jsonify({"ok": False, "msg": "没有有效的模型条目"}), 400
+        result = db.db_add_batch(items)
+        return jsonify({"ok": True, "added": result["added"], "skipped": result["skipped"]})
+
     @app.route("/api/models/<int:rid>", methods=["GET"])
     def api_get(rid):
         row = db.db_get(rid)
@@ -81,7 +127,7 @@ def register(app):
         found = os.path.isfile(path)
         if not found and config.IS_LINUX:
             try:
-                rr = subprocess.run(["which", "aria2c"], capture_output=True, text=True, timeout=5)
+                rr = subprocess.run(["which", "aria2c"], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
                 if rr.returncode == 0:
                     path = rr.stdout.strip()
                     found = True
@@ -90,7 +136,7 @@ def register(app):
         ver = None
         if found:
             try:
-                rr = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=5)
+                rr = subprocess.run([path, "--version"], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
                 ver = rr.stdout.split("\n")[0] if rr.stdout else ""
             except Exception:
                 pass
@@ -208,8 +254,17 @@ def register(app):
 
     @app.route("/api/plugins/<int:pid>", methods=["DELETE"])
     def api_plugin_delete(pid):
+        p = db.plugin_get(pid)
+        if not p:
+            return jsonify({"ok": False, "error": "插件不存在"}), 404
+        installed = db.plugin_get_names()
+        if p["name"] not in installed:
+            return jsonify({"ok": False, "error": "该插件未安装"}), 400
+        ok, msg = svc.plugin_uninstall(p["name"])
+        if not ok:
+            return jsonify({"ok": False, "error": msg}), 500
         db.plugin_delete(pid)
-        return jsonify({"ok": True})
+        return jsonify({"ok": True, "msg": msg})
 
     @app.route("/api/plugins/installed", methods=["GET"])
     def api_plugin_installed():
@@ -270,18 +325,18 @@ def register(app):
         found = False
         ver = None
         try:
-            r = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=5)
+            r = subprocess.run([path, "--version"], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
             if r.returncode == 0:
                 found = True
                 ver = r.stdout.split("\n")[0] if r.stdout else ""
         except Exception:
             if not config.IS_WINDOWS and path == "git":
                 try:
-                    rr = subprocess.run(["which", "git"], capture_output=True, text=True, timeout=5)
+                    rr = subprocess.run(["which", "git"], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
                     if rr.returncode == 0:
                         path = rr.stdout.strip()
                         found = True
-                        rv = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=5)
+                        rv = subprocess.run([path, "--version"], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
                         ver = rv.stdout.split("\n")[0] if rv.stdout else ""
                 except Exception:
                     pass
@@ -293,7 +348,7 @@ def register(app):
         found = False
         ver = None
         try:
-            r = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=5)
+            r = subprocess.run([path, "--version"], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
             if r.returncode == 0:
                 found = True
                 ver = (r.stdout or r.stderr).split("\n")[0].strip()
@@ -302,10 +357,10 @@ def register(app):
         if not found and not config.IS_WINDOWS and path == "python3":
             for alt in ["python3", "python"]:
                 try:
-                    rr = subprocess.run(["which", alt], capture_output=True, text=True, timeout=5)
+                    rr = subprocess.run(["which", alt], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
                     if rr.returncode == 0:
                         path = rr.stdout.strip()
-                        rv = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=5)
+                        rv = subprocess.run([path, "--version"], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
                         ver = (rv.stdout or rv.stderr).split("\n")[0].strip()
                         found = True
                         break
@@ -349,6 +404,15 @@ def register(app):
                   "comfyui_preview_method", "comfyui_cors_origin", "comfyui_extra_args"):
             d[k] = str(d.get(k, config.settings.get(k, ""))).strip()
         d["comfyui_auto_launch"] = bool(d.get("comfyui_auto_launch", True))
+        # comfyui 环境变量预设
+        raw_presets = d.get("comfyui_presets", config.settings.get("comfyui_presets", []))
+        if isinstance(raw_presets, list):
+            d["comfyui_presets"] = [
+                {"key": (p.get("key", "") or "").strip(), "value": (p.get("value", "") or "").strip()}
+                for p in raw_presets if isinstance(p, dict) and (p.get("key", "") or "").strip()
+            ]
+        else:
+            d["comfyui_presets"] = config.settings.get("comfyui_presets", [])
         config.settings.update(d)
         config.save_settings(config.settings)
         return jsonify({"ok": True, "msg": "设置已保存，重启 aria2c 生效"})
@@ -386,7 +450,9 @@ def register(app):
         py = s.get("python_path") or config.DEFAULT_SETTINGS["python_path"]
         d = s.get("comfyui_dir") or config.DEFAULT_SETTINGS["comfyui_dir"]
         cmd = svc.build_comfyui_cmd(py, d)
-        return jsonify({"cmd": cmd, "cmd_str": " ".join(cmd)})
+        prefix = svc._build_preset_env_prefix()
+        cmd_str = (prefix or "") + " ".join(cmd)
+        return jsonify({"cmd": cmd, "cmd_str": cmd_str})
 
     @app.route("/api/comfyui/cmd_reset", methods=["POST"])
     def api_comfyui_cmd_reset():
@@ -397,6 +463,7 @@ def register(app):
         config.settings["comfyui_preview_method"] = config.DEFAULT_SETTINGS["comfyui_preview_method"]
         config.settings["comfyui_cors_origin"] = config.DEFAULT_SETTINGS["comfyui_cors_origin"]
         config.settings["comfyui_extra_args"] = config.DEFAULT_SETTINGS["comfyui_extra_args"]
+        config.settings["comfyui_presets"] = config.DEFAULT_SETTINGS["comfyui_presets"]
         config.save_settings(config.settings)
         return jsonify({"ok": True, "msg": "ComfyUI 启动命令已重置为默认"})
 
@@ -421,6 +488,20 @@ def register(app):
     def api_repair_clone_check():
         d = request.args.get("dir", "")
         return jsonify({"exists": bool(d and os.path.exists(os.path.join(d, "main.py")))})
+
+    @app.route("/api/repair/comfyui_branches")
+    def api_repair_comfyui_branches():
+        git_path = config.settings.get("git_path", "git")
+        comfyui_dir = config.settings.get("comfyui_dir", config.COMFYUI_DIR)
+        return jsonify(svc.get_comfyui_branches(git_path, comfyui_dir))
+
+    @app.route("/api/repair/comfyui_update", methods=["POST"])
+    def api_repair_comfyui_update():
+        d = request.get_json(force=True) or {}
+        git_path = config.settings.get("git_path", "git")
+        comfyui_dir = config.settings.get("comfyui_dir", config.COMFYUI_DIR)
+        target = (d.get("target") or "").strip()
+        return jsonify(svc.repair_comfyui_update(git_path, comfyui_dir, target))
 
     @app.route("/api/repair/requirements", methods=["POST"])
     def api_repair_requirements():
@@ -462,7 +543,8 @@ def register(app):
         plugin_name = (d.get("plugin_name") or "").strip()
         if not plugin_name:
             return jsonify({"ok": False, "msg": "请填写插件名称"})
-        return jsonify(svc.repair_single_plugin(git_path, python_path, comfyui_dir, plugin_name))
+        mirror = d.get("mirror") or None
+        return jsonify(svc.repair_single_plugin(git_path, python_path, comfyui_dir, plugin_name, mirror))
 
     @app.route("/api/repair/pip_install", methods=["POST"])
     def api_repair_pip_install():
@@ -482,10 +564,12 @@ def register(app):
 
     @app.route("/api/repair/all_plugins", methods=["POST"])
     def api_repair_all_plugins():
+        d = request.get_json(silent=True) or {}
         git_path = config.settings.get("git_path", "git")
         python_path = config.settings.get("python_path", config.DEFAULT_SETTINGS["python_path"])
         comfyui_dir = config.settings.get("comfyui_dir", config.COMFYUI_DIR)
-        return jsonify(svc.repair_all_plugins(git_path, python_path, comfyui_dir))
+        mirror = d.get("mirror") or None  # None=官方直连, str=镜像前缀
+        return jsonify(svc.repair_all_plugins(git_path, python_path, comfyui_dir, mirror))
 
     @app.route("/api/repair/kill_comfyui", methods=["POST"])
     def api_repair_kill_comfyui():
@@ -574,6 +658,17 @@ def register(app):
             return jsonify({"ok": False, "msg": "缺少参数"})
         return jsonify(svc.copy_output_files(root, paths, dest))
 
+    @app.route("/api/output/send_to_input", methods=["POST"])
+    def api_output_send_to_input():
+        """将选中的输出文件发送到输入文件夹"""
+        root_out = _get_output_dir()
+        root_in = _get_input_dir()
+        data = request.get_json(silent=True) or {}
+        paths = data.get("paths", [])
+        if not paths:
+            return jsonify({"ok": False, "msg": "未指定路径"})
+        return jsonify(svc.send_to_input_dir(root_out, paths, root_in))
+
     @app.route("/api/output/mkdir", methods=["POST"])
     def api_output_mkdir():
         root = _get_output_dir()
@@ -582,3 +677,319 @@ def register(app):
         if not path:
             return jsonify({"ok": False, "msg": "缺少路径"})
         return jsonify(svc.create_output_dir(root, path))
+
+    @app.route("/api/output/upload", methods=["POST"])
+    def api_output_upload():
+        root = _get_output_dir()
+        dest = (request.form.get("dest") or "").strip()
+        files = request.files.getlist("files")
+        if not files:
+            return jsonify({"ok": False, "msg": "未选择文件"})
+        return jsonify(svc.upload_output_files(root, dest, files))
+
+
+
+    # ========== 抖音提取 API ==========
+    def _douyin_cookie_file():
+        """获取抖音 Cookie 文件路径"""
+        f = config.settings.get("douyin_cookie_file", "").strip()
+        if f and os.path.isfile(f):
+            return f
+        # fallback: 项目目录下 dy_cookie.json
+        fallback = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dy_cookie.json")
+        if os.path.isfile(fallback):
+            return fallback
+        return None
+
+    @app.route("/api/douyin/fetch", methods=["POST"])
+    def api_douyin_fetch():
+        """提取抖音链接的图片/视频信息（使用 dy_cookie.json）"""
+        data = request.get_json(silent=True) or {}
+        raw_text = (data.get("url") or data.get("text") or "").strip()
+        if not raw_text:
+            return jsonify({"ok": False, "msg": "请输入抖音链接或包含链接的文本"})
+        cookie_file = _douyin_cookie_file()
+        if not cookie_file:
+            return jsonify({"ok": False, "msg": "请先在全局设置中配置 dy_cookie.json 路径（Cookie 文件格式：原始 Cookie 字符串或 JSON）"})
+        return jsonify(svc.douyin_fetch(raw_text, cookie_file))
+
+    @app.route("/api/douyin/download", methods=["POST"])
+    def api_douyin_download():
+        """通过 aria2c 下载图片或视频"""
+        data = request.get_json(silent=True) or {}
+        save_dir = (data.get("save_dir") or "").strip()
+        if not save_dir:
+            save_dir = config.settings.get("douyin_save_dir", "").strip()
+        if not save_dir:
+            return jsonify({"ok": False, "msg": "请配置保存目录"})
+
+        # 视频下载
+        video_url = (data.get("video_url") or "").strip()
+        if video_url:
+            name = (data.get("video_name") or data.get("aweme_id") or "video").strip() + ".mp4"
+            cookie_file = _douyin_cookie_file()
+            return jsonify(svc.douyin_download_video(video_url, save_dir, name, cookie_file))
+
+        # 图片下载
+        urls = data.get("urls", [])
+        if not urls:
+            return jsonify({"ok": False, "msg": "没有可下载的图片"})
+        tmpl = (data.get("name_template") or "{index:02d}.{ext}").strip()
+        cookie_file = _douyin_cookie_file()
+        return jsonify(svc.douyin_download_images(urls, save_dir, tmpl, cookie_file))
+
+
+    @app.route("/api/douyin/progress/<gid>")
+    def api_douyin_progress(gid):
+        return jsonify(svc.douyin_download_status(gid))
+
+
+    @app.route("/api/douyin/open_dir")
+    def api_douyin_open_dir():
+        d = config.settings.get("douyin_save_dir", "").strip()
+        if d and os.path.isdir(d):
+            try:
+                subprocess.Popen(['explorer', d], shell=False)
+            except Exception:
+                os.startfile(d)
+            return jsonify({"ok": True})
+        return jsonify({"ok": False, "msg": "目录不存在或未配置"})
+    # ========== 输入管理 API ==========
+    def _get_input_dir():
+        d = config.settings.get("input_dir", "").strip()
+        if d:
+            return d
+        comfy = config.settings.get("comfyui_dir", config.DEFAULT_SETTINGS["comfyui_dir"])
+        return os.path.join(comfy, "input")
+
+    @app.route("/api/input/browse")
+    def api_input_browse():
+        root = _get_input_dir()
+        rel = request.args.get("path", "")
+        page = int(request.args.get("page", 1))
+        page_size = int(request.args.get("page_size", 20))
+        search = request.args.get("search", "")
+        sort = request.args.get("sort", "name_asc")
+        return jsonify(svc.browse_output_dir(root, rel, page, page_size, search, sort))
+
+    @app.route("/api/input/file")
+    def api_input_file():
+        root = _get_input_dir()
+        rel = request.args.get("path", "")
+        file_path = svc.serve_output_file(root, rel)
+        if not file_path:
+            return jsonify({"ok": False, "msg": "文件不存在或路径无效"}), 404
+        return send_file(file_path)
+
+    @app.route("/api/input/open_dir")
+    def api_input_open_dir():
+        d = _get_input_dir()
+        if os.path.isdir(d):
+            try:
+                subprocess.Popen(['explorer', d], shell=False)
+            except Exception:
+                os.startfile(d)
+            return jsonify({"ok": True})
+        return jsonify({"ok": False, "msg": "目录不存在: " + d})
+
+    @app.route("/api/input/delete", methods=["POST"])
+    def api_input_delete():
+        root = _get_input_dir()
+        data = request.get_json(silent=True) or {}
+        paths = data.get("paths", [])
+        if not paths:
+            return jsonify({"ok": False, "msg": "未指定路径"})
+        return jsonify(svc.delete_output_files(root, paths))
+
+    @app.route("/api/input/rename", methods=["POST"])
+    def api_input_rename():
+        root = _get_input_dir()
+        data = request.get_json(silent=True) or {}
+        path = data.get("path", "")
+        new_name = data.get("new_name", "")
+        if not path or not new_name:
+            return jsonify({"ok": False, "msg": "缺少参数"})
+        return jsonify(svc.rename_output_file(root, path, new_name))
+
+    @app.route("/api/input/move", methods=["POST"])
+    def api_input_move():
+        root = _get_input_dir()
+        data = request.get_json(silent=True) or {}
+        paths = data.get("paths", [])
+        dest = data.get("dest", "")
+        if not paths or dest is None:
+            return jsonify({"ok": False, "msg": "缺少参数"})
+        return jsonify(svc.move_output_files(root, paths, dest))
+
+    @app.route("/api/input/copy", methods=["POST"])
+    def api_input_copy():
+        root = _get_input_dir()
+        data = request.get_json(silent=True) or {}
+        paths = data.get("paths", [])
+        dest = data.get("dest", "")
+        if not paths or dest is None:
+            return jsonify({"ok": False, "msg": "缺少参数"})
+        return jsonify(svc.copy_output_files(root, paths, dest))
+
+    @app.route("/api/input/mkdir", methods=["POST"])
+    def api_input_mkdir():
+        root = _get_input_dir()
+        data = request.get_json(silent=True) or {}
+        path = data.get("path", "")
+        if not path:
+            return jsonify({"ok": False, "msg": "缺少路径"})
+        return jsonify(svc.create_output_dir(root, path))
+
+    @app.route("/api/input/upload", methods=["POST"])
+    def api_input_upload():
+        root = _get_input_dir()
+        dest = (request.form.get("dest") or "").strip()
+        files = request.files.getlist("files")
+        if not files:
+            return jsonify({"ok": False, "msg": "未选择文件"})
+        return jsonify(svc.upload_output_files(root, dest, files))
+
+    # ========== 工作流管理 API ==========
+    def _get_workflow_dir():
+        d = config.settings.get("workflow_dir", "").strip()
+        if d:
+            return d
+        comfy = config.settings.get("comfyui_dir", config.DEFAULT_SETTINGS["comfyui_dir"])
+        return os.path.join(comfy, "user", "default", "workflows")
+
+    @app.route("/api/workflows/browse")
+    def api_workflows_browse():
+        root = _get_workflow_dir()
+        rel = request.args.get("path", "")
+        page = int(request.args.get("page", 1))
+        page_size = int(request.args.get("page_size", 20))
+        search = request.args.get("search", "")
+        sort = request.args.get("sort", "name_asc")
+        return jsonify(svc.workflows_browse(root, rel, page, page_size, search, sort))
+
+    @app.route("/api/workflows/get")
+    def api_workflows_get():
+        root = _get_workflow_dir()
+        rel = request.args.get("path", "")
+        return jsonify(svc.workflows_get(root, rel))
+
+    @app.route("/api/workflows/save", methods=["POST"])
+    def api_workflows_save():
+        root = _get_workflow_dir()
+        data = request.get_json(silent=True) or {}
+        rel = data.get("path", "")
+        content = data.get("content", "")
+        if not rel:
+            return jsonify({"ok": False, "msg": "缺少路径"})
+        return jsonify(svc.workflows_save(root, rel, content))
+
+    @app.route("/api/workflows/new", methods=["POST"])
+    def api_workflows_new():
+        root = _get_workflow_dir()
+        data = request.get_json(silent=True) or {}
+        name = data.get("name", "")
+        if not name:
+            return jsonify({"ok": False, "msg": "缺少文件名"})
+        return jsonify(svc.workflows_new(root, name))
+
+    @app.route("/api/workflows/delete", methods=["POST"])
+    def api_workflows_delete():
+        root = _get_workflow_dir()
+        data = request.get_json(silent=True) or {}
+        paths = data.get("paths", [])
+        if not paths:
+            return jsonify({"ok": False, "msg": "未指定路径"})
+        return jsonify(svc.delete_output_files(root, paths))
+
+    @app.route("/api/workflows/rename", methods=["POST"])
+    def api_workflows_rename():
+        root = _get_workflow_dir()
+        data = request.get_json(silent=True) or {}
+        rel = data.get("path", "")
+        new_name = data.get("new_name", "")
+        if not rel or not new_name:
+            return jsonify({"ok": False, "msg": "缺少参数"})
+        return jsonify(svc.rename_output_file(root, rel, new_name))
+
+    @app.route("/api/workflows/open_dir")
+    def api_workflows_open_dir():
+        d = _get_workflow_dir()
+        if os.path.isdir(d):
+            try:
+                subprocess.Popen(['explorer', d], shell=False)
+            except Exception:
+                os.startfile(d)
+            return jsonify({"ok": True})
+        return jsonify({"ok": False, "msg": "目录不存在: " + d})
+
+
+    @app.route("/api/workflows/analyze")
+    def api_workflows_analyze():
+        root = _get_workflow_dir()
+        rel = request.args.get("path", "")
+        if not rel:
+            return jsonify({"ok": False, "msg": "缺少路径"})
+        return jsonify(svc.workflows_analyze(root, rel))
+
+    # ========== 笔记本 API ==========
+    db.notes_init_db()
+
+    @app.route("/api/notes", methods=["GET"])
+    def api_notes_list():
+        kw = request.args.get("q", "").strip()
+        tag = request.args.get("tag", "").strip()
+        sort = request.args.get("sort", "updated_desc").strip()
+        items = db.notes_get_all(kw, tag, sort)
+        return jsonify({"ok": True, "items": items, "tags": db.notes_get_tags()})
+
+    @app.route("/api/notes", methods=["POST"])
+    def api_notes_add():
+        d = request.get_json(force=True, silent=True) or {}
+        title = (d.get("title") or "未命名笔记").strip()[:200]
+        content = d.get("content") or ""
+        color = d.get("color") or "#00d4ff"
+        tag = (d.get("tag") or "").strip()[:50]
+        rid = db.notes_add(title, content, color, tag)
+        return jsonify({"ok": True, "id": rid})
+
+    @app.route("/api/notes/<int:rid>", methods=["GET"])
+    def api_notes_get(rid):
+        row = db.notes_get(rid)
+        return jsonify({"ok": True, "note": row}) if row else (jsonify({"ok": False, "msg": "笔记不存在"}), 404)
+
+    @app.route("/api/notes/<int:rid>", methods=["PUT"])
+    def api_notes_update(rid):
+        d = request.get_json(force=True, silent=True) or {}
+        note = db.notes_get(rid)
+        if not note:
+            return jsonify({"ok": False, "msg": "笔记不存在"}), 404
+        title = (d.get("title") if d.get("title") is not None else note["title"]).strip()[:200]
+        content = d.get("content") if d.get("content") is not None else note["content"]
+        color = d.get("color") or note["color"]
+        tag = (d.get("tag") if d.get("tag") is not None else note["tag"]).strip()[:50]
+        db.notes_update(rid, title, content, color, tag)
+        return jsonify({"ok": True})
+
+    @app.route("/api/notes/<int:rid>", methods=["DELETE"])
+    def api_notes_delete(rid):
+        db.notes_delete(rid)
+        return jsonify({"ok": True})
+
+    @app.route("/api/notes/<int:rid>/pin", methods=["POST"])
+    def api_notes_pin(rid):
+        db.notes_toggle_pin(rid)
+        return jsonify({"ok": True})
+
+    # ========== 关机 API ==========
+    @app.route("/api/shutdown", methods=["POST"])
+    def api_shutdown():
+        d = request.get_json(silent=True) or {}
+        try:
+            delay = int(d.get("delay", config.settings.get("shutdown_delay", 60)))
+        except (TypeError, ValueError):
+            delay = 60
+        return jsonify(svc.schedule_shutdown(delay))
+
+    @app.route("/api/shutdown/cancel", methods=["POST"])
+    def api_shutdown_cancel():
+        return jsonify(svc.cancel_shutdown())

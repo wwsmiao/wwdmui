@@ -1,4 +1,8 @@
+import logging
 from flask import Flask
+
+# 关闭 Flask/Werkzeug 的 HTTP 请求日志，只保留 WARNING 及以上
+logging.getLogger("werkzeug").setLevel(logging.WARNING)
 
 app = Flask(__name__)
 

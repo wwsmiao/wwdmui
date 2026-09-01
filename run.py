@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ComfyUI 模型管理器 v2.9 — 入口脚本
+ComfyUI 模型管理器 v3.5 — 入口脚本
 用法: python run.py
 """
 
@@ -16,9 +16,9 @@ from wwdm_app.services import aria2_start, cleanup_all
 
 def _on_exit():
     """退出时强制清理所有子进程"""
-    print("\n[v2.9] 正在清理子进程...")
+    print("\n[v3.5] 正在清理子进程...")
     cleanup_all()
-    print("[v2.9] 已退出")
+    print("[v3.5] 已退出")
 
 
 atexit.register(_on_exit)
@@ -30,18 +30,18 @@ if hasattr(signal, "SIGTERM"):
 
 if __name__ == "__main__":
     import platform as _p
-    print("[v2.9] " + _p.system() + ", Python: " + sys.version.split()[0])
-    print("[v2.9] BASE_DIR: " + BASE_DIR)
-    print("[v2.9] DB: " + DB_PATH)
+    print("[v3.5] " + _p.system() + ", Python: " + sys.version.split()[0])
+    print("[v3.5] BASE_DIR: " + BASE_DIR)
+    print("[v3.5] DB: " + DB_PATH)
     if settings.get("auto_start_aria2", True):
         aria2_start()
-    print("\n  === ComfyUI 模型管理器 v2.9 ===\n  访问: http://127.0.0.1:7860\n")
+    print("\n  === ComfyUI 模型管理器 v3.5 ===\n  访问: http://127.0.0.1:7860\n")
     # 自动打开浏览器（延迟 1.5s 等待 Flask 就绪）
     def _open_browser():
         time.sleep(1.5)
         webbrowser.open("http://127.0.0.1:7860")
     threading.Thread(target=_open_browser, daemon=True).start()
     try:
-        app.run(host="127.0.0.1", port=7860, debug=False)
+        app.run(host="0.0.0.0", port=7860, debug=False)
     finally:
         _on_exit()

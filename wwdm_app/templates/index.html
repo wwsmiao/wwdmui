@@ -1,9 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>薇薇的猫-模型插件管理器</title>
+<link rel="icon" href="https://i2.wp.com/wx2.sinaimg.cn/large/006dp3hUgy1ieudx0sa2uj301s01s0si.jpg" type="image/x-icon">
+<title>薇薇的猫-comfyui管理器</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -25,13 +26,17 @@
     <div class="mi active" data-page="launcher" onclick="switchPage(event,'launcher')"><span class="mi-icon">&#128640;</span><span class="mt">wwdmc启动器</span></div>
     <div class="mi" data-page="models" onclick="switchPage(event,'models')"><span class="mi-icon">&#128230;</span><span class="mt">模型管理</span></div>
     <div class="mi" data-page="plugins" onclick="switchPage(event,'plugins')"><span class="mi-icon">&#128187;</span><span class="mt">插件管理</span></div>
+    <div class="mi" data-page="input" onclick="switchPage(event,'input')"><span class="mi-icon">&#128229;</span><span class="mt">输入管理</span></div>
     <div class="mi" data-page="output" onclick="switchPage(event,'output')"><span class="mi-icon">&#128193;</span><span class="mt">输出管理</span></div>
     <div class="mi" data-page="settings" onclick="switchPage(event,'settings')"><span class="mi-icon">&#9881;&#65039;</span><span class="mt">全局设置</span></div>
     <div class="mi" data-page="repair" onclick="switchPage(event,'repair')"><span class="mi-icon">&#128736;</span><span class="mt">修复安装</span></div>
+    <div class="mi" data-page="douyin" onclick="switchPage(event,'douyin')"><span class="mi-icon">&#127925;</span><span class="mt">抖音提取</span></div>
+    <div class="mi" data-page="notes" onclick="switchPage(event,'notes')"><span class="mi-icon">&#128221;</span><span class="mt">笔记本</span></div>
+    <div class="mi" data-page="workflows" onclick="switchPage(event,'workflows')"><span class="mi-icon">&#128295;</span><span class="mt">工作流</span></div>
     <div class="mi" data-page="help" onclick="switchPage(event,'help')"><span class="mi-icon">&#10067;</span><span class="mt">帮助</span></div>
     <div class="mi" data-page="about" onclick="switchPage(event,'about')"><span class="mi-icon">&#8505;&#65039;</span><span class="mt">关于</span></div>
   </div>
-  <div id="sidebar-ft">v2.9 &copy; 薇薇的猫</div>
+  <div id="sidebar-ft">v3.5 &copy; 薇薇的猫</div>
 </div>
 
 <!-- ====== MAIN ====== -->
@@ -43,7 +48,8 @@
   <div class="card">
     <div class="dlbar" style="margin-bottom:12px">
       <button class="btn btn1" id="cuiStartBtn" onclick="cuiStart()">&#9654; 启动 ComfyUI</button>
-      <button class="btn btn3" id="cuiStopBtn" onclick="cuiStop()" disabled>&#9632; 停止 ComfyUI</button>
+      <button class="btn btn3" id="cuiStopBtn" onclick="cuiStop()" disabled>&#9632; 停止 ComfyUI</button> <button class="btn btn3" onclick="repairKillComfyUI()" title="强制结束所有 ComfyUI Python 进程">&#128163; 强制结束</button>
+      <button class="btn btn6 btn-sm" id="cuiAutoBtn" onclick="cuiToggleAuto()" title="自动滚动到最新日志">&#128899; 自动</button>
       <span style="flex:1"></span>
       <span id="cuiStatus" style="color:var(--text2);font-size:12.5px">准备就绪</span>
     </div>
@@ -70,6 +76,7 @@
     </select>
     <button class="btn btn6 btn-sm" onclick="resetModels()" title="重置搜索与排序">↺ 重置</button>
     <button class="btn btn2" onclick="openModal()">+ 新增</button>
+    <button class="btn btn5" onclick="openBatModal()">📋 批量新增</button>
     <div class="bbar" style="margin:0 0 0 0;flex:1">
       <button class="btn btn2 btn-sm" onclick="batchDl(false)">批量下载</button>
       <button class="btn btn5 btn-sm" onclick="batchDl(true)">&#127760; 国内批量</button>
@@ -141,6 +148,236 @@
   <div class="card pcard" id="plqcard" style="display:none"><h3>&#9776; 克隆队列</h3><div id="plqlist"></div></div>
 </div>
 
+<!-- ====== 抖音提取 ====== -->
+<div id="page-douyin" class="page center-page">
+  <div class="center-wrap">
+    <h1 class="ph">&#127925; 抖音提取</h1>
+
+    <!-- 卡片1: 提取链接 -->
+    <div class="card">
+      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <textarea id="dyUrl" class="sinput sinput-wide" placeholder="粘贴抖音链接即可（视频/笔记），支持多链接&#10;&#10;例如：&#10;https://www.douyin.com/video/XXXX&#10;https://v.douyin.com/XXXX&#10;https://www.douyin.com/note/XXXX" style="flex:1;min-width:260px;height:120px;resize:vertical;font-size:13px;line-height:1.6"></textarea>
+        <button class="btn btn1" id="dyFetchBtn" onclick="dyFetch()" style="flex-shrink:0;align-self:stretch;font-size:15px;padding:0 24px">&#128269;<br>提取</button>
+      </div>
+      <div id="dyStatus" style="color:var(--text2);font-size:12.5px;min-height:18px"></div>
+    </div>
+
+    <!-- 卡片2: 多链接标签页 + 预览 -->
+    <div class="card" id="dyResultCard" style="margin-top:16px;display:none">
+      <!-- 链接标签栏 -->
+      <div id="dyTabBar" style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;border-bottom:1px solid var(--border)"></div>
+      <!-- 视频预览 -->
+      <div id="dyVideoSection" style="display:none;margin-bottom:12px">
+        <video id="dyCoverVideo" controls style="max-width:100%;max-height:400px;border-radius:8px;margin-bottom:8px" poster="" crossorigin="anonymous"></video>
+        <div id="dyCoverOnly" style="display:none;margin-bottom:8px;border-radius:8px;overflow:hidden;max-height:300px">
+          <img id="dyCoverImg" src="" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'" crossorigin="anonymous">
+        </div>
+      </div>
+      <!-- 图片网格 -->
+      <div id="dyGridWrap" style="display:none">
+        <div style="margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <button class="btn btn6 btn-xs" onclick="dySelectAll()">&#9745; 全选</button>
+          <button class="btn btn6 btn-xs" onclick="dyDeselectAll()">&#9744; 取消全选</button>
+          <span id="dySelCount" style="font-size:12px;color:var(--text2)">已选 0 / 0</span>
+        </div>
+        <div id="dyGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
+      </div>
+      <!-- 描述信息 -->
+      <div id="dyResultDesc" style="font-size:13px;color:var(--text1);line-height:1.6;margin-top:4px"></div>
+    </div>
+
+    <!-- 卡片3: 下载控制 -->
+    <div class="card" id="dyDlCard" style="margin-top:16px;display:none">
+      <h3 style="margin:0 0 12px 0;font-size:15px">&#128228; 下载</h3>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+        <div class="slabel-block"><div class="slabel">保存目录</div></div>
+        <input type="text" id="dySaveDir" class="sinput sinput-wide" placeholder="C:\tmp\douyin-tiqu\images" style="flex:1;min-width:220px">
+        <button class="btn btn6" onclick="dyOpenSaveDir()" title="打开文件夹" style="font-size:18px;padding:4px 8px">&#128193;</button>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:14px" id="dyTmplRow">
+        <div class="slabel-block" style="flex-shrink:0;margin-top:4px"><div class="slabel">命名模板</div><div class="shint">{index} {uri} {ext} {datetime}</div></div>
+        <input type="text" id="dyNameTmpl" class="sinput sinput-wide" placeholder="{index:02d}.{ext}" style="flex:1;min-width:200px">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn2" id="dyDlBtn" onclick="dyDownload()" disabled>开始下载</button>
+        <button class="btn btn6" id="dyDlDeselectBtn" onclick="dyDeselectAll();dyUpdateDlBtn()" style="display:none">取消选择</button>
+      </div>
+      <div id="dyDlStatus" style="color:var(--text2);font-size:12px;margin-top:10px;min-height:18px"></div>
+      <div id="dyDlProgress" style="display:none;margin-top:8px">
+        <div class="pbar-bg"><div class="pbar-fill" id="dyDlBar" style="width:0%;min-width:0">0%</div></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-top:4px">
+          <span id="dyDlSize">0 / 0 MB</span><span id="dyDlSpeed">0 MB/s</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 卡片4: Cookie 设置 -->
+    <div class="card" style="margin-top:16px">
+      <h3 style="margin:0 0 12px 0;font-size:15px">&#128273; Cookie 配置</h3>
+      <div style="color:var(--text2);font-size:12px;margin-bottom:12px;line-height:1.6">
+        抖音提取需要有效的 Cookie。请在"全局设置"中配置 <code>dy_cookie.json</code> 文件路径。
+        <br><span style="color:var(--text3)">该文件内容为原始 Cookie 字符串（key1=val1; key2=val2）或 JSON 格式</span>
+      </div>
+      <a href="javascript:switchPage(event,'settings')" style="display:inline-block;font-size:12px;color:var(--blue);text-decoration:underline">&#8594; 前往全局设置配置 Cookie 路径</a>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 笔记本 ====== -->
+<div id="page-notes" class="page" style="padding:0;overflow:hidden">
+  <div id="notes-app" class="notes-app">
+    <!-- 左栏: 笔记列表 -->
+    <div id="notes-list-pane" class="notes-pane notes-list-pane">
+      <div class="notes-pane-hd">
+        <div class="notes-pane-title">&#128221; 笔记本</div>
+        <button class="btn btn1" onclick="noteNew()" title="新建笔记">&#43; 新建</button>
+      </div>
+      <div class="notes-search-row">
+        <input type="text" id="noteSearch" class="sinput" placeholder="搜索笔记..." oninput="noteDebounceSearch()" style="flex:1">
+        <button class="btn btn6" onclick="noteSearch()" title="搜索" style="padding:6px 10px">&#128269;</button>
+      </div>
+      <div id="noteTagBar" class="notes-tagbar"></div>
+      <div id="noteList" class="notes-list"></div>
+      <div id="noteListEmpty" class="notes-empty" style="display:none">
+        <div style="font-size:40px;opacity:0.3">&#128221;</div>
+        <div>暂无笔记，点击「新建」开始记录</div>
+      </div>
+    </div>
+
+    <!-- 右栏: 编辑器 -->
+    <div id="notes-editor-pane" class="notes-pane notes-editor-pane">
+      <!-- 空状态 -->
+      <div id="noteEditorEmpty" class="notes-empty" style="height:100%;justify-content:center;align-items:center">
+        <div style="font-size:56px;opacity:0.25">&#128221;</div>
+        <div style="font-size:15px;color:var(--text2);margin-top:12px">选择左侧笔记，或点击「新建」开始</div>
+      </div>
+
+      <!-- 编辑器主体 -->
+      <div id="noteEditor" style="display:none;height:100%;flex-direction:column">
+        <div class="notes-editor-hd">
+          <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+            <input type="text" id="noteTitle" class="sinput" placeholder="笔记标题" style="flex:1;font-size:16px;font-weight:600;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;padding:8px 4px">
+          </div>
+          <div class="notes-color-row" id="noteColorRow">
+            <span class="notes-color" style="background:#00d4ff" data-c="#00d4ff" title="青色"></span>
+            <span class="notes-color" style="background:#a855f7" data-c="#a855f7" title="紫色"></span>
+            <span class="notes-color" style="background:#10b981" data-c="#10b981" title="绿色"></span>
+            <span class="notes-color" style="background:#f59e0b" data-c="#f59e0b" title="橙色"></span>
+            <span class="notes-color" style="background:#ef4444" data-c="#ef4444" title="红色"></span>
+            <span class="notes-color" style="background:#3b82f6" data-c="#3b82f6" title="蓝色"></span>
+            <span class="notes-color" style="background:#14b8a6" data-c="#14b8a6" title="青色绿"></span>
+            <span class="notes-color" style="background:#f472b6" data-c="#f472b6" title="粉色"></span>
+          </div>
+          <input type="text" id="noteTag" class="sinput" placeholder="标签" style="width:110px" title="标签，用于分类筛选">
+          <button class="btn btn6" id="notePinBtn" onclick="noteTogglePin()" title="置顶">&#128204;</button>
+          <button class="btn btn6" onclick="notePreviewToggle()" id="notePreviewBtn" title="预览">&#128065;</button>
+          <button class="btn btn7" onclick="noteDelete()" title="删除笔记">&#128465;</button>
+          <button class="btn btn1" onclick="noteSave()">&#128190; 保存</button>
+        </div>
+
+        <!-- 工具栏 -->
+        <div class="notes-toolbar" id="noteToolbar">
+          <button class="ntb" onclick="noteInsert('**','**')" title="粗体"><b>B</b></button>
+          <button class="ntb" onclick="noteInsert('*','*')" title="斜体"><i>I</i></button>
+          <button class="ntb" onclick="noteInsert('~~','~~')" title="删除线"><s>S</s></button>
+          <span class="ntb-sep"></span>
+          <button class="ntb" onclick="noteInsert('# ','',true)" title="标题1">H1</button>
+          <button class="ntb" onclick="noteInsert('## ','',true)" title="标题2">H2</button>
+          <button class="ntb" onclick="noteInsert('### ','',true)" title="标题3">H3</button>
+          <span class="ntb-sep"></span>
+          <button class="ntb" onclick="noteInsert('- ','',true)" title="无序列表">&#8226; 列表</button>
+          <button class="ntb" onclick="noteInsert('1. ','',true)" title="有序列表">1. 列表</button>
+          <button class="ntb" onclick="noteInsert('> ','',true)" title="引用">&#10077; 引用</button>
+          <button class="ntb" onclick="noteInsert('\x60\x60\x60\n','\n\x60\x60\x60')" title="代码块">&lt;/&gt; 代码</button>
+          <button class="ntb" onclick="noteInsert('[','](https://)')" title="链接">&#128279; 链接</button>
+          <span class="ntb-sep"></span>
+          <button class="ntb" onclick="noteInsert('![','](图片URL)')" title="图片">&#128444; 图片</button>
+          <button class="ntb" onclick="noteInsert('---\n','')" title="分隔线">&#9472; 分隔线</button>
+        </div>
+
+        <div id="noteEditorBody" style="flex:1;min-height:0;position:relative">
+          <textarea id="noteContent" class="sinput" placeholder="开始写点什么..."
+            style="width:100%;height:100%;resize:none;background:transparent;border:none;outline:none;padding:16px;font-size:14px;line-height:1.8;color:var(--text)"></textarea>
+          <div id="notePreview" class="notes-preview" style="display:none;height:100%;overflow-y:auto;padding:16px;font-size:14px;line-height:1.8"></div>
+        </div>
+
+        <div class="notes-editor-ft">
+          <span id="noteStatus" style="color:var(--text3);font-size:11.5px">就绪</span>
+          <span style="flex:1"></span>
+          <span id="noteCharCount" style="color:var(--text3);font-size:11.5px"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ====== 工作流管理 ====== -->
+<div id="page-workflows" class="page center-page">
+  <div class="center-wrap">
+    <h1 class="ph">&#128295; 工作流管理</h1>
+
+    <!-- 面包屑 + 工具栏 -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <span id="wfBread" style="color:var(--cyan);font-size:13px"></span>
+      <span style="flex:1"></span>
+      <button class="btn btn1" onclick="wfNew()" title="新建工作流">&#43; 新建</button>
+      <button class="btn btn6" onclick="wfOpenFolder()" title="在资源管理器中打开工作流文件夹" style="font-size:18px;padding:4px 8px">&#128193;</button>
+      <button class="btn btn6" onclick="wfDoBrowse()" title="刷新" style="font-size:15px;padding:4px 8px">&#8635;</button>
+    </div>
+
+    <!-- 搜索 + 排序 + 分页 -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <input type="text" id="wfSearch" class="sinput" placeholder="搜索工作流..." style="width:200px" onkeydown="if(event.key==='Enter')wfDoBrowse()">
+      <button class="btn btn6" onclick="wfClearSearch()" title="清除搜索" style="font-size:14px;padding:4px 8px;min-width:28px">&#8634;</button>
+      <button class="btn btn6" onclick="wfDoBrowse()" style="font-size:12px">&#128269; 搜索</button>
+      <select id="wfSort" class="sinput" style="width:120px" onchange="wfDoBrowse()">
+        <option value="name_asc">名称 &uarr;</option><option value="name_desc">名称 &darr;</option>
+        <option value="date_desc">最新优先</option><option value="date_asc">最早优先</option>
+      </select>
+      <span style="flex:1"></span>
+      <span id="wfPageInfo" style="color:var(--text3);font-size:12px"></span>
+      <button class="btn btn6" onclick="wfPrevPage()" style="font-size:11px;padding:3px 8px">&larr; 上一页</button>
+      <button class="btn btn6" onclick="wfNextPage()" style="font-size:11px;padding:3px 8px">下一页 &rarr;</button>
+    </div>
+
+    <!-- 文件列表 -->
+    <div id="wfList" class="wf-list" style="min-height:300px"></div>
+    <div id="wfEmpty" class="wf-empty" style="display:none;text-align:center;padding:60px 0;color:var(--text3)">
+      <div style="font-size:48px;opacity:0.3">&#128295;</div>
+      <div style="margin-top:10px">暂无工作流文件</div>
+    </div>
+  </div>
+</div>
+
+<!-- 工作流编辑器弹窗 -->
+<div id="wfEditorModal" class="wf-modal-mask" style="display:none" onclick="if(event.target===this)wfCloseEditor()">
+  <div class="wf-modal">
+    <div class="wf-modal-hd">
+      <span id="wfEditorTitle" style="font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">工作流编辑器</span>
+      <span id="wfEditorStatus" style="color:var(--text3);font-size:11.5px;margin-right:10px"></span>
+      <button class="btn btn6" onclick="wfFormatJson()" title="格式化 JSON" style="font-size:11px;padding:3px 8px">&#9881; 格式化</button>
+      <button class="btn btn1" onclick="wfSave()" style="font-size:12px;padding:4px 10px">&#128190; 保存</button>
+      <button class="btn btn7" onclick="wfCloseEditor()" style="font-size:12px;padding:4px 10px;margin-left:6px">&#10005; 关闭</button>
+    </div>
+    <textarea id="wfContent" class="sinput" spellcheck="false"
+      style="width:100%;flex:1;min-height:0;resize:none;background:var(--bg2);border:none;outline:none;padding:14px;font-size:13px;line-height:1.6;color:var(--text);font-family:'JetBrains Mono',Consolas,monospace"></textarea>
+  </div>
+</div>
+
+
+<!-- 工作流解析结果弹窗 -->
+<div id="wfAnaModal" class="wf-modal-mask" style="display:none" onclick="if(event.target===this)wfAnaClose()">
+  <div class="wf-modal" style="max-width:760px">
+    <div class="wf-modal-hd">
+      <span id="wfAnaName" style="font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">模型解析</span>
+      <span id="wfAnaCount" style="color:var(--text3);font-size:11.5px;margin-right:10px"></span>
+      <button class="btn btn7" onclick="wfAnaClose()" style="font-size:12px;padding:4px 10px">&#10005; 关闭</button>
+    </div>
+    <div id="wfAnaBody" style="flex:1;overflow:auto;padding:6px 4px"></div>
+  </div>
+</div>
+
 <!-- ====== 帮助 ====== -->
 <div id="page-help" class="page center-page">
   <div class="center-wrap">
@@ -149,16 +386,34 @@
       <div style="max-width:800px;margin:0 auto">
         <div style="font-size:16px;font-weight:700;color:var(--cyan);margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid var(--border)">薇薇的猫 ComfyUI 整合包 · 使用指南</div>
 
+        <!-- 视频教程 + 作者链接 -->
+        <div style="display:flex;gap:16px;margin-bottom:36px;flex-wrap:wrap">
+          <a href="https://www.bilibili.com/video/BV1R6Nu6eEhE" target="_blank" style="flex:1;min-width:280px;display:flex;align-items:center;gap:14px;padding:18px 20px;background:linear-gradient(135deg,rgba(251,114,153,0.12),rgba(251,114,153,0.04));border:1px solid rgba(251,114,153,0.25);border-radius:var(--radius);text-decoration:none;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(251,114,153,0.5)';this.style.background='linear-gradient(135deg,rgba(251,114,153,0.18),rgba(251,114,153,0.06))'" onmouseout="this.style.borderColor='rgba(251,114,153,0.25)';this.style.background='linear-gradient(135deg,rgba(251,114,153,0.12),rgba(251,114,153,0.04))'">
+            <span style="font-size:32px;line-height:1">&#127916;</span>
+            <div>
+              <div style="font-size:14px;font-weight:700;margin-bottom:4px;color:white;">&#9654; 视频教程</div>
+              <div style="font-size:12px;color:white;">哔哩哔哩观看完整安装 &amp; 使用教学</div>
+            </div>
+          </a>
+          <a href="https://space.bilibili.com/472768517" target="_blank" style="flex:1;min-width:280px;display:flex;align-items:center;gap:14px;padding:18px 20px;background:linear-gradient(135deg,rgba(0,212,255,0.1),rgba(0,212,255,0.03));border:1px solid rgba(0,212,255,0.2);border-radius:var(--radius);text-decoration:none;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(0,212,255,0.45)';this.style.background='linear-gradient(135deg,rgba(0,212,255,0.15),rgba(0,212,255,0.05))'" onmouseout="this.style.borderColor='rgba(0,212,255,0.2)';this.style.background='linear-gradient(135deg,rgba(0,212,255,0.1),rgba(0,212,255,0.03))'">
+            <span style="font-size:32px;line-height:1">&#128100;</span>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:var(--cyan);margin-bottom:4px;color:white;">薇薇的猫 · B站主页</div>
+              <div style="font-size:12px;color:white;">如果有用记得点个关注哦</div>
+            </div>
+          </a>
+        </div>
+
         <div style="margin-bottom:36px">
           <h3 style="color:var(--cyan);font-size:14px;margin-bottom:12px">1. 解压到根目录</h3>
           <p style="color:var(--text2);font-size:13px">解压后，保证路径没有英文，最好放在磁盘根目录。如 <code>C:/ComfyUI</code></p>
-          <img src="https://i2.wp.com/wx1.sinaimg.cn/large/006dp3hUgy1ieu1j0v1kyj30fe0930sv.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="解压位置">
+          <img src="https://i2.wp.com/wx4.sinaimg.cn/large/006dp3hUgy1ieuj69ag0zj30ik0bdwep.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="解压位置">
         </div>
 
         <div style="margin-bottom:36px">
           <h3 style="color:var(--cyan);font-size:14px;margin-bottom:12px">2. 启动 ComfyUI</h3>
           <p style="color:var(--text2);font-size:13px">双击 <strong>comfyui启动器</strong> 即可启动，网页会自动打开7860端口，如果没有打开，可以手动复制到浏览器打开。</p>
-          <img src="https://i2.wp.com/wx2.sinaimg.cn/large/006dp3hUgy1ieu1j83ncxj30fe082aa6.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="启动器">
+          <img src="https://i2.wp.com/wx1.sinaimg.cn/large/006dp3hUgy1ieuj69aox6j30h20b4t8z.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="启动器">
           <img src="https://i2.wp.com/wx2.sinaimg.cn/large/006dp3hUgy1ieu1jfmlb5j30fe07imxt.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:8px" alt="浏览器打开">
         </div>
 
@@ -189,8 +444,28 @@
           <img src="https://i2.wp.com/wx4.sinaimg.cn/large/006dp3hUgy1ieu1k3rpkqj30fe07qjrv.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:8px" alt="VS组件">
         </div>
 
+        <div style="margin-bottom:36px">
+          <h3 style="color:var(--cyan);font-size:14px;margin-bottom:12px">7. 抖音下载配置</h3>
+          <p style="color:var(--text2);font-size:13px">用任意浏览器登录你的抖音账号；新开一个标签页，访问<a href="https://cookie-editor.com/" target="_blank" style="color:var(--cyan)">https://cookie-editor.com/</a>插件页面，获取对应浏览器插件并安装，如edge浏览器：</p>
+          <img src="https://i2.wp.com/wx2.sinaimg.cn/large/006dp3hUgy1iff279lfb8j312w0kfn0a.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="VS安装">
+          <img src="https://i2.wp.com/wx2.sinaimg.cn/large/006dp3hUgy1iff27kyayxj312w0i6765.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="VS安装">
+          <img src="https://i2.wp.com/wx4.sinaimg.cn/large/006dp3hUgy1iff281asbqj30st0kjjso.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="VS安装">
+          <p style="color:var(--text2);font-size:13px">安装好插件后可以固定插件。回到登录后的抖音页面，点击插件图标，会弹出一个cookie获取框。</p>
+          <p style="color:var(--text2);font-size:13px">选择cookie导出的图标，选择json格式的cookie复制。</p>
+          <img src="https://i2.wp.com/wx3.sinaimg.cn/large/006dp3hUgy1iff28zma6pj30nz0mygpk.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="VS安装">
+          <img src="https://i2.wp.com/wx4.sinaimg.cn/large/006dp3hUgy1iff29iu8rtj30uz0mk43u.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="VS安装">
+          <p style="color:var(--text2);font-size:13px">在你记得住的路径，新建一个文本文档命名为dy_config.json，用记事本打开，将刚才的json内容粘贴进去，保存。</p>
+          <img src="https://i2.wp.com/wx4.sinaimg.cn/large/006dp3hUgy1iff2fb1a6vj30iz0azjrj.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="VS安装">
+          <img src="https://i2.wp.com/wx3.sinaimg.cn/large/006dp3hUgy1iff2fqcb43j30wz0e1ju8.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="VS安装">
+          <p style="color:var(--text2);font-size:13px">回到“全局设置”菜单，填写dy_cookie.json的路径和想要提取视频、图片保存的路径，最后点击保存按钮即可。</p>
+          <img src="https://i2.wp.com/wx3.sinaimg.cn/large/006dp3hUgy1iff2ikp0n6j312w0ijwg2.jpg" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px" alt="VS安装">
+        </div>
+
+
+
+
         <div style="margin-bottom:16px">
-          <h3 style="color:var(--cyan);font-size:14px;margin-bottom:12px">7. ComfyUI 启动命令 · 额外参数说明</h3>
+          <h3 style="color:var(--cyan);font-size:14px;margin-bottom:12px">8. ComfyUI 启动命令 · 额外参数说明</h3>
           <p style="color:var(--text2);font-size:13px">在 <a href="javascript:switchPage(null,'settings')" style="color:var(--cyan);text-decoration:underline">全局设置</a> 的「ComfyUI 启动命令」中，可在<strong>额外命令行参数</strong>填入更多选项：</p>
           <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:12px;line-height:1.6">
             <tr style="background:rgba(0,212,255,0.08)"><th style="padding:6px 10px;text-align:left;color:var(--cyan);border:1px solid var(--border)">参数</th><th style="padding:6px 10px;text-align:left;color:var(--cyan);border:1px solid var(--border)">说明</th></tr>
@@ -237,7 +512,16 @@
 
     <!-- 搜索 + 排序 + 分页控制 -->
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <input type="file" id="outFileInput" multiple style="display:none" onchange="outUploadFiles(this.files)">
+      <button class="btn btn6" onclick="document.getElementById('outFileInput').click()" title="上传文件到当前输出目录" style="font-size:15px;padding:4px 8px">&#128228;</button>
       <button class="btn btn6" onclick="outOpenFolder()" title="在资源管理器中打开输出文件夹" style="font-size:18px;padding:4px 8px">&#128193;</button>
+      <span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 2px"></span>
+      <label class="btn btn6" style="font-size:12px;padding:4px 8px;cursor:pointer;margin:0;display:inline-flex;align-items:center;gap:4px">
+        <input type="checkbox" id="outSelAll" onclick="outToggleSelectAll()" style="margin:0"> 全选本页
+      </label>
+      <span id="outSelCount" style="color:var(--cyan);font-size:12px;display:none"></span>
+      <button class="btn btn6" id="outClearSel" onclick="outClearSelection()" style="font-size:11px;padding:3px 6px;display:none">&#10005; 清除</button>
+      <button class="btn btn7" id="outDelSel" onclick="outDeleteSelected()" style="font-size:11px;padding:3px 6px;display:none">&#128465; 删除选中</button>
       <input type="text" id="outSearch" class="sinput" placeholder="搜索文件名/文件夹..." style="width:180px" onkeydown="if(event.key==='Enter')outSearch()">
       <button class="btn btn6" onclick="outClearSearch()" title="清除搜索" style="font-size:14px;padding:4px 8px;min-width:28px">&#8634;</button>
       <button class="btn btn6" onclick="outSearch()" style="font-size:12px">&#128269; 搜索</button>
@@ -256,6 +540,53 @@
 
     <!-- 分页 -->
     <div id="outPager" style="display:flex;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap"></div>
+  </div>
+</div>
+
+<!-- ====== 输入管理 ====== -->
+<div id="page-input" class="page center-page">
+  <div class="center-wrap">
+    <h1 class="ph">&#128229; 输入管理</h1>
+
+    <!-- 面包屑 + 工具栏 -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <span id="inBread" style="color:var(--cyan);font-size:13px"></span>
+      <span style="flex:1"></span>
+      <select id="inViewSel" class="sinput" style="width:140px" onchange="inViewChange()">
+        <option value="grid">&#9630; 网格</option><option value="masonry">&#9630; 瀑布流</option><option value="list">&#9776; 列表</option>
+      </select>
+    </div>
+
+    <!-- 搜索 + 排序 + 分页控制 -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <input type="file" id="inFileInput" multiple style="display:none" onchange="inUploadFiles(this.files)">
+      <button class="btn btn6" onclick="document.getElementById('inFileInput').click()" title="上传文件到当前输入目录" style="font-size:15px;padding:4px 8px">&#128228;</button>
+      <button class="btn btn6" onclick="inOpenFolder()" title="在资源管理器中打开输入文件夹" style="font-size:18px;padding:4px 8px">&#128193;</button>
+      <span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 2px"></span>
+      <label class="btn btn6" style="font-size:12px;padding:4px 8px;cursor:pointer;margin:0;display:inline-flex;align-items:center;gap:4px">
+        <input type="checkbox" id="inSelAll" onclick="inToggleSelectAll()" style="margin:0"> 全选本页
+      </label>
+      <span id="inSelCount" style="color:var(--cyan);font-size:12px;display:none"></span>
+      <button class="btn btn6" id="inClearSel" onclick="inClearSelection()" style="font-size:11px;padding:3px 6px;display:none">&#10005; 清除</button>
+      <button class="btn btn7" id="inDelSel" onclick="inDeleteSelected()" style="font-size:11px;padding:3px 6px;display:none">&#128465; 删除选中</button>
+      <input type="text" id="inSearch" class="sinput" placeholder="搜索文件名/文件夹..." style="width:180px" onkeydown="if(event.key==='Enter')inSearch()">
+      <button class="btn btn6" onclick="inClearSearch()" title="清除搜索" style="font-size:14px;padding:4px 8px;min-width:28px">&#8634;</button>
+      <button class="btn btn6" onclick="inSearch()" style="font-size:12px">&#128269; 搜索</button>
+      <select id="inSort" class="sinput" style="width:120px" onchange="inDoBrowse()">
+        <option value="name_asc">名称 ↑</option><option value="name_desc">名称 ↓</option>
+        <option value="date_desc">最新优先</option><option value="date_asc">最旧优先</option>
+      </select>
+      <select id="inPS" class="sinput" style="width:80px" onchange="inDoBrowse()">
+        <option value="12">12条</option><option value="20" selected>20条</option><option value="40">40条</option><option value="60">60条</option>
+      </select>
+      <span id="inPageInfo" style="color:var(--text2);font-size:13px;margin-left:8px"></span>
+    </div>
+
+    <!-- 内容区域 -->
+    <div id="inGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;min-height:200px"></div>
+
+    <!-- 分页 -->
+    <div id="inPager" style="display:flex;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap"></div>
   </div>
 </div>
 
@@ -283,6 +614,17 @@
           <div class="slabel-block"><div class="slabel">aria2c 路径</div><div class="shint">Windows: C:\aria2\aria2c.exe | Linux: /usr/bin/aria2c</div></div>
           <div style="display:flex;gap:10px;align-items:center"><input type="text" id="sap" class="sinput-wide" placeholder="aria2c 路径"><button class="btn btn6" style="min-width:80px" onclick="detectA2()">检测</button></div>
           <div id="adr"></div>
+        </div>
+        <div class="srow srow-full" style="margin-top:12px">
+          <div class="slabel-block"><div class="slabel">pip 镜像源</div><div class="shint">安装 Python 依赖时使用的镜像源，国内用户推荐清华源</div></div>
+          <select id="spm" class="sinput-wide">
+            <option value="default">国外官方 (pypi.org) - 推荐</option>
+            <option value="tsinghua">清华大学 (推荐)</option>
+            <option value="aliyun">阿里云</option>
+            <option value="tencent">腾讯云</option>
+            <option value="douban">豆瓣</option>
+            <option value="ustc">中科大</option>
+          </select>
         </div>
       </div>
 
@@ -315,6 +657,11 @@
           <div class="slabel-block"><div class="slabel">额外命令行参数</div><div class="shint">其他 main.py 参数，用空格分隔，如: --force-fp16 --bf16-vae --verbose DEBUG</div></div>
           <input type="text" class="sinput-wide" id="sclx" placeholder="如 --force-fp16 --bf16-vae">
         </div>
+        <div class="srow srow-full" style="flex-direction:column;align-items:stretch;">
+          <div class="slabel-block"><div class="slabel">环境变量预设</div><div class="shint">在 ComfyUI 启动前注入 set 命令，每行为一组变量名=值，如 TORCH_COMPILE_OFF=1</div></div>
+          <div id="presetList" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;"></div>
+          <div style="display:flex;gap:6px;margin-top:6px;"><button class="btn btn-xs" onclick="addPreset()">+ 添加</button><span style="font-size:11px;color:#888;align-self:center;">示例: TORCH_COMPILE_OFF=1</span></div>
+        </div>
       </div>
 
       <div class="sg"><div class="sg-title">下载队列</div>
@@ -343,9 +690,29 @@
       </div>
 
       <div class="sg"><div class="sg-title">其他</div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">输入预览文件夹</div><div class="shint">文件管理预览的根目录，默认为 ComfyUI 目录下的 input 文件夹</div></div>
+          <input type="text" class="sinput sinput-wide" id="sind" placeholder="C:\ComfyUI\ComfyUI\input">
+        </div>
         <div class="srow"><div class="slabel-block"><div class="slabel">输出预览文件夹</div><div class="shint">文件管理预览的根目录，默认为 ComfyUI 目录下的 output 文件夹</div></div>
           <input type="text" class="sinput sinput-wide" id="soutd" placeholder="C:\ComfyUI\ComfyUI\output">
         </div>
+      </div>
+
+
+      <h2 class="sg-title">抖音提取</h2>
+      <div class="slabel-block" style="margin-bottom:4px"><div class="slabel">Cookie 文件路径</div><div class="shint">dy_cookie.json 绝对路径（从 Chrome/Edge 的 EditThisCookie 导出的 JSON）</div></div>
+      <input type="text" id="dyCookieFile" class="sinput sinput-wide" placeholder="C:\\tmp\\douyin-tiqu\\dy_cookie.json" style="width:100%;margin-bottom:14px">
+      <div class="slabel-block" style="margin-bottom:4px"><div class="slabel">默认保存目录</div><div class="shint">图片保存目录</div></div>
+      <input type="text" id="dySaveDirSet" class="sinput sinput-wide" placeholder="C:\\tmp\\douyin-tiqu\\images" style="width:100%;margin-bottom:14px">
+      <div class="slabel-block" style="margin-bottom:4px"><div class="slabel">默认图片格式</div></div>
+      <select id="dyFmtSet" class="sinput" style="width:120px;margin-bottom:14px">
+        <option value="png">PNG</option>
+        <option value="jpg">JPG</option>
+      </select>
+
+      <h2 class="sg-title">关机功能</h2>
+      <div class="srow"><div class="slabel-block"><div class="slabel">默认关机延迟(秒)</div><div class="shint">点击右下角悬浮按钮后，等待多少秒执行关机，可填 0-3600</div></div>
+        <input type="number" id="sdly" class="sinput" style="width:140px" min="0" max="3600" placeholder="60">
       </div>
 
       <div class="sacts"><button class="btn btn6" onclick="resetS()">恢复默认</button><button class="btn btn1" onclick="saveS()">保存设置</button><button class="btn btn5" onclick="saveSRestart()">保存并重启 aria2c</button></div>
@@ -392,6 +759,20 @@
   <div class="section-title"><span class="mi-icon">&#128736;</span> 修复区域</div>
 
   <div class="card">
+    <div class="card-title"><span class="mi-icon">&#128260;</span> 更新 ComfyUI</div>
+    <div style="color:var(--text2);margin-bottom:10px">使用 git 更新 ComfyUI 到最新版或切换到特定分支/标签。需要 ComfyUI 根目录为 Git 仓库。普通用户只需要点更新到最新版按钮即可。</div>
+    <div class="srow"><span class="sl">版本选择</span>
+      <select id="rcui_branch" class="sinput sinput-wide" style="width:100%" onchange="repairCuiBranchChange()">
+        <option value="">加载中...</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn5" id="rcui_latest_btn" onclick="repairComfyUIUpdate('')">&#128260; 更新到最新版 (git pull)</button>
+      <button class="btn btn1" id="rcui_tag_btn" onclick="repairComfyUIUpdate(document.getElementById('rcui_branch').value)">&#128260; 更新到选中版本</button>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-title"><span class="mi-icon">&#128230;</span> 安装依赖</div>
     <div style="color:var(--text2);margin-bottom:10px">使用全局设置中的 Python 路径安装 pip 依赖包。多个包名用空格分隔。</div>
     <div class="srow"><span class="sl">包名</span><input id="rpip_pkgs" class="sinput sinput-wide" placeholder="例如: numpy pandas torch==2.1.0" style="width:100%"></div>
@@ -411,13 +792,23 @@
     <div class="card-title"><span class="mi-icon">&#128193;</span> 修复单个插件</div>
     <div style="color:var(--text2);margin-bottom:10px">输入 custom_nodes 中的插件文件夹名，执行 <strong>git pull</strong> 更新 + 安装 requirements.txt 依赖</div>
     <div class="srow"><span class="sl">插件名称</span><input id="rplugin_name" class="sinput sinput-wide" placeholder="例如: ComfyUI-Manager" style="width:100%"></div>
-    <button class="btn btn1" id="rplugin_btn" onclick="repairPlugin()">&#128193; 修复此插件</button>
+    <div style="margin-top:8px">
+      <button class="btn btn1" id="rplugin_btn" onclick="repairPlugin()">&#128193; 修复此插件</button>
+      <select id="rplugin_mirror" style="margin-left:8px;padding:6px 10px;border-radius:6px;font-size:13px">
+        <option value="">&#127760; 官方源 (直连)</option>
+        <option value="https://api.gitproxy.dev/github.com/">&#128640; api.gitproxy.dev 镜像</option>
+      </select>
+    </div>
   </div>
 
   <div class="card">
     <div class="card-title"><span class="mi-icon">&#128194;</span> 修复所有插件</div>
     <div style="color:var(--text2);margin-bottom:10px">扫描 custom_nodes 下所有 Git 插件，逐个执行 <strong>git pull</strong> + requirements.txt 依赖安装</div>
     <button class="btn btn1" id="rall_btn" onclick="repairAllPlugins()">&#128194; 批量修复全部插件</button>
+    <select id="rall_mirror" style="margin-left:8px;padding:6px 10px;border-radius:6px;font-size:13px" onchange="repairAllMirrorChanged()">
+      <option value="">&#127760; 官方源 (直连)</option>
+      <option value="https://api.gitproxy.dev/github.com/">&#128640; api.gitproxy.dev 镜像</option>
+    </select>
   </div>
 
   <div class="card" style="border-color:rgba(239,68,68,0.5);background:rgba(239,68,68,0.04)">
@@ -426,7 +817,6 @@
       <strong>&#9888; 危险操作</strong>：以下按钮将强制结束所有相关进程，可能丢失未保存数据，请谨慎使用。
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn btn3" id="rkill_cui" onclick="repairKillComfyUI()">&#128163; 结束所有 ComfyUI 进程</button>
       <button class="btn btn3" id="rkill_a2" onclick="repairKillAria2()">&#128163; 结束所有 aria2 进程</button>
     </div>
   </div>
@@ -450,7 +840,7 @@
   <div class="card" style="text-align:center;padding:48px 40px;margin-bottom:24px">
     <div style="font-size:72px;margin-bottom:20px;filter:drop-shadow(0 0 32px rgba(250,180,200,0.4));animation:float 3s ease-in-out infinite">&#128049;</div>
     <div style="font-size:28px;font-weight:800;margin-bottom:6px;background:linear-gradient(135deg,#f9a8d4,var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent">薇薇的猫</div>
-    <div style="font-size:13px;color:var(--cyan);margin-bottom:28px;font-weight:500;letter-spacing:2px">COMFYUI MODEL MANAGER</div>
+    <div style="font-size:13px;color:var(--cyan);margin-bottom:28px;font-weight:500;letter-spacing:2px">COMFYUI MANAGER</div>
     <div style="font-size:14px;color:var(--text2);line-height:2.2;max-width:460px;margin:0 auto 8px">
       便捷的 ComfyUI 模型管理工具<br>
       模型 CRUD &middot; 模型下载 &middot; 插件克隆 &middot; 队列管理<br>
@@ -518,12 +908,35 @@
     </div>
     <div style="position:relative;padding-left:32px">
       <div style="position:absolute;left:11px;top:8px;bottom:8px;width:2px;background:linear-gradient(180deg,var(--cyan),rgba(0,212,255,0.15))"></div>
-
+      
       <div style="position:relative;margin-bottom:32px">
         <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px rgba(0,212,255,0.5)"></div>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-          <span style="display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(0,212,255,0.05));color:var(--cyan);font-weight:700;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid rgba(0,212,255,0.25)">v2.9</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(0,212,255,0.05));color:var(--cyan);font-weight:700;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid rgba(0,212,255,0.25)">v3.5</span>
           <span style="font-size:12px;color:var(--text3)">最新</span>
+        </div>
+        <div style="color:var(--text2);font-size:13px;line-height:1.8;padding-left:4px">
+          • 增加更多模型与插件<br>
+          • 新增抖音图片/视频一键提取功能<br>
+          • 优化输出管理右键菜单，支持批量发送到输入文件夹<br>
+          • 修复帮助页面及多项细节问题
+        </div>
+      </div>
+
+      <div style="position:relative;margin-bottom:32px">
+        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--text3);box-shadow:0 0 8px rgba(0,212,255,0.15)"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;background:rgba(0,212,255,0.05);color:var(--text3);font-weight:600;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">v3.2</span>
+        </div>
+        <div style="color:var(--text2);font-size:13px;line-height:1.8;padding-left:4px">
+          增加输入预览文件夹模块，优化输入输出预览；优化全局设置和修复安装设置功能；优化模型和插件管理；帮助增加视频教程链接。
+        </div>
+      </div>
+
+      <div style="position:relative;margin-bottom:32px">
+        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--text3);box-shadow:0 0 8px rgba(0,212,255,0.15)"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;background:rgba(0,212,255,0.05);color:var(--text3);font-weight:600;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">v2.9</span>
         </div>
         <div style="color:var(--text2);font-size:13px;line-height:1.8;padding-left:4px">
           支持模型智能搜索与批量管理；新增队列管理与进度监控面板；优化 UI 交互与暗色主题；修复多项稳定性问题。
@@ -563,6 +976,29 @@
   <div class="fg"><label>存放路径</label><input type="text" id="fpath" placeholder="models/diffusion_models" list="plist"><datalist id="plist"></datalist></div>
   <div class="fg"><label>下载链接</label><input type="url" id="furl" placeholder="https://huggingface.co/..."></div>
   <div class="fact"><button class="btn btn6" onclick="closeModal()">取消</button><button class="btn btn1" onclick="saveModel()">保存</button></div>
+</div></div>
+
+<!-- 批量新增模型弹窗 -->
+<div class="modal-bg" id="batmbg"><div class="modal" style="min-width:800px;max-width:95vw">
+  <h3 style="margin-bottom:18px">&#128230; 批量新增模型</h3>
+  <div class="fg"><label>下载链接（每行一个）</label>
+    <textarea id="batUrls" rows="8" style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-family:var(--font);font-size:12px;resize:vertical" placeholder="https://huggingface.co/user/repo/resolve/main/model1.safetensors&#10;https://civitai.com/api/download/models/12345?type=Model&#10;..."></textarea>
+  </div>
+  <div class="fg" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+    <div id="batRegexWrap" style="flex:2;min-width:300px"><label>正则表达式 <span style="color:var(--text3);font-weight:400">（第一个捕获组作为模型名，留空则不过滤）</span></label>
+      <input type="text" id="batRegex" placeholder="例如: /([^/]+?\.safetensors)" style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-family:var(--font);font-size:12px">
+    </div>
+  </div>
+  <div class="fg"><label>存放路径</label><input type="text" id="batPath" placeholder="models/diffusion_models" list="plist"></div>
+  <div class="fg" style="margin-bottom:4px"><label>解析预览</label>
+    <div id="batPreview" style="max-height:200px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-size:11.5px;color:var(--text2);min-height:48px;line-height:1.8">等待输入链接...</div>
+  </div>
+  <div class="fact" style="margin-top:16px">
+    <span id="batMsg" style="flex:1;font-size:12px;color:var(--text2)"></span>
+    <button class="btn btn6" onclick="closeBatModal()">取消</button>
+    <button class="btn btn2" id="batExtractBtn" onclick="extractNames()">提取名称</button>
+    <button class="btn btn1" id="batSubmitBtn" onclick="submitBatch()">批量新增</button>
+  </div>
 </div></div>
 
 <!-- ====== 插件模态框 ====== -->
@@ -609,9 +1045,13 @@ function switchPage(e,p){
   if(p==='launcher'){cuiCheckStatus()}
   if(p==='models'){checkA2();loadModels();restoreDlState()}
   if(p==='plugins'){checkGit();loadPlugins();restoreCloneState()}
+  if(p==='input'){inInitView();browseInput('')}
   if(p==='output')browseOutput('')
   if(p==='settings')loadSF()
-  if(p==='repair'){repairLoadPytorch();repairCheckStatus()}
+  if(p==='douyin'){loadDySettings()}
+  if(p==='notes'){notesInit()}
+  if(p==='workflows'){wfInit()}
+  if(p==='repair'){repairLoadPytorch();repairLoadComfyUIBranches();repairCheckStatus()}
 }
 
 
@@ -629,12 +1069,67 @@ function switchPage(e,p){
 var outPath='',outData=null,outView='grid',outRendered=null,outItemMap={};
 var _outState=null,_outZoom=1,_outPanX=0,_outPanY=0,_outDragging=false,_outDragSX=0,_outDragSY=0,_outDragPX=0,_outDragPY=0;
 var _clipboard={action:'',paths:[]};
+var _selPaths=new Set();
+
+function outToggleSelectAll(){
+  var cb=document.getElementById('outSelAll');
+  var items=document.querySelectorAll('#outGrid [data-path]');
+  if(cb.checked){
+    for(var i=0;i<items.length;i++){
+      var p=items[i].getAttribute('data-path');
+      _selPaths.add(p);
+      items[i].classList.add(items[i].tagName==='TR'?'out-row':'out-item','selected');
+    }
+  }else{
+    for(var i=0;i<items.length;i++){
+      _selPaths.delete(items[i].getAttribute('data-path'));
+      items[i].classList.remove('selected');
+    }
+  }
+  outUpdateSelUI();
+}
+
+function outClearSelection(){
+  _selPaths.clear();
+  var all=document.querySelectorAll('#outGrid .selected');
+  for(var i=0;i<all.length;i++)all[i].classList.remove('selected');
+  var cb=document.getElementById('outSelAll');if(cb)cb.checked=false;
+  outUpdateSelUI();
+}
+
+function outUpdateSelUI(){
+  var cnt=_selPaths.size;
+  var badge=document.getElementById('outSelCount');
+  var clr=document.getElementById('outClearSel');
+  var del=document.getElementById('outDelSel');
+  if(cnt>0){
+    badge.style.display='';badge.textContent='已选 '+cnt+' 项';
+    clr.style.display='';del.style.display='';
+  }else{
+    badge.style.display='none';clr.style.display='none';del.style.display='none';
+  }
+}
+
+async function outDeleteSelected(){
+  if(_selPaths.size===0)return;
+  if(!confirm('确认删除 '+_selPaths.size+' 个文件/文件夹？\n此操作不可撤销！'))return;
+  var paths=[];_selPaths.forEach(function(p){paths.push(p)});
+  try{
+    var r=await fetch('/api/output/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paths:paths})});
+    var d=await r.json();
+    _selPaths.clear();outUpdateSelUI();
+    var cb=document.getElementById('outSelAll');if(cb)cb.checked=false;
+    browseOutput(outPath,outData?outData.page:1);
+  }catch(e){alert('删除失败: '+e.message)}
+}
 
 function escHtml(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
 async function browseOutput(path,page){
   page=page||1;
-  outPath=path||'';
+  var newPath=path||'';
+  if(newPath!==outPath){_selPaths.clear();var cb=document.getElementById('outSelAll');if(cb)cb.checked=false;outUpdateSelUI()}
+  outPath=newPath;
   var ps=+document.getElementById('outPS').value||20;
   var sort=document.getElementById('outSort').value||'name_asc';
   var search=(document.getElementById('outSearch').value||'').trim();
@@ -659,6 +1154,26 @@ function outClearSearch(){
 }
 function outOpenFolder(){
   fetch('/api/output/open_dir').then(function(r){return r.json()}).then(function(d){if(!d.ok)alert(d.msg)});
+}
+
+function outUploadFiles(files){
+  if(!files||!files.length)return;
+  var formData=new FormData();
+  for(var i=0;i<files.length;i++) formData.append('files',files[i]);
+  formData.append('dest',outPath);
+  var input=document.getElementById('outFileInput');
+  input.disabled=true;
+  fetch('/api/output/upload',{method:'POST',body:formData})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      input.disabled=false; input.value='';
+      if(d.ok){ browseOutput(outPath,1); }
+      else { alert(d.msg); }
+    })
+    .catch(function(e){
+      input.disabled=false; input.value='';
+      alert('上传失败: '+e.message);
+    });
 }
 
 var _viewTimer=null;
@@ -721,7 +1236,23 @@ function outRender(d,pg){
       outRendered='masonry';
     }
     outRenderPager(d);
+    if(_selPaths.size>0)outRestoreSelection();
   });
+}
+
+function outRestoreSelection(){
+  var items=document.querySelectorAll('#outGrid [data-path]');
+  var found=0;
+  for(var i=0;i<items.length;i++){
+    var p=items[i].getAttribute('data-path');
+    if(_selPaths.has(p)){
+      found++;
+      items[i].classList.add(items[i].tagName==='TR'?'out-row':'out-item','selected');
+    }
+  }
+  var cb=document.getElementById('outSelAll');
+  if(cb)cb.checked=(found===items.length&&found>0);
+  outUpdateSelUI();
 }
 
 function outGridItem(it){
@@ -784,7 +1315,7 @@ function showCtxMenu(el,x,y,path,isDir){
   var copyEl=document.getElementById('ctxCopy'),moveEl=document.getElementById('ctxMove');
   var pasteEl=document.getElementById('ctxPaste'),s1=document.getElementById('ctxSep1'),s2=document.getElementById('ctxSep2');
   var delEl=document.getElementById('ctxDelete'),renEl=document.getElementById('ctxRename'),s3=document.getElementById('ctxSep3');
-  var mkEl=document.getElementById('ctxNewFolder');
+  var mkEl=document.getElementById('ctxNewFolder'),sendEl=document.getElementById('ctxSendToInput');
 
   if(_ctxTarget.is_blank){
     if(copyEl)copyEl.style.display='none';
@@ -796,6 +1327,7 @@ function showCtxMenu(el,x,y,path,isDir){
     if(pasteEl)pasteEl.style.display=_clipboard.paths.length>0?'':'none';
     if(s2)s2.style.display=_clipboard.paths.length>0?'':'none';
     if(mkEl)mkEl.style.display='';
+    if(sendEl)sendEl.style.display='none';
   }else{
     if(copyEl)copyEl.style.display='';
     if(moveEl)moveEl.style.display='';
@@ -806,6 +1338,7 @@ function showCtxMenu(el,x,y,path,isDir){
     if(pasteEl)pasteEl.style.display=_clipboard.paths.length>0?'':'none';
     if(s2)s2.style.display=_clipboard.paths.length>0?'':'none';
     if(mkEl)mkEl.style.display='';
+    if(sendEl)sendEl.style.display='';
   }
 
   m.style.left=Math.min(x,window.innerWidth-180)+'px';
@@ -813,66 +1346,137 @@ function showCtxMenu(el,x,y,path,isDir){
   m.style.display='block';
 }
 
+function _ctxInfo(){
+  if(window._curPage==='input')return{api:'/api/input',path:inPath,data:inData,browse:browseInput,delSel:inDeleteSelected,upUI:inUpdateSelUI};
+  return{api:'/api/output',path:outPath,data:outData,browse:browseOutput,delSel:outDeleteSelected,upUI:outUpdateSelUI};
+}
+
 function ctxCopy(){
   if(!_ctxTarget||_ctxTarget.is_blank)return;
-  _clipboard={action:'copy',paths:[_ctxTarget.path]};
+  var paths=[];
+  if(_selPaths&&_selPaths.size>0){
+    _selPaths.forEach(function(p){paths.push(p)});
+  }else{
+    paths.push(_ctxTarget.path);
+  }
+  _clipboard={action:'copy',paths:paths};
   hideCtxMenu();
 }
 function ctxMove(){
   if(!_ctxTarget||_ctxTarget.is_blank)return;
-  _clipboard={action:'move',paths:[_ctxTarget.path]};
+  var paths=[];
+  if(_selPaths&&_selPaths.size>0){
+    _selPaths.forEach(function(p){paths.push(p)});
+  }else{
+    paths.push(_ctxTarget.path);
+  }
+  _clipboard={action:'move',paths:paths};
   hideCtxMenu();
 }
 async function ctxPaste(){
   if(!_ctxTarget||_clipboard.paths.length===0)return;
-  var dest=_ctxTarget.is_dir?_ctxTarget.path:outPath;
-  var args=_clipboard.action==='move'?['/api/output/move',{paths:_clipboard.paths,dest:dest}]:
-    ['/api/output/copy',{paths:_clipboard.paths,dest:dest}];
+  var ci=_ctxInfo();
+  var dest=_ctxTarget.is_dir?_ctxTarget.path:ci.path;
+  var args=_clipboard.action==='move'?[ci.api+'/move',{paths:_clipboard.paths,dest:dest}]:
+    [ci.api+'/copy',{paths:_clipboard.paths,dest:dest}];
   var r=await fetch(args[0],{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(args[1])});
   var d=await r.json();
   if(d.ok||(d.results&&d.results.length)){
     var errs=d.results?d.results.filter(function(x){return!x.ok}):[];
     if(errs.length)alert('失败: '+errs.map(function(x){return x.path+': '+x.msg}).join('\n'));
     if(_clipboard.action==='move')_clipboard={action:'',paths:[]};
-    browseOutput(outPath,outData?outData.page:1);
+    ci.browse(ci.path,ci.data?ci.data.page:1);
   }else{alert(d.msg)}
   hideCtxMenu();
 }
 async function ctxDelete(){
+  var ci=_ctxInfo();
+  if(_selPaths.size>1){
+    hideCtxMenu();
+    ci.delSel();
+    return;
+  }
   if(!_ctxTarget||_ctxTarget.is_blank)return;
   var name=_ctxTarget.path.split('/').pop();
   if(!confirm('确认删除 "'+name+'"?\n此操作不可撤销！')){hideCtxMenu();return}
-  var r=await fetch('/api/output/delete',{method:'POST',headers:{'Content-Type':'application/json'},
+  var r=await fetch(ci.api+'/delete',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({paths:[_ctxTarget.path]})});
   var d=await r.json();
-  if(d.ok||d.results)browseOutput(outPath,outData?outData.page:1);
+  if(d.ok||d.results)ci.browse(ci.path,ci.data?ci.data.page:1);
   else alert(d.msg||'删除失败');
   hideCtxMenu();
 }
 function ctxRename(){
+  var ci=_ctxInfo();
   if(!_ctxTarget||_ctxTarget.is_blank)return;
   var old=_ctxTarget.path.split('/').pop();
   var nm=prompt('重命名:',old);
   if(!nm||nm===old){hideCtxMenu();return;}
   var p=_ctxTarget.path;
   hideCtxMenu();
-  fetch('/api/output/rename',{method:'POST',headers:{'Content-Type':'application/json'},
+  fetch(ci.api+'/rename',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({path:p,new_name:nm})}).then(function(r){return r.json()}).then(function(d){
-      if(d.ok)browseOutput(outPath,outData?outData.page:1);
+      if(d.ok)ci.browse(ci.path,ci.data?ci.data.page:1);
       else alert(d.msg||'重命名失败');
     });
 }
+async function ctxSendToInput(){
+  // 优先使用多选路径，否则用右键点击的单个路径
+  var paths = [];
+  if(_selPaths && _selPaths.size > 0){
+    _selPaths.forEach(function(p){paths.push(p)});
+  }else if(_ctxTarget&&_ctxTarget.path){
+    paths.push(_ctxTarget.path);
+  }
+  if(paths.length===0){hideCtxMenu();return}
+  hideCtxMenu();
+  try{
+    var r=await fetch('/api/output/send_to_input',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paths:paths})});
+    var d=await r.json();
+    if(d.ok){
+      var cntOk=d.results.filter(function(x){return x.ok}).length;
+      alert('\u2705 已发送 '+cntOk+'/'+paths.length+' 项到输入文件夹');
+    }else{
+      alert('\u274c 发送失败: '+(d.msg||''));
+    }
+  }catch(e){alert('\u274c 发送失败: '+e.message)}
+}
+
 function ctxNewFolder(){
+  var ci=_ctxInfo();
   var nm=prompt('新建文件夹名称:');
   hideCtxMenu();
   if(!nm)return;
-  var p=outPath?outPath+'/'+nm:nm;
-  fetch('/api/output/mkdir',{method:'POST',headers:{'Content-Type':'application/json'},
+  var p=ci.path?ci.path+'/'+nm:nm;
+  fetch(ci.api+'/mkdir',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({path:p})}).then(function(r){return r.json()}).then(function(d){
-      if(d.ok)browseOutput(outPath,outData?outData.page:1);
+      if(d.ok)ci.browse(ci.path,ci.data?ci.data.page:1);
       else alert(d.msg||'创建失败');
     });
 }
+
+// ---- Ctrl+Click 多选 ----
+(function(){
+  var grid=document.getElementById('outGrid');
+  if(grid)grid.addEventListener('click',function(e){
+    var el=e.target.closest('[data-path]');
+    if(!el)return;
+    var path=el.getAttribute('data-path');
+    if(e.ctrlKey){
+      e.preventDefault();e.stopPropagation();
+      if(_selPaths.has(path)){
+        _selPaths.delete(path);
+        el.classList.remove('selected');
+      }else{
+        _selPaths.add(path);
+        el.classList.add(el.tagName==='TR'?'out-row':'out-item','selected');
+      }
+      var items=document.querySelectorAll('#outGrid [data-path]');
+      var cb=document.getElementById('outSelAll');if(cb)cb.checked=(_selPaths.size===items.length&&_selPaths.size>0);
+      outUpdateSelUI();
+    }
+  },true);
+})();
 
 // 全局右键监听
 (function(){
@@ -881,9 +1485,11 @@ function ctxNewFolder(){
     var el=e.target.closest('[data-path]');
     if(el){
       e.preventDefault();
+      window._curPage='output';
       showCtxMenu(el,e.clientX,e.clientY,el.getAttribute('data-path'),el.getAttribute('data-is-dir'));
     }else if(e.target.closest('#outGrid')||e.target.closest('#page-output')){
       e.preventDefault();
+      window._curPage='output';
       showCtxMenu(null,e.clientX,e.clientY,'',false);
     }
   });
@@ -1017,8 +1623,9 @@ function _outNavigate(dir){
   if(!_outState||_outState.browseList.length<2)return;
   _outState.curIdx=(_outState.curIdx+dir+_outState.browseList.length)%_outState.browseList.length;
   var it=_outState.browseList[_outState.curIdx];
+  var apiPrefix=_outState.src.split('/file?')[0];
   _outUpdateContent(document.getElementById('outOverlay'),{
-    src:'/api/output/file?path='+encodeURIComponent(it.path),
+    src:apiPrefix+'/file?path='+encodeURIComponent(it.path),
     fn:decodeURIComponent(it.path.split('/').pop()||it.path),
     type:it.type||'image',info:it,
     browseList:_outState.browseList,curIdx:_outState.curIdx
@@ -1031,14 +1638,7 @@ function outImgReady(){
   var res=document.getElementById('outInfoRes');
   if(res)res.textContent=(img.naturalWidth||'?')+' × '+(img.naturalHeight||'?')+' px';
   img.style.opacity='1';
-  _outZoom=1;
-  var wrap=document.getElementById('outFsWrap');
-  if(wrap){
-    var wr=wrap.getBoundingClientRect();
-    _outPanX=(wr.width-img.naturalWidth)/2;
-    _outPanY=(wr.height-img.naturalHeight)/2;
-  }
-  _applyZoom();
+  _outZoom=1;_outPanX=0;_outPanY=0;
 }
 
 function outToggleFullscreen(){
@@ -1072,24 +1672,28 @@ document.addEventListener('webkitfullscreenchange',_onFsChange);
 function _applyZoom(){
   var img=document.getElementById('outFsImg');
   if(!img)return;
-  img.style.maxWidth='none';
-  img.style.maxHeight='none';
-  img.style.objectFit='none';
-  img.style.transformOrigin='0 0';
-  img.style.transform='translate('+_outPanX+'px,'+_outPanY+'px) scale('+_outZoom+')';
+  var wrap=document.getElementById('outFsWrap');
+  if(_outZoom <= 1){
+    // 未缩放：用 CSS contain 显示完整图片，flexbox 居中
+    if(wrap){wrap.style.justifyContent='center';wrap.style.alignItems='center';}
+    img.style.maxWidth='';
+    img.style.maxHeight='';
+    img.style.objectFit='';
+    img.style.transform='';
+  }else{
+    // 缩放模式：flexbox 对齐左上角，transform 平移图片
+    if(wrap){wrap.style.justifyContent='flex-start';wrap.style.alignItems='flex-start';}
+    img.style.maxWidth='none';
+    img.style.maxHeight='none';
+    img.style.objectFit='none';
+    img.style.transformOrigin='0 0';
+    img.style.transform='translate('+_outPanX+'px,'+_outPanY+'px) scale('+_outZoom+')';
+  }
 }
 
 function outZoomReset(){
-  _outZoom=1;
-  var img=document.getElementById('outFsImg');
+  _outZoom=1;_outPanX=0;_outPanY=0;
   var wrap=document.getElementById('outFsWrap');
-  if(img&&wrap){
-    var wr=wrap.getBoundingClientRect();
-    _outPanX=(wr.width-img.naturalWidth)/2;
-    _outPanY=(wr.height-img.naturalHeight)/2;
-  }else{
-    _outPanX=0;_outPanY=0;
-  }
   _applyZoom();
   if(wrap)wrap.style.cursor='grab';
 }
@@ -1104,8 +1708,16 @@ function outZoomReset(){
     e.preventDefault();
     var old=_outZoom;
     _outZoom=Math.max(0.3,Math.min(10,_outZoom-(e.deltaY>0?0.15:-0.15)));
-    var rt=_outZoom/old;
     var mx=e.clientX-r.left,my=e.clientY-r.top;
+    // 从 CSS contain 进入 transform 模式：用 contain 的等效缩放作为 old
+    if(old<=1&&_outZoom>1){
+      var nw=img.naturalWidth,nh=img.naturalHeight;
+      var s=Math.min(r.width/nw,r.height/nh);
+      _outPanX=(r.width-nw*s)/2;
+      _outPanY=(r.height-nh*s)/2;
+      old=s;
+    }
+    var rt=_outZoom/old;
     _outPanX=mx-rt*(mx-_outPanX);
     _outPanY=my-rt*(my-_outPanY);
     _applyZoom();
@@ -1158,8 +1770,7 @@ function renderModels(){
     var us=m.download_url.length>60?m.download_url.substring(0,57)+'...':m.download_url;
     var actions='<div style="display:flex;gap:3px;flex-wrap:wrap">'+
       '<button class="btn btn4 btn-xs" onclick="editModel('+m.id+')">编辑</button>'+
-      '<button class="btn btn3 btn-xs" onclick="delModel('+m.id+')">删除</button>'+
-      dlBtns(m.id,stat)+'</div>';
+            dlBtns(m.id,stat)+'</div>';
     tb.innerHTML+='<tr id="dlr-'+m.id+'"><td class="cb-cell"><input type="checkbox" class="dlcb" value="'+m.id+'" '+ch+' onchange="dlOnSel('+m.id+',this.checked)"></td><td>'+m.id+'</td><td>'+esc(m.name)+'</td><td><code>'+esc(m.save_path)+'</code></td><td><a href="'+m.download_url+'" target="_blank" title="'+esc(m.download_url)+'">'+esc(us)+'</a></td><td id="dsz-'+m.id+'">'+sz+' MB</td><td id="dpg-'+m.id+'">'+renderMiniBar(st.progress||0)+'</td><td id="dst-'+m.id+'">'+dlBadge(stat)+'</td><td class="acts">'+actions+'</td></tr>'
   });
   dlUpCnt();
@@ -1179,6 +1790,95 @@ function resetModels(){
   document.getElementById('ssort').value='id_asc';
   mPage=1;loadModels();
 }
+// ====== 批量新增模型 ======
+var _batItems=[];var BAT_EXTS=/\.(safetensors|ckpt|pt|pth|bin|onnx|gguf|sft|tensor|zip|tar\.gz|7z)/i;
+function openBatModal(){
+  _batItems=[];
+  document.getElementById('batUrls').value='';
+  document.getElementById('batPath').value='models/';
+  document.getElementById('batPreview').innerHTML='等待输入链接...';
+  document.getElementById('batMsg').textContent='';
+  document.getElementById('batSubmitBtn').disabled=false;
+  document.getElementById('batRegex').value='';
+  document.getElementById('batmbg').classList.add('show');
+  fetch('/api/paths').then(r=>r.json()).then(paths=>{
+    var dl=document.querySelectorAll('#plist');
+    if(dl.length>0){dl[0].innerHTML=paths.map(function(p){return '<option value="'+esc(p)+'">'}).join('');}
+  }).catch(function(){});
+}
+function closeBatModal(){document.getElementById('batmbg').classList.remove('show')}
+function _renderBatPreview(results){
+  var prev=document.getElementById('batPreview');
+  if(!results||results.length===0){prev.innerHTML='等待输入链接...';return}
+  var html='<table style="width:100%;font-size:11.5px"><thead><tr style="color:var(--cyan)"><th style="text-align:left;padding:2px 4px">#</th><th style="text-align:left;padding:2px 4px">模型名称</th><th style="text-align:left;padding:2px 4px">下载链接</th></tr></thead><tbody>';
+  results.forEach(function(item,i){
+    var hasName=item.name&&!/^[\s?#]+$/.test(item.name);
+    var rowStyle=hasName?'':'style="background:rgba(255,100,100,0.12)"';
+    html+='<tr '+rowStyle+'><td style="padding:3px 4px;color:var(--text3)">'+(i+1)+'</td><td style="padding:3px 4px;color:'+(hasName?'var(--green)':'var(--red)')+';max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(item.name||'(未匹配)')+'">'+(hasName?esc(item.name):'<em>(未匹配)</em>')+'</td><td style="padding:3px 4px;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(item.url)+'">'+esc(item.url)+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  prev.innerHTML=html;
+  document.getElementById('batMsg').textContent='共 '+results.length+' 个模型待导入';
+}
+async function extractNames(){
+  var raw=document.getElementById('batUrls').value.trim();
+  if(!raw){alert('请输入下载链接');return}
+  var regex=document.getElementById('batRegex').value.trim();
+  var btn=document.getElementById('batExtractBtn');
+  btn.disabled=true;btn.textContent='提取中...';
+  try{
+    var r=await fetch('/api/models/extract_names',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({urls:raw,regex:regex})
+    });
+    var j=await r.json();
+    if(!j.ok){alert('提取失败: '+j.msg);return}
+    _batItems=j.results;
+    _renderBatPreview(j.results);
+  }catch(e){
+    alert('提取失败: '+e.message);
+  }finally{
+    btn.disabled=false;btn.textContent='提取';
+  }
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var ta=document.getElementById('batUrls');
+  if(ta){ta.addEventListener('input',parseBatchUrls)}
+  var br=document.getElementById('batRegex');
+  if(br){br.addEventListener('input',parseBatchUrls)}
+});
+async function submitBatch(){
+  if(!_batItems||_batItems.length===0){alert('请先点击「提取名称」');return}
+  var items=_batItems;
+  var savePath=document.getElementById('batPath').value.trim();
+  if(!savePath){alert('请填写存放路径');return}
+  if(items.length===0){alert('请至少输入一个下载链接');return}
+  var btn=document.getElementById('batSubmitBtn');
+  btn.disabled=true;btn.textContent='提交中...';
+  document.getElementById('batMsg').textContent='正在批量导入...';
+  try{
+    var r=await fetch('/api/models/batch',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({save_path:savePath,items:items})
+    });
+    var j=await r.json();
+    if(j.ok){
+      document.getElementById('batMsg').textContent='\u2705 成功: '+j.added+' 个，跳过重复: '+j.skipped+' 个';
+      loadModels();
+      setTimeout(function(){closeBatModal()},1500);
+    }else{
+      document.getElementById('batMsg').textContent='\u274c '+j.msg;
+      btn.disabled=false;btn.textContent='批量新增';
+    }
+  }catch(e){
+    document.getElementById('batMsg').textContent='\u274c 请求失败: '+e.message;
+    btn.disabled=false;btn.textContent='批量新增';
+  }
+}
+
+
 async function saveModel(){
   var id=document.getElementById('eid').value,b={name:document.getElementById('fname').value.trim(),save_path:document.getElementById('fpath').value.trim(),download_url:document.getElementById('furl').value.trim()};
   if(!b.name||!b.save_path||!b.download_url){alert('请填写完整');return}
@@ -1192,7 +1892,7 @@ function dlBadge(s){var m={active:'bg-on|下载中',paused:'bg-pause|已暂停',
 function dlBtns(id,s){var complete=s==='complete';return'<button class="btn btn2 btn-xs" id="bstart-'+id+'" onclick="dlStart('+id+',false)"'+(complete?' disabled':'')+'>'+(complete?'已完成':'下载')+'</button><button class="btn btn5 btn-xs" id="bmirr-'+id+'" onclick="dlStart('+id+',true)"'+(complete?' disabled':'')+'>国内</button><button class="btn btn4 btn-xs bpause" id="bpause-'+id+'" onclick="dlPause('+id+')" style="'+(s==='active'?'':'display:none')+'">暂停</button><button class="btn btn4 btn-xs bresume" id="bresume-'+id+'" onclick="dlResume('+id+')" style="'+(s==='paused'?'':'display:none')+'">恢复</button><button class="btn btn3 btn-xs" id="bcancel-'+id+'" onclick="dlCancel('+id+')"'+(s==='active'||s==='paused'||s==='queue'?'':' disabled')+'>取消</button>'}
 function dlOnSel(id,c){if(c)dlSelIds.add(id);else dlSelIds.delete(id);dlUpCnt()}
 function dlSelAll(c){if(c){mData.forEach(function(m){dlSelIds.add(m.id)})}else{dlSelIds.clear()}renderModels()}
-function dlUpCnt(){document.getElementById('bcnt').textContent='已选 '+dlSelIds.size}
+function dlUpCnt(){var e=document.getElementById('bcnt');if(e)e.textContent='已选 '+dlSelIds.size}
 
 async function checkA2(){try{var r=await fetch('/api/aria2/status');var d=await r.json();var dot=document.getElementById('a2dot'),t=document.getElementById('a2text');if(d.running){dot.className='a2dot on';t.textContent='aria2c v'+d.version}else{dot.className='a2dot off';t.textContent='aria2c 未运行'}return d.running}catch(e){return false}}
 async function a2Start(){try{var r=await fetch('/api/aria2/start',{method:'POST'});var d=await r.json();alert(d.msg);checkA2()}catch(e){alert('启动失败')}}
@@ -1254,7 +1954,7 @@ function renderPlugins(){
     var urlDisp=p.repo_url.substring(0,40)+(p.repo_url.length>40?'...':'');
     var actions='<div style="display:flex;gap:3px;flex-wrap:wrap">'+
       '<button class="btn btn4 btn-xs" onclick="editPlugin('+p.id+')">编辑</button>'+
-      '<button class="btn btn3 btn-xs" onclick="delPlugin('+p.id+')">删除</button>'+
+      (p.installed?'<button class="btn btn3 btn-xs" onclick="delPlugin('+p.id+')">卸载</button>':'<button class="btn btn3 btn-xs" disabled style="opacity:0.35">卸载</button>')+
       clBtns(p.id,stat,p.installed)+'</div>';
     tb.innerHTML+='<tr id="plr-'+p.id+'"><td class="cb-cell"><input type="checkbox" class="plcb" value="'+p.id+'" '+ch+' onchange="plOnSel('+p.id+',this.checked)"></td><td>'+p.id+'</td><td>'+esc(p.name)+inst+'</td><td><a href="'+p.repo_url+'" target="_blank" style="font-size:11px">'+esc(urlDisp)+'</a></td><td style="color:var(--text2);font-size:11.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(p.desc||'')+'">'+esc(p.desc||'')+'</td><td id="plst-'+p.id+'">'+clBadge(stat)+'</td><td class="acts">'+actions+'</td></tr>'
   });
@@ -1277,14 +1977,14 @@ async function savePlugin(){
   if(!b.name||!b.url){alert('请填写完整');return}
   try{if(id){await fetch('/api/plugins/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}else{var r=await fetch('/api/plugins',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});var j=await r.json();if(!j.ok){alert(j.msg);return}}closePluginModal()}catch(e){alert('保存失败: '+e.message)}
 }
-async function delPlugin(id){if(!confirm('确认删除插件 #'+id+'？'))return;try{await fetch('/api/plugins/'+id,{method:'DELETE'});loadPlugins()}catch(e){alert('删除失败')}}
+async function delPlugin(id){if(!confirm('确认卸载该插件？插件文件夹将被删除！'))return;try{var r=await fetch('/api/plugins/'+id,{method:'DELETE'});var d=await r.json();if(!d.ok){alert(d.error||'卸载失败')}else{alert(d.msg||'已卸载')};loadPlugins()}catch(e){alert('卸载失败: '+e)}}
 
 // ---- 克隆控制 ----
 function clBadge(s){var m={cloning:'bg-cloning|克隆中',complete:'bg-done|已完成',error:'bg-err|错误',queue:'bg-q|排队中'},p=(m[s]||'bg-off|未开始').split('|');return'<span class="badge '+p[0]+'">'+p[1]+'</span>'}
 function clBtns(id,s,installed){var done=s==='complete'||installed;return'<button class="btn btn-teal btn-xs" id="cbclone-'+id+'" onclick="clStart('+id+',false)"'+(done?' disabled':'')+'>'+(installed?'已安装':s==='complete'?'已完成':'克隆')+'</button><button class="btn btn5 btn-xs" id="cbmirr-'+id+'" onclick="clStart('+id+',true)"'+(done?' disabled':'')+'>国内</button><button class="btn btn3 btn-xs" id="cbcancel-'+id+'" onclick="clCancel('+id+')"'+(s==='cloning'||s==='queue'?'':' disabled')+'>取消</button>'}
 function plOnSel(id,c){if(c)plSelIds.add(id);else plSelIds.delete(id);plUpCnt()}
 function plSelAll(c){if(c){plData.forEach(function(p){plSelIds.add(p.id)})}else{plSelIds.clear()}renderPlugins()}
-function plUpCnt(){document.getElementById('pbcnt').textContent='已选 '+plSelIds.size}
+function plUpCnt(){var e=document.getElementById('pbcnt');if(e)e.textContent='已选 '+plSelIds.size}
 
 async function checkGit(){try{var r=await fetch('/api/git/detect');var d=await r.json();var dot=document.getElementById('gitdot'),t=document.getElementById('gittext');if(d.found){dot.className='a2dot on';t.textContent='Git '+esc(d.version||'')}else{dot.className='a2dot off';t.textContent='Git 未找到'}return d.found}catch(e){return false}}
 async function detectGit(){var d=document.getElementById('gtr');d.innerHTML='<span style="color:var(--text3);font-size:12px">检测中...</span>';try{var r=await fetch('/api/git/detect');var j=await r.json();if(j.found){document.getElementById('sgp').value=j.path;d.innerHTML='<span class="db db-ok">'+esc(j.version||j.path)+'</span>'}else{d.innerHTML='<span class="db db-fail">未找到 Git</span>'}}catch(e){d.innerHTML='<span class="db db-fail">检测失败</span>'}}
@@ -1317,7 +2017,7 @@ async function restoreCloneState(){
 // ============================================================
 // ComfyUI 启动器
 // ============================================================
-var cuiLogIdx=0,cuiPollTimer=null;
+var cuiLogIdx=0,cuiAutoScroll=true,cuiPollTimer=null;
 async function cuiCheckStatus(){
   try{var r=await fetch('/api/comfyui/status');var d=await r.json();
     var sb=document.getElementById('cuiStartBtn'),stb=document.getElementById('cuiStopBtn'),
@@ -1329,9 +2029,19 @@ async function cuiCheckStatus(){
       if(cuiPollTimer){clearInterval(cuiPollTimer);cuiPollTimer=null}}
   }catch(e){}
 }
+function cuiToggleAuto(){
+  cuiAutoScroll=!cuiAutoScroll;
+  var b=document.getElementById('cuiAutoBtn');
+  if(!b)return;
+  if(cuiAutoScroll){b.textContent='\u{1F53D} 自动';b.title='自动滚动到最新日志';b.className='btn btn6 btn-sm'}
+  else{b.textContent='\u{1F513} 手动';b.title='停止自动滚动，自由查看日志';b.className='btn btn-o btn-sm'}
+  // 切换后立即跳一次
+  if(cuiAutoScroll){var log=document.getElementById('cuiLog');if(log)log.scrollTop=log.scrollHeight}
+}
 async function cuiStart(){
   var log=document.getElementById('cuiLog');log.textContent='正在启动 ComfyUI ...\n';
-  cuiLogIdx=0;
+  cuiLogIdx=0;cuiAutoScroll=true;
+  var b=document.getElementById('cuiAutoBtn');if(b){b.textContent='\u{1F53D} 自动';b.className='btn btn6 btn-sm'}
   try{var r=await fetch('/api/comfyui/start',{method:'POST'});
     var d=await r.json();
     if(d.ok){cuiCmdPreview2();cuiPollLogs();cuiCheckStatus()}else{alert(d.msg)}
@@ -1344,7 +2054,7 @@ async function cuiPollLogs(){
   try{var r=await fetch('/api/comfyui/logs?since='+cuiLogIdx);var d=await r.json();
     if(d.lines&&d.lines.length>0){var log=document.getElementById('cuiLog');
       d.lines.forEach(function(l){log.textContent+=l+'\n'});
-      log.scrollTop=log.scrollHeight;cuiLogIdx=d.next_index}
+      if(cuiAutoScroll)log.scrollTop=log.scrollHeight;cuiLogIdx=d.next_index}
   }catch(e){}
 }
 cuiCheckStatus();async function cuiCmdPreview2(){
@@ -1354,11 +2064,569 @@ cuiCheckStatus();async function cuiCmdPreview2(){
 cuiCmdPreview2();
 
 // ============================================================
-// 设置
 // ============================================================
+// ============================================================
+// ============================================================
+// ============================================================
+// ============================================================
+// ============================================================
+// 输入管理
+// ============================================================
+var inPath='',inData=null,inView='grid',inRendered=null,inItemMap={};
+var _inZoom=1,_inPanX=0,_inPanY=0,_inDragging=false,_inDragSX=0,_inDragSY=0,_inDragPX=0,_inDragPY=0;
+var _inState=null;
+
+function inToggleSelectAll(){
+  var cb=document.getElementById('inSelAll');
+  var items=document.querySelectorAll('#inGrid [data-path]');
+  if(cb.checked){
+    for(var i=0;i<items.length;i++){
+      var p=items[i].getAttribute('data-path');
+      _selPaths.add(p);
+      items[i].classList.add(items[i].tagName==='TR'?'out-row':'out-item','selected');
+    }
+  }else{
+    for(var i=0;i<items.length;i++){
+      _selPaths.delete(items[i].getAttribute('data-path'));
+      items[i].classList.remove('selected');
+    }
+  }
+  inUpdateSelUI();
+}
+
+function inClearSelection(){
+  _selPaths.clear();
+  var all=document.querySelectorAll('#inGrid .selected');
+  for(var i=0;i<all.length;i++)all[i].classList.remove('selected');
+  var cb=document.getElementById('inSelAll');if(cb)cb.checked=false;
+  inUpdateSelUI();
+}
+
+function inUpdateSelUI(){
+  var cnt=_selPaths.size;
+  var badge=document.getElementById('inSelCount');
+  var clr=document.getElementById('inClearSel');
+  var del=document.getElementById('inDelSel');
+  if(cnt>0){
+    badge.style.display='';badge.textContent='已选 '+cnt+' 项';
+    clr.style.display='';del.style.display='';
+  }else{
+    badge.style.display='none';clr.style.display='none';del.style.display='none';
+  }
+}
+
+async function inDeleteSelected(){
+  if(_selPaths.size===0)return;
+  if(!confirm('确认删除 '+_selPaths.size+' 个文件/文件夹？\n此操作不可撤销！'))return;
+  var paths=[];_selPaths.forEach(function(p){paths.push(p)});
+  try{
+    var r=await fetch('/api/input/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paths:paths})});
+    var d=await r.json();
+    _selPaths.clear();inUpdateSelUI();
+    var cb=document.getElementById('inSelAll');if(cb)cb.checked=false;
+    browseInput(inPath,inData?inData.page:1);
+  }catch(e){alert('删除失败: '+e.message)}
+}
+
+async function browseInput(path,page){
+  page=page||1;
+  var newPath=path||'';
+  if(newPath!==inPath){_selPaths.clear();var cb=document.getElementById('inSelAll');if(cb)cb.checked=false;inUpdateSelUI()}
+  inPath=newPath;
+  var ps=+document.getElementById('inPS').value||20;
+  var sort=document.getElementById('inSort').value||'name_asc';
+  var search=(document.getElementById('inSearch').value||'').trim();
+  var q='path='+encodeURIComponent(inPath)+'&page='+page+'&page_size='+ps+'&sort='+sort;
+  if(search)q+='&search='+encodeURIComponent(search);
+  try{
+    var r=await fetch('/api/input/browse?'+q);
+    var d=await r.json();
+    inData=d;
+    if(!d.ok){alert(d.msg);return}
+    inInitView();
+    inItemMap={};d.items.forEach(function(it){inItemMap[it.path]=it});
+    inRender(d,page);
+  }catch(e){}
+}
+
+function inDoBrowse(){browseInput(inPath,1)}
+function inSearch(){browseInput('',1)}
+function inClearSearch(){
+  document.getElementById('inSearch').value='';
+  browseInput('',1);
+}
+function inOpenFolder(){
+  fetch('/api/input/open_dir').then(function(r){return r.json()}).then(function(d){if(!d.ok)alert(d.msg)});
+}
+async function inUploadFiles(files){
+  if(!files||!files.length)return;
+  var formData=new FormData();
+  for(var i=0;i<files.length;i++)formData.append('files',files[i]);
+  formData.append('dest',inPath);
+  var input=document.getElementById('inFileInput');
+  input.disabled=true;
+  fetch('/api/input/upload',{method:'POST',body:formData})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      input.disabled=false; input.value='';
+      if(d.ok){ browseInput(inPath,1); }
+      else { alert(d.msg); }
+    })
+    .catch(function(e){
+      input.disabled=false; input.value='';
+      alert('上传失败: '+e.message);
+    });
+}
+
+var _inViewTimer=null;
+function inViewChange(){
+  inView=document.getElementById('inViewSel').value||'grid';
+  localStorage.setItem('inputViewMode',inView);
+  clearTimeout(_inViewTimer);
+  _inViewTimer=setTimeout(function(){inApplyView()},50);
+}
+function inInitView(){
+  var v=localStorage.getItem('inputViewMode')||'grid';
+  inView=v;
+  var sel=document.getElementById('inViewSel');
+  if(sel)sel.value=v;
+}
+function inApplyView(){
+  var g=document.getElementById('inGrid');
+  if(!g||!inData)return;
+  var wasList=inRendered==='list',isList=inView==='list';
+  if(wasList!==isList){inRender(inData,inData.page);return}
+  if(!isList){
+    var cls=inView==='grid'?'out-grid-regular':'out-grid-masonry';
+    g.className=cls;g.style.display=inView==='grid'?'grid':'block';
+    if(inView==='grid')g.style.gridTemplateColumns='repeat(4,1fr)';
+    inRendered=inView;
+  }
+}
+
+function inRender(d,pg){
+  var bc=document.getElementById('inBread');
+  var h='<a href="javascript:browseInput(\'\')" style="color:var(--cyan);text-decoration:none">&#128193;</a>';
+  if(d.breadcrumbs)for(var i=0;i<d.breadcrumbs.length;i++){
+    var b=d.breadcrumbs[i];
+    h+=' / <a href="javascript:browseInput(\''+b.path.replace(/'/g,"\\'")+'\')" style="color:var(--cyan);text-decoration:none">'+escHtml(b.name)+'</a>';
+  }
+  bc.innerHTML=h;
+
+  document.getElementById('inPageInfo').textContent=d.total>0?'共 '+d.total+' 项 | 第 '+d.page+'/'+d.total_pages+' 页':'无内容';
+
+  var g=document.getElementById('inGrid');
+  if(!d.items||!d.items.length){
+    g.innerHTML='<div style="text-align:center;color:var(--text2);padding:40px">&#128194; 此目录下无可预览的媒体文件</div>';
+    g.style.display='block';g.className='';inRendered='empty';
+    inRenderPager(d);return;
+  }
+
+  requestAnimationFrame(function(){
+    if(inView==='list'){
+      g.style.display='block';g.className='';
+      g.innerHTML='<table style="width:100%;border-collapse:collapse;color:var(--text)"><thead><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:8px">名称</th><th style="width:80px;text-align:center;padding:8px">类型</th><th style="width:100px;text-align:right;padding:8px">大小</th><th style="width:140px;text-align:right;padding:8px">修改时间</th></tr></thead><tbody>'+d.items.map(inListRow).join('')+'</tbody></table>';
+      inRendered='list';
+    }else if(inView==='grid'){
+      g.style.display='grid';g.style.gridTemplateColumns='repeat(4,1fr)';
+      g.className='out-grid-regular';
+      g.innerHTML=d.items.map(inGridItem).join('');
+      inRendered='grid';
+    }else{
+      g.style.display='block';g.className='out-grid-masonry';
+      g.innerHTML=d.items.map(inGridItem).join('');
+      inRendered='masonry';
+    }
+    inRenderPager(d);
+    if(_selPaths.size>0)inRestoreSelection();
+  });
+}
+
+function inRestoreSelection(){
+  var items=document.querySelectorAll('#inGrid [data-path]');
+  var found=0;
+  for(var i=0;i<items.length;i++){
+    var p=items[i].getAttribute('data-path');
+    if(_selPaths.has(p)){
+      found++;
+      items[i].classList.add(items[i].tagName==='TR'?'out-row':'out-item','selected');
+    }
+  }
+  var cb=document.getElementById('inSelAll');
+  if(cb)cb.checked=(found===items.length&&found>0);
+  inUpdateSelUI();
+}
+
+function inGridItem(it){
+  var icon=outIcon(it),nm=escHtml(it.name);
+  var disp=nm.length>20?nm.substring(0,18)+'...':nm;
+  var src='/api/input/file?path='+encodeURIComponent(it.path);
+  var err=' onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'<div class=out-fb style=font-size:48px>'+icon.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>\'"';
+  var dpA=escHtml(it.path);
+  var dpJ=_joinPath(it.path);
+  var isd=it.is_dir?'1':'0';
+  if(it.is_dir)
+    return '<div class="out-item" data-path="'+dpA+'" data-is-dir="1" onclick="browseInput(\''+dpJ+'\')"><div class="out-thumb"><span style="font-size:48px">'+icon+'</span></div><div class="out-name" title="'+nm+'">'+disp+'</div></div>';
+  if(it.type==='image')
+    return '<div class="out-item" data-path="'+dpA+'" data-is-dir="0" onclick="inOpenFile(\''+dpJ+'\')"><div class="out-thumb is-file"><img src="'+src+'" loading="lazy"'+err+'></div><div class="out-name" title="'+nm+'">'+disp+'</div></div>';
+  if(it.type==='video')
+    return '<div class="out-item" data-path="'+dpA+'" data-is-dir="0" onclick="inOpenFile(\''+dpJ+'\')"><div class="out-thumb is-file"><video src="'+src+'" preload="metadata" muted'+err+'></video></div><div class="out-name" title="'+nm+'">'+disp+'</div></div>';
+  return '<div class="out-item" data-path="'+dpA+'" data-is-dir="0" onclick="inOpenFile(\''+dpJ+'\')"><div class="out-thumb is-file"><span style="font-size:48px">'+icon+'</span></div><div class="out-name" title="'+nm+'">'+disp+'</div></div>';
+}
+
+function inListRow(it){
+  var icon=outIcon(it),nm=escHtml(it.name);
+  var type=it.is_dir?'文件夹':{image:'图片',video:'视频',audio:'音频'}[it.type]||it.type;
+  var sz=it.size?outFmtSize(it.size):'';var mt=it.modified?outFmtTime(it.modified):'';
+  var dpA=escHtml(it.path);
+  var dpJ=_joinPath(it.path);
+  var isd=it.is_dir?'1':'0';
+  if(it.is_dir)
+    return '<tr data-path="'+dpA+'" data-is-dir="1" style="border-bottom:1px solid var(--border)"><td style="padding:8px"><a onclick="browseInput(\''+dpJ+'\')" style="cursor:pointer;color:var(--cyan)">'+icon+' '+nm+'</a></td><td style="text-align:center;padding:8px;color:var(--text2)">'+escHtml(type)+'</td><td style="text-align:right;padding:8px;color:var(--text2)">'+sz+'</td><td style="text-align:right;padding:8px;color:var(--text2);font-size:12px">'+mt+'</td></tr>';
+  return '<tr data-path="'+dpA+'" data-is-dir="0" style="border-bottom:1px solid var(--border)"><td style="padding:8px"><a onclick="inOpenFile(\''+dpJ+'\')" style="cursor:pointer;color:var(--text)">'+icon+' '+nm+'</a></td><td style="text-align:center;padding:8px;color:var(--text2)">'+escHtml(type)+'</td><td style="text-align:right;padding:8px;color:var(--text2)">'+sz+'</td><td style="text-align:right;padding:8px;color:var(--text2);font-size:12px">'+mt+'</td></tr>';
+}
+
+function _joinPath(p){return p.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+
+function inRenderPager(d){
+  var pgEl=document.getElementById('inPager');
+  if(!pgEl)return;
+  if(d.total_pages<=1){pgEl.innerHTML='';return}
+  var h='<button class="btn btn6" style="font-size:12px;padding:4px 8px"'+(d.page<=1?' disabled':' onclick="browseInput(inPath,'+(d.page-1)+')"')+'>◀ 上一页</button>';
+  for(var i=Math.max(1,d.page-2),e=Math.min(d.total_pages,d.page+2);i<=e;i++)
+    h+='<button class="btn '+(i===d.page?'btn1':'btn6')+'" style="font-size:12px;padding:4px 8px;min-width:32px" onclick="browseInput(inPath,'+i+')">'+i+'</button>';
+  h+='<button class="btn btn6" style="font-size:12px;padding:4px 8px"'+(d.page>=d.total_pages?' disabled':' onclick="browseInput(inPath,'+(d.page+1)+')"')+'>▶ 下一页</button>';
+  pgEl.innerHTML=h;
+}
+
+// Precisa preview overlay (simplified - reuse _out* functions via adapter)
+function inOpenFile(path){
+  var item=inItemMap[path],info=item||{};
+  var src='/api/input/file?path='+encodeURIComponent(path);
+  var fn=decodeURIComponent(path.split('/').pop()||path);
+  var type=info.type||'image';
+
+  var browseList=[];
+  if(inData&&inData.items)inData.items.forEach(function(it){if(!it.is_dir)browseList.push(it)});
+  var curIdx=-1;
+  browseList.forEach(function(it,i){if(it.path===path)curIdx=i});
+
+  inPath=_saveCur_ob=inPath;
+  _saveCur_p=inPath; _saveCur_d=inData; _saveCur_b=browseInput;
+
+  _outZoom=1;_outPanX=0;_outPanY=0;_outDragging=false;
+
+  var existing=document.getElementById('outOverlay');
+  if(existing){_outUpdateContent(existing,{src:src,fn:fn,type:type,info:info,browseList:browseList,curIdx:curIdx});return}
+
+  var overlay=document.createElement('div');
+  overlay.className='out-overlay';overlay.id='outOverlay';
+  overlay.onclick=function(e){if(e.target===overlay)_outClose()};
+  _outBuildOverlay(overlay,{src:src,fn:fn,type:type,info:info,browseList:browseList,curIdx:curIdx});
+  document.body.appendChild(overlay);
+
+  var onKey=function(e){
+    if(e.key==='ArrowLeft'){e.preventDefault();_outNavigate(-1)}
+    if(e.key==='ArrowRight'){e.preventDefault();_outNavigate(1)}
+    if(e.key==='Escape')_outClose()
+  };
+  document.addEventListener('keydown',onKey);
+  overlay._onKey=onKey;
+}
+
+// Ctrl+Click for input grid
+(function(){
+  var grid=document.getElementById('inGrid');
+  if(grid)grid.addEventListener('click',function(e){
+    var el=e.target.closest('[data-path]');
+    if(!el)return;
+    var path=el.getAttribute('data-path');
+    if(e.ctrlKey){
+      e.preventDefault();e.stopPropagation();
+      if(_selPaths.has(path)){
+        _selPaths.delete(path);
+        el.classList.remove('selected');
+      }else{
+        _selPaths.add(path);
+        el.classList.add(el.tagName==='TR'?'out-row':'out-item','selected');
+      }
+      var items=document.querySelectorAll('#inGrid [data-path]');
+      var cb=document.getElementById('inSelAll');if(cb)cb.checked=(_selPaths.size===items.length&&_selPaths.size>0);
+      inUpdateSelUI();
+    }
+  },true);
+})();
+
+// Contextmenu for input grid - reuse shared ctx functions via curPage()
+(function(){
+  var grid=document.getElementById('inGrid');
+  if(grid)grid.addEventListener('contextmenu',function(e){
+    var el=e.target.closest('[data-path]');
+    if(el){
+      e.preventDefault();
+      // Set current page context for shared ctx functions
+      window._curPage='input';
+      window._curPath=inPath; window._curData=inData; window._curBrowse=browseInput;
+      showCtxMenu(el,e.clientX,e.clientY,el.getAttribute('data-path'),el.getAttribute('data-is-dir'));
+    }else if(e.target.closest('#inGrid')||e.target.closest('#page-input')){
+      e.preventDefault();
+      window._curPage='input';
+      window._curPath=inPath; window._curData=inData; window._curBrowse=browseInput;
+      showCtxMenu(null,e.clientX,e.clientY,'',false);
+    }
+  });
+})();
+
+
+// ============================================================
+// ============================================================
+// 抖音提取
+// ============================================================
+var dyResults=[],dyTabIdx=0,
+  dyImages=[],dySelected={},dyVideoUrl=null,dyCoverUrl=null,dyAwemeId=null,dyType='';
+
+function dyTabLabel(r,i){
+  var title=r.desc||'';
+  if(title)title=title.slice(0,10);
+  if(!title){title=(r.target_url||'').split('/').pop().slice(0,12)||'#'+(i+1)}
+  var icon=r.type==='video'?'🎥':(r.type==='note'?'🖼':'❓');
+  if(r.type==='error')icon='❌';
+  return icon+' '+title;
+}
+
+function dySwitchTab(i){
+  if(i<0||i>=dyResults.length)return;
+  dyTabIdx=i;
+  var bars=document.querySelectorAll('#dyTabBar .dy-tab');
+  bars.forEach(function(b,j){b.classList.toggle('dy-tab-on',j===i)});
+  var r=dyResults[i];
+  dyType=r.type;dyVideoUrl=r.video_url||null;dyCoverUrl=r.cover_url||null;dyAwemeId=r.aweme_id||null;
+  dySelected={};
+  dyImages=(r.image_urls||[]).map(function(u,j){return{url:u,idx:j}});
+  document.getElementById('dyResultDesc').innerText=(r.desc||'')+'\n链接: '+(r.target_url||'')+'\n共 '+(r.image_count||0)+' 张图片';
+  document.getElementById('dyVideoSection').style.display='none';
+  document.getElementById('dyGridWrap').style.display='none';
+  if(r.type==='video'){
+    document.getElementById('dyVideoSection').style.display='';
+    if(r.video_url){
+      var vid=document.getElementById('dyCoverVideo');
+      vid.src=r.video_url;vid.style.display='';
+      document.getElementById('dyCoverOnly').style.display='none';
+      dyMsg('✅ 视频已就绪','ok');
+    }else if(r.cover_url){
+      document.getElementById('dyCoverVideo').style.display='none';
+      document.getElementById('dyCoverOnly').style.display='';
+      document.getElementById('dyCoverImg').src=r.cover_url;
+      dyMsg('🖼 封面已加载 (视频需Cookie)','');
+    }
+  }else if(r.type==='note'){
+    dyRenderGrid();
+    document.getElementById('dyGridWrap').style.display='';
+    dyMsg('共 '+dyImages.length+' 张图片','');
+  }else if(r.type==='error'){
+    dyMsg(r.msg||'请求失败','err');
+  }else{
+    dyMsg('无法识别内容类型','');
+  }
+  var dl=document.getElementById('dyDlCard');
+  if(dl)dl.style.display=(dyType==='video'||dyType==='note')?'':'none';
+  var tr=document.getElementById('dyTmplRow');
+  if(tr)tr.style.display=(dyType==='note')?'':'none';
+  dyUpdateDlBtn();
+}
+
+function loadDySettings(){
+  fetch('/api/settings').then(function(r){return r.json()}).then(function(s){
+    setVal('dySaveDir',s.douyin_save_dir);
+    setVal('dyNameTmpl',s.douyin_name_template||'{index:02d}.{ext}');
+  }).catch(function(){});
+}
+
+async function dyFetch(){
+  var text=document.getElementById('dyUrl').value.trim();
+  if(!text){dyMsg('请输入抖音链接','err');return}
+  var btn=document.getElementById('dyFetchBtn');
+  btn.disabled=true;btn.textContent='提取中...';
+  dyMsg('正在提取链接...','');
+  dyResults=[];dyTabIdx=0;
+  dyImages=[];dySelected={};dyVideoUrl=null;dyCoverUrl=null;dyAwemeId=null;dyType='';
+  document.getElementById('dyResultCard').style.display='none';
+  document.getElementById('dyVideoSection').style.display='none';
+  document.getElementById('dyGridWrap').style.display='none';
+  var dl=document.getElementById('dyDlCard');if(dl)dl.style.display='none';
+  document.getElementById('dyDlProgress').style.display='none';
+  document.getElementById('dyTabBar').innerHTML='';
+  try{
+    var r=await fetch('/api/douyin/fetch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text})});
+    var j=await r.json();
+    if(!j.ok){dyMsg(j.msg||'提取失败','err');btn.disabled=false;btn.textContent='🔍 提取';return}
+    dyResults=j.results||[];
+    if(!dyResults.length){dyMsg('无结果','err');btn.disabled=false;btn.textContent='🔍 提取';return}
+    var bar=document.getElementById('dyTabBar');
+    dyResults.forEach(function(res,idx){
+      var tab=document.createElement('span');
+      tab.className='dy-tab'+(idx===0?' dy-tab-on':'');
+      tab.textContent=dyTabLabel(res,idx);
+      tab.style.cssText='display:inline-block;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;background:var(--bg3);color:var(--text2);white-space:nowrap;transition:all .15s;user-select:none';
+      tab.addEventListener('click',function(){dySwitchTab(idx)});
+      bar.appendChild(tab);
+    });
+    var style=document.getElementById('dyTabStyle');
+    if(!style){
+      style=document.createElement('style');style.id='dyTabStyle';
+      style.textContent='.dy-tab-on{background:var(--accent1)!important;color:#fff!important}';
+      document.head.appendChild(style);
+    }
+    document.getElementById('dyResultCard').style.display='';
+    dySwitchTab(0);
+    dyMsg('✅ 已提取 '+dyResults.length+' 个链接','ok');
+  }catch(e){dyMsg('请求失败: '+e.message,'err')}
+  btn.disabled=false;btn.textContent='🔍 提取';
+}
+
+function dyRenderGrid(){
+  var grid=document.getElementById('dyGrid');
+  grid.innerHTML='';
+  dyImages.forEach(function(img,i){
+    var card=document.createElement('div');
+    card.setAttribute('data-i',i);card.className='dy-img-card';
+    card.style.position='relative';card.style.borderRadius='6px';card.style.overflow='hidden';card.style.cursor='pointer';
+    var checked=!!dySelected[i];
+    var cbBg=checked?'var(--accent1)':'rgba(0,0,0,0.45)';
+    var cbBorder=checked?'var(--accent1)':'rgba(255,255,255,0.35)';
+    card.innerHTML='<img src="'+img.url+'" loading="lazy" style="width:100%;height:140px;object-fit:cover;display:block" crossorigin="anonymous" onerror="this.style.background=&apos;var(--bg3)&apos;;this.style.minHeight=&apos;80px&apos;">'
+      +'<div class="dy-chk" style="position:absolute;top:5px;left:5px;width:22px;height:22px;border-radius:4px;background:'+cbBg+';border:2px solid '+cbBorder+';display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;transition:all .15s">'+(checked?'\u2714':'')+'</div>'
+      +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.6));color:#fff;font-size:10px;padding:14px 4px 3px">#'+(i+1)+'</div>';
+    card.addEventListener('click',function(){
+      dyToggleSelect(i);dyRenderGrid();
+    });
+    if(checked)card.style.boxShadow='0 0 0 2px var(--accent1)';
+    grid.appendChild(card);
+  });
+}
+
+function dyToggleSelect(i){
+  if(dySelected[i]){delete dySelected[i]}else{dySelected[i]=true}
+  dyUpdateDlBtn();
+}
+
+function dySelectAll(){
+  dyImages.forEach(function(_,i){dySelected[i]=true});
+  dyRenderGrid();dyUpdateDlBtn();
+}
+
+function dyDeselectAll(){
+  dySelected={};dyRenderGrid();dyUpdateDlBtn();
+}
+
+function dyUpdateDlBtn(){
+  var btn=document.getElementById('dyDlBtn');
+  var dBtn=document.getElementById('dyDlDeselectBtn');
+  if(dyType==='video'){
+    btn.textContent='\ud83d\udce5 下载视频';
+    btn.disabled=!dyVideoUrl;
+    if(dBtn)dBtn.style.display='none';
+  }else{
+    var n=Object.keys(dySelected).length;
+    btn.textContent='\ud83d\udce5 下载选中 ('+n+')';
+    btn.disabled=(n===0);
+    if(dBtn)dBtn.style.display=(n>0)?'':'none';
+  }
+}
+
+async function dyDownload(){
+  var saveDir=document.getElementById('dySaveDir').value.trim();
+  if(!saveDir){dyDlMsg('请填写保存目录','err');return}
+  var btn=document.getElementById('dyDlBtn');
+  btn.disabled=true;btn.textContent='添加中...';
+  dyDlMsg('','');
+  try{
+    var resp;
+    if(dyType==='video'){
+      resp=await fetch('/api/douyin/download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({video_url:dyVideoUrl,aweme_id:dyAwemeId,save_dir:saveDir})});
+    }else{
+      var urls=dyImages.filter(function(_,i){return dySelected[i]}).map(function(x){return x.url});
+      var tmpl=document.getElementById('dyNameTmpl').value.trim()||'{index:02d}.{ext}';
+      resp=await fetch('/api/douyin/download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({urls:urls,save_dir:saveDir,name_template:tmpl})});
+    }
+    var j=await resp.json();
+    if(j.ok){
+      if(dyType==='video' && j.gid){
+        await dyMonitorVideoProgress(j.gid);
+      }else if(j.gid){
+        dyDlMsg('\u2705 视频已添加到aria2下载队列 (gid='+j.gid+')','ok');
+      }else if(j.gids){
+        dyDlMsg('\u2705 已添加 '+j.added+'/'+j.total+' 张图片到aria2下载队列','ok');
+      }else{
+        dyDlMsg('\u2705 下载任务已添加','ok');
+      }
+      dyDeselectAll();
+    }else{
+      dyDlMsg('失败: '+(j.msg||''),'err');
+    }
+  }catch(e){dyDlMsg('失败: '+e.message,'err')}
+  btn.disabled=false;dyUpdateDlBtn();
+}
+
+async function dyMonitorVideoProgress(gid){
+  var bar=document.getElementById('dyDlProgress');
+  var fill=document.getElementById('dyDlBar');
+  var sizeEl=document.getElementById('dyDlSize');
+  var speedEl=document.getElementById('dyDlSpeed');
+  var btn=document.getElementById('dyDlBtn');
+  bar.style.display='block';
+  btn.textContent='下载中...';
+  var timer=setInterval(async function(){
+    try{
+      var r=await fetch('/api/douyin/progress/'+gid);
+      var s=await r.json();
+      var pct=s.progress||0;
+      var cm=(s.completed/1048576).toFixed(1);
+      var tm=s.total?(s.total/1048576).toFixed(1):'?';
+      var sp=s.speed?(s.speed/1048576).toFixed(2):'0';
+      fill.style.width=Math.max(pct,3)+'%';
+      fill.textContent=pct.toFixed(1)+'%';
+      sizeEl.textContent=cm+' / '+tm+' MB';
+      speedEl.textContent=sp+' MB/s';
+      if(s.status==='complete'){
+        clearInterval(timer);
+        fill.style.width='100%';
+        fill.textContent='100%';
+        btn.textContent='开始下载';
+        dyDlMsg('\u2705 视频下载完成！','ok');
+      }else if(s.status==='error'||s.status==='removed'){
+        clearInterval(timer);
+        btn.textContent='开始下载';
+        dyDlMsg('\u274c 下载失败: '+(s.msg||s.status),'err');
+      }
+    }catch(e){
+      clearInterval(timer);
+      btn.textContent='开始下载';
+      dyDlMsg('进度查询失败: '+e.message,'err');
+    }
+  },1000);
+}
+
+function dyMsg(msg,cls){
+  var el=document.getElementById('dyStatus');
+  el.textContent=msg;
+  el.style.color=cls==='err'?'var(--red)':cls==='ok'?'var(--green)':'var(--text2)';
+}
+
+function dyDlMsg(msg,cls){
+  var el=document.getElementById('dyDlStatus');
+  el.textContent=msg;
+  el.style.color=cls==='err'?'var(--red)':cls==='ok'?'var(--green)':'var(--text2)';
+}
+
+function dyOpenSaveDir(){
+  fetch('/api/douyin/open_dir').catch(function(){});
+}
+
 async function loadSF(){
   try{var r=await fetch('/api/settings');var s=await r.json();
     setVal('sap',s.aria2c_path);setVal('scd',s.comfyui_dir);setVal('spy',s.python_path);setVal('sgp',s.git_path);
+    setVal('spm',s.pip_mirror||'default');
     setVal('smc',s.max_concurrent_downloads);setVal('scl',s.max_concurrent_clones);
     setVal('smcs',s.max_connection_per_server);setVal('sspl',s.split);setVal('smss',s.min_split_size);
     setVal('sct',s.connect_timeout);setVal('sto',s.timeout);setVal('sls',s.lowest_speed_limit);
@@ -1370,7 +2638,11 @@ async function loadSF(){
     document.getElementById('scla').checked=s.comfyui_auto_launch!==false;
     setVal('sclv',s.comfyui_vram||'default');setVal('sclpm',s.comfyui_preview_method||'default');
     setVal('sclc',s.comfyui_cors_origin);setVal('sclx',s.comfyui_extra_args);
+    loadPresets(s.comfyui_presets||[]);
     setVal('soutd',s.output_dir||s.comfyui_dir+'\\output');
+    setVal('sind',s.input_dir||s.comfyui_dir+'\\input');
+    setVal('dyCookieFile',s.douyin_cookie_file);setVal('dySaveDirSet',s.douyin_save_dir);
+    setVal('sdly',s.shutdown_delay||60);
     cuiCmdPreview()
   }catch(e){}
 }
@@ -1386,12 +2658,18 @@ async function saveS(){
     comfyui_auto_launch:document.getElementById('scla').checked,
     comfyui_vram:gv('sclv')||'default',comfyui_preview_method:gv('sclpm')||'default',
     comfyui_cors_origin:gv('sclc'),comfyui_extra_args:gv('sclx'),
-    output_dir:gv('soutd')};
+    comfyui_presets:collectPresets(),
+    input_dir:gv('sind'),output_dir:gv('soutd'),pip_mirror:gv('spm')||'default',douyin_cookie_file:gv('dyCookieFile'),douyin_save_dir:gv('dySaveDirSet'),shutdown_delay:gvi('sdly',60)};
   try{var r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});var j=await r.json();
     if(j.ok){document.getElementById('mcd').textContent=d.max_concurrent_downloads;document.getElementById('cld').textContent=d.max_concurrent_clones;cuiCmdPreview();alert(j.msg)}else{alert('保存失败: '+j.msg)}}catch(e){alert('保存失败: '+e.message)}
 }
 function gv(id){return document.getElementById(id).value.trim()}
 function gvi(id,d){return parseInt(document.getElementById(id).value)||d}
+// 环境变量预设
+function collectPresets(){var r=[];document.querySelectorAll('#presetList .pr-row').forEach(function(row){var k=row.querySelector('.pr-key'),v=row.querySelector('.pr-val');if(k&&v){var key=k.value.trim(),val=v.value.trim();if(key)r.push({key:key,value:val})}});return r}
+function addPreset(k,v){k=k||'';v=v||'';var d=document.createElement('div');d.className='pr-row';d.innerHTML='<input class="pr-key sinput" value="'+esc(k)+'" placeholder="变量名" style="width:200px;font-size:13px;padding:4px 8px;"><span style="margin:0 4px;color:#888;align-self:center;font-size:13px;">=</span><input class="pr-val sinput" value="'+esc(v)+'" placeholder="值" style="width:140px;font-size:13px;padding:4px 8px;"><button class="btn btn-xs btn-danger" onclick="this.closest(\'.pr-row\').remove();cuiCmdPreview()" style="margin-left:6px;">删除</button>';d.querySelectorAll('input').forEach(function(e){e.addEventListener('input',cuiCmdPreview)});document.getElementById('presetList').appendChild(d);cuiCmdPreview()}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function loadPresets(arr){document.getElementById('presetList').innerHTML='';if(arr&&arr.length)arr.forEach(function(p){addPreset(p.key,p.value)})}
 async function saveSRestart(){await saveS();await new Promise(function(r){setTimeout(r,600)});await a2Restart()}
 async function resetS(){if(!confirm('确认恢复默认？'))return;try{var r=await fetch('/api/settings/reset',{method:'POST'});var j=await r.json();j.ok&&(alert(j.msg),loadSF())}catch(e){}}
 async function cuiCmdReset(){if(!confirm('确认重置 ComfyUI 启动命令为最简单的默认模式？(python main.py --auto-launch)'))return;
@@ -1441,7 +2719,7 @@ function repairStartTimer(){
 }
 
 function repairEnableBtns(en){
-  var ids=['rclone_btn','rreq_btn','rpt_btn','rpurge_btn'];
+  var ids=['rclone_btn','rreq_btn','rpt_btn','rpurge_btn','rcui_latest_btn','rcui_tag_btn','rpip_btn','rdl_btn','rplugin_btn','rall_btn','rkill_cui','rkill_a2'];
   ids.forEach(function(id){var e=document.getElementById(id);if(e)e.disabled=!en})
 }
 
@@ -1566,27 +2844,33 @@ async function repairDownload(){
 async function repairPlugin(){
   var nm=document.getElementById('rplugin_name').value.trim();
   if(!nm){alert('请填写插件名称');return}
-  var log=document.getElementById('rlog');log.textContent='正在修复插件: '+nm+'\n';
+  var mir=document.getElementById('rplugin_mirror').value;
+  var lab=mir?'[镜像] ':'';
+  var log=document.getElementById('rlog');log.textContent='正在修复插件'+lab+': '+nm+'\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
-  document.getElementById('rlog_status').textContent='运行中: 修复插件 '+nm;
+  document.getElementById('rlog_status').textContent='运行中: 修复插件 '+nm+lab;
   repairEnableBtns(false);
-  try{var r=await fetch('/api/repair/plugin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plugin_name:nm})});
+  try{var r=await fetch('/api/repair/plugin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plugin_name:nm,mirror:mir||null})});
     var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
   }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
 }
 
 async function repairAllPlugins(){
-  if(!confirm('确认批量修复所有插件？这将依次 git pull 并安装依赖，可能耗时较长。'))return;
-  var log=document.getElementById('rlog');log.textContent='正在扫描 custom_nodes 并批量修复所有插件...\n';
+  var mir=document.getElementById('rall_mirror').value;
+  var lab=mir?'[镜像] ':'';
+  if(!confirm('确认'+(mir?'[镜像] ':'')+'批量修复所有插件？这将依次 git pull 并安装依赖，可能耗时较长。'))return;
+  var log=document.getElementById('rlog');log.textContent='正在扫描 custom_nodes 并批量修复所有插件...'+(mir?' (镜像加速)':'')+'\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
-  document.getElementById('rlog_status').textContent='运行中: 批量修复插件';
+  document.getElementById('rlog_status').textContent='运行中: 批量修复插件'+lab;
   repairEnableBtns(false);
-  try{var r=await fetch('/api/repair/all_plugins',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  try{var r=await fetch('/api/repair/all_plugins',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mirror:mir||null})});
     var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
   }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
 }
+
+async function repairAllMirrorChanged(){}
 
 async function repairKillComfyUI(){
   if(!confirm('&#9888; 确认强制结束所有 ComfyUI Python 进程？\n\n这将关闭所有正在运行的 ComfyUI 实例，可能导致未保存的工作丢失。'))return;
@@ -1600,6 +2884,54 @@ async function repairKillAria2(){
   try{var r=await fetch('/api/repair/kill_aria2',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
     var j=await r.json();alert(j.msg)
   }catch(e){alert('失败: '+e.message)}
+}
+
+
+
+// ---- 更新 ComfyUI ----
+var rCuiBranches=[];
+
+async function repairLoadComfyUIBranches(){
+  var sel=document.getElementById('rcui_branch');
+  sel.innerHTML='<option value="">加载中...</option>';
+  try{
+    var r=await fetch('/api/repair/comfyui_branches');
+    var j=await r.json();
+    if(!j.ok){sel.innerHTML='<option value="">'+j.msg+'</option>';return}
+    rCuiBranches=j;
+    var html='<option value="">— 当前: '+j.current+' —</option>';
+    if(j.branches.length>0){
+      html+='<optgroup label="远程分支">';
+      j.branches.forEach(function(b){html+='<option value="'+b+'">'+b+'</option>'});
+      html+='</optgroup>';
+    }
+    if(j.tags.length>0){
+      html+='<optgroup label="标签 (tag)">';
+      j.tags.forEach(function(t){html+='<option value="'+t+'">'+t+'</option>'});
+      html+='</optgroup>';
+    }
+    sel.innerHTML=html;
+  }catch(e){sel.innerHTML='<option value="">加载失败</option>'}
+}
+
+function repairCuiBranchChange(){
+  var v=document.getElementById('rcui_branch').value;
+  document.getElementById('rcui_tag_btn').disabled = (v==='');
+}
+
+async function repairComfyUIUpdate(target){
+  var log=document.getElementById('rlog');
+  var label = target ? '切换到 '+target : '更新到最新版 (git pull)';
+  log.textContent='正在 '+label+' ...\n';
+  rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
+  document.getElementById('rlog_status').textContent='运行中: '+label;
+  repairEnableBtns(false);
+  try{
+    var r=await fetch('/api/repair/comfyui_update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:target})});
+    var j=await r.json();
+    if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    repairStartTimer()
+  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
 }
 
 // ---- 恢复状态 ----
@@ -1627,6 +2959,537 @@ else{cuiCheckStatus()}
 var btnTop=document.getElementById('btnTop'),mainEl=document.getElementById('main');
 mainEl.addEventListener('scroll',function(){btnTop.style.display=mainEl.scrollTop>400?'flex':'none'});
 btnTop.addEventListener('click',function(){mainEl.scrollTo({top:0,behavior:'smooth'})});
+
+// ============================================================
+// 笔记本
+// ============================================================
+var noteList=[],noteCurId=null,noteTags=[],noteDebounceTimer=null;
+var notePreviewMode=false;
+
+function notesInit(){
+    noteCurId=null;
+    notePreviewMode=false;
+    noteLoadAll();
+}
+
+function noteLoadAll(kw,tag){
+    var url='/api/notes?sort=updated_desc';
+    if(kw)url+='&q='+encodeURIComponent(kw);
+    if(tag)url+='&tag='+encodeURIComponent(tag);
+    fetch(url).then(function(r){return r.json()}).then(function(d){
+        if(!d.ok)return;
+        noteList=d.items||[];
+        noteTags=d.tags||[];
+        noteRenderList();
+        noteRenderTags(tag||'');
+    }).catch(function(e){console.error(e)});
+}
+
+function noteRenderList(){
+    var el=document.getElementById('noteList');
+    var empty=document.getElementById('noteListEmpty');
+    if(!noteList||noteList.length===0){el.innerHTML='';empty.style.display='flex';return;}
+    empty.style.display='none';
+    el.innerHTML=noteList.map(function(n){
+        var preview=(n.content||'').replace(/[#*>\`_\[\]()!~-]/g,'').substring(0,60);
+        var tagStr=n.tag?'<span class="ni-tag">'+escHtml(n.tag)+'</span>':'';
+        var pinStr=n.pinned?'<span class="pin">&#128204;</span>':'';
+        var colorAccent=n.color||'var(--cyan)';
+        return '<div class="note-item'+(noteCurId==n.id?' active':'')+'" style="border-left-color:'+colorAccent+'" onclick="noteOpen('+n.id+')">'+
+            '<div class="ni-title">'+pinStr+escHtml(n.title)+'</div>'+
+            '<div class="ni-preview">'+escHtml(preview)+'</div>'+
+            '<div class="ni-meta">'+escHtml((n.updated_at||'').substring(0,10))+tagStr+'</div>'+
+            '<div class="ni-del" onclick="event.stopPropagation();noteConfirmDelete('+n.id+')">&#10005;</div>'+
+        '</div>';
+    }).join('');
+}
+
+function noteRenderTags(activeTag){
+    var el=document.getElementById('noteTagBar');
+    if(!noteTags||noteTags.length===0){el.innerHTML='';return;}
+    var html='<span class="notes-tag'+(activeTag===''?' active':'')+'" onclick="noteFilterTag(\'\')">全部</span>';
+    html+=noteTags.map(function(t){return '<span class="notes-tag'+(activeTag===t?' active':'')+'" onclick="noteFilterTag(\''+escAttr(t)+'\')">'+escHtml(t)+'</span>'}).join('');
+    el.innerHTML=html;
+}
+
+function noteFilterTag(tag){
+    noteLoadAll(document.getElementById('noteSearch').value,tag);
+}
+
+function noteSearch(){
+    var kw=document.getElementById('noteSearch').value;
+    noteLoadAll(kw,'');
+}
+
+function noteDebounceSearch(){
+    clearTimeout(noteDebounceTimer);
+    noteDebounceTimer=setTimeout(noteSearch,350);
+}
+
+function noteOpen(id){
+    noteCurId=id;
+    noteRenderList();
+    fetch('/api/notes/'+id).then(function(r){return r.json()}).then(function(d){
+        if(!d.ok||!d.note)return;
+        var n=d.note;
+        document.getElementById('noteEditorEmpty').style.display='none';
+        var ed=document.getElementById('noteEditor');
+        ed.style.display='flex';
+        document.getElementById('noteTitle').value=n.title||'';
+        document.getElementById('noteContent').value=n.content||'';
+        document.getElementById('noteTag').value=n.tag||'';
+        document.getElementById('noteCharCount').textContent=(n.content||'').length+' 字';
+        document.getElementById('noteStatus').textContent='已加载';
+        document.querySelectorAll('.notes-color').forEach(function(el){el.classList.toggle('active',el.dataset.c===n.color)});
+        document.getElementById('notePinBtn').style.color=n.pinned?'var(--amber)':'var(--text3)';
+        if(notePreviewMode)notePreviewUpdate();
+    }).catch(function(e){console.error(e)});
+}
+
+function noteNew(){
+    fetch('/api/notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:'未命名笔记',content:'',color:'#00d4ff',tag:''})}).then(function(r){return r.json()}).then(function(d){
+        if(d.ok){
+            noteCurId=d.id;
+            noteLoadAll();
+            noteOpen(d.id);
+        }
+    }).catch(function(e){console.error(e)});
+}
+
+function noteSave(){
+    if(!noteCurId)return;
+    var title=document.getElementById('noteTitle').value.trim()||'未命名笔记';
+    var content=document.getElementById('noteContent').value||'';
+    var tag=document.getElementById('noteTag').value.trim()||'';
+    var color='#00d4ff';
+    var active=document.querySelector('.notes-color.active');
+    if(active)color=active.dataset.c;
+    document.getElementById('noteStatus').textContent='保存中...';
+    fetch('/api/notes/'+noteCurId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:title,content:content,tag:tag,color:color})}).then(function(r){return r.json()}).then(function(d){
+        if(d.ok){
+            document.getElementById('noteStatus').textContent='已保存 '+new Date().toLocaleTimeString();
+            var actTag=document.querySelector('.notes-tag.active');
+            noteLoadAll(document.getElementById('noteSearch').value,actTag&&actTag.textContent!=='全部'?actTag.textContent:'');
+        }
+    }).catch(function(e){console.error(e);document.getElementById('noteStatus').textContent='保存失败';});
+}
+
+function noteDelete(){
+    if(!noteCurId)return;
+    if(!confirm('确定删除这篇笔记？'))return;
+    fetch('/api/notes/'+noteCurId,{method:'DELETE'}).then(function(r){return r.json()}).then(function(d){
+        if(d.ok){
+            noteCurId=null;
+            document.getElementById('noteEditor').style.display='none';
+            document.getElementById('noteEditorEmpty').style.display='flex';
+            noteLoadAll();
+        }
+    }).catch(function(e){console.error(e)});
+}
+
+function noteConfirmDelete(id){
+    if(!confirm('确定删除这篇笔记？'))return;
+    fetch('/api/notes/'+id,{method:'DELETE'}).then(function(r){return r.json()}).then(function(d){
+        if(d.ok){
+            if(noteCurId===id){noteCurId=null;document.getElementById('noteEditor').style.display='none';document.getElementById('noteEditorEmpty').style.display='flex';}
+            noteLoadAll();
+        }
+    }).catch(function(e){console.error(e)});
+}
+
+function noteTogglePin(){
+    if(!noteCurId)return;
+    fetch('/api/notes/'+noteCurId+'/pin',{method:'POST'}).then(function(r){return r.json()}).then(function(d){
+        if(d.ok){
+            var actTag=document.querySelector('.notes-tag.active');
+            noteLoadAll(document.getElementById('noteSearch').value,actTag&&actTag.textContent!=='全部'?actTag.textContent:'');
+        }
+    }).catch(function(e){console.error(e)});
+}
+
+function noteInsert(before,after,lineStart){
+    var ta=document.getElementById('noteContent');
+    if(!ta)return;
+    var s=ta.selectionStart;
+    var e=ta.selectionEnd;
+    var v=ta.value;
+    if(lineStart){
+        var ls=v.lastIndexOf('\n',s-1)+1;
+        var selected=v.substring(ls,e);
+        ta.value=v.substring(0,ls)+before+selected+after+v.substring(e);
+        ta.selectionStart=ta.selectionEnd=ls+before.length+selected.length+after.length;
+    } else {
+        ta.value=v.substring(0,s)+before+v.substring(s,e)+after+v.substring(e);
+        ta.focus();
+        ta.selectionStart=s+before.length;
+        ta.selectionEnd=s+before.length+(e-s);
+    }
+    noteCount();
+}
+
+function noteCount(){
+    var ta=document.getElementById('noteContent');
+    if(!ta)return;
+    var n=ta.value.length;
+    var cc=document.getElementById('noteCharCount');
+    if(cc)cc.textContent=n+' 字';
+}
+
+document.addEventListener('click',function(e){
+    if(e.target.classList&&e.target.classList.contains('notes-color')){
+        document.querySelectorAll('.notes-color').forEach(function(el){el.classList.remove('active')});
+        e.target.classList.add('active');
+    }
+});
+
+document.addEventListener('keydown',function(e){
+    if((e.ctrlKey||e.metaKey)&&e.key==='s'){
+        var ed=document.getElementById('noteEditor');
+        if(ed&&ed.style.display!=='none'){e.preventDefault();noteSave();}
+    }
+});
+
+function notePreviewToggle(){
+    notePreviewMode=!notePreviewMode;
+    var ta=document.getElementById('noteContent');
+    var pv=document.getElementById('notePreview');
+    var tb=document.getElementById('noteToolbar');
+    var btn=document.getElementById('notePreviewBtn');
+    if(!ta||!pv)return;
+    if(notePreviewMode){
+        notePreviewUpdate();
+        ta.style.display='none';
+        pv.style.display='block';
+        if(tb)tb.style.display='none';
+        if(btn)btn.style.color='var(--cyan)';
+    } else {
+        ta.style.display='block';
+        pv.style.display='none';
+        if(tb)tb.style.display='flex';
+        if(btn)btn.style.color='var(--text3)';
+    }
+}
+
+function notePreviewUpdate(){
+    var md=document.getElementById('noteContent').value||'';
+    var html=md
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+        .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+        .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+        .replace(/```([\s\S]*?)```/g,'<pre><code>$1</code></pre>')
+        .replace(/`([^`]+)`/g,'<code>$1</code>')
+        .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g,'<em>$1</em>')
+        .replace(/~~(.+?)~~/g,'<del>$1</del>')
+        .replace(/^> (.+)$/gm,'<blockquote>$1</blockquote>')
+        .replace(/^- (.+)$/gm,'<li>$1</li>')
+        .replace(/^(\d+)\. (.+)$/gm,'<li>$2</li>')
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank">$1</a>')
+        .replace(/!\[([^\]]*)\]\(([^)]+)\)/g,'<img src="$2" alt="$1" style="max-width:100%;border-radius:8px">')
+        .replace(/^---$/gm,'<hr style="border:none;border-top:1px solid var(--border);margin:14px 0">')
+        .replace(/\n/g,'<br>');
+    var pv=document.getElementById('notePreview');
+    if(pv)pv.innerHTML=html;
+}
+
+function escHtml(s){
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s){
+    return String(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+
+
+function fmtSize(n){
+  if(n===null||n===undefined)return '?';
+  n=Number(n);
+  if(n<1024)return n+'B';
+  if(n<1048576)return (n/1024).toFixed(1)+'KB';
+  if(n<1073741824)return (n/1048576).toFixed(1)+'MB';
+  return (n/1073741824).toFixed(2)+'GB';
+}
+function fmtTime(t){
+  if(!t)return '';
+  var d=new Date(t*1000);
+  var p=function(x){return x<10?'0'+x:x};
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+
+// ============================================================
+// 工作流管理
+// ============================================================
+var wfState = { page: 1, pageSize: 20, totalPages: 1, curPath: '', sort: 'name_asc', search: '', editing: null };
+
+function wfInit() { wfDoBrowse(); }
+
+function wfDoBrowse() {
+  var q = document.getElementById('wfSearch');
+  var s = document.getElementById('wfSort');
+  if (q) wfState.search = q.value.trim();
+  if (s) wfState.sort = s.value;
+  var params = new URLSearchParams();
+  params.set('path', wfState.curPath || '');
+  params.set('page', wfState.page || 1);
+  params.set('page_size', wfState.pageSize || 20);
+  params.set('search', wfState.search || '');
+  params.set('sort', wfState.sort || 'name_asc');
+  fetch('/api/workflows/browse?' + params.toString())
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d.ok) { wfShowList(null, d.msg); return; }
+      wfRender(d);
+    })
+    .catch(function (e) { wfShowList(null, '请求失败: ' + e); });
+}
+
+function wfRender(d) {
+  var list = document.getElementById('wfList');
+  var empty = document.getElementById('wfEmpty');
+  if (!list) return;
+  wfState.totalPages = d.total_pages || 1;
+  wfState.page = d.page || 1;
+  // 面包屑
+  var bc = document.getElementById('wfBread');
+  if (bc) {
+    var html = '<a href="javascript:void(0)" onclick="wfGoto(\'\')" style="color:var(--cyan)">工作流</a>';
+    (d.breadcrumbs || []).forEach(function (b) {
+      html += ' <span style="color:var(--text3)">/</span> <a href="javascript:void(0)" onclick="wfGoto(\'' + escAttr(b.path) + '\')" style="color:var(--cyan)">' + escHtml(b.name) + '</a>';
+    });
+    bc.innerHTML = html;
+  }
+  // 分页信息
+  var pi = document.getElementById('wfPageInfo');
+  if (pi) pi.textContent = '第 ' + d.page + ' / ' + d.total_pages + ' 页，共 ' + d.total + ' 项';
+  // 列表
+  var items = d.items || [];
+  if (!items.length) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  var html = '<div class="wf-row wf-hd"><span class="wf-col-name">名称</span><span class="wf-col-size">大小</span><span class="wf-col-date">修改时间</span><span class="wf-col-op">操作</span></div>';
+  items.forEach(function (it) {
+    var icon = it.is_dir ? '&#128193;' : (it.type === 'json' ? '&#128196;' : (it.type === 'image' ? '&#128444;' : '&#128196;'));
+    var size = it.is_dir ? '&lt;目录&gt;' : fmtSize(it.size);
+    var date = fmtTime(it.modified);
+    var openBtn = it.is_dir
+      ? '<button class="btn btn6" onclick="wfGoto(\'' + escAttr(it.path) + '\')" title="打开文件夹" style="font-size:12px;padding:2px 8px">打开</button>'
+      : '<button class="btn btn6" onclick="wfOpen(\'' + escAttr(it.path) + '\')" title="编辑" style="font-size:12px;padding:2px 8px">&#128221; 编辑</button>';
+    html += '<div class="wf-row">'
+      + '<span class="wf-col-name" style="cursor:pointer" onclick="' + (it.is_dir ? 'wfGoto(\'' + escAttr(it.path) + '\')' : 'wfOpen(\'' + escAttr(it.path) + '\')') + '" title="' + escAttr(it.name) + '">' + icon + ' ' + escHtml(it.name) + '</span>'
+      + '<span class="wf-col-size">' + size + '</span>'
+      + '<span class="wf-col-date">' + date + '</span>'
+      + '<span class="wf-col-op">'
+      + openBtn
+      + (it.is_dir ? '' : ' <button class="btn btn7" onclick="wfDelete(\'' + escAttr(it.path) + '\')" title="删除" style="font-size:12px;padding:2px 8px">&#128465;</button>')
+      + (it.type === 'json' ? ' <button class="btn btn6" onclick="wfAnalyze(\'' + escAttr(it.path) + '\')" title="解析模型名" style="font-size:12px;padding:2px 8px">&#128269; 解析</button>' : '')
+      + ' <button class="btn btn6" onclick="wfRename(\'' + escAttr(it.path) + '\')" title="重命名" style="font-size:12px;padding:2px 8px">&#9999;</button>'
+      + '</span></div>';
+  });
+  list.innerHTML = html;
+}
+
+function wfGoto(p) { wfState.curPath = p; wfState.page = 1; wfDoBrowse(); }
+function wfPrevPage() { if (wfState.page > 1) { wfState.page--; wfDoBrowse(); } }
+function wfNextPage() { if (wfState.page < wfState.totalPages) { wfState.page++; wfDoBrowse(); } }
+function wfClearSearch() { var q = document.getElementById('wfSearch'); if (q) q.value = ''; wfState.search = ''; wfDoBrowse(); }
+
+function wfShowList(html, msg) {
+  var list = document.getElementById('wfList');
+  var empty = document.getElementById('wfEmpty');
+  if (list) list.innerHTML = html || '';
+  if (empty) empty.style.display = (html === null || html === '') ? 'block' : 'none';
+  if (msg && typeof alert === 'function') alert(msg);
+}
+
+function wfOpen(path) {
+  fetch('/api/workflows/get?path=' + encodeURIComponent(path))
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d.ok) { alert(d.msg || '读取失败'); return; }
+      wfState.editing = d.path;
+      document.getElementById('wfEditorTitle').textContent = d.name;
+      document.getElementById('wfContent').value = d.content;
+      document.getElementById('wfEditorStatus').textContent = '';
+      document.getElementById('wfEditorModal').style.display = 'flex';
+      var ta = document.getElementById('wfContent');
+      ta.focus();
+      ta.scrollTop = 0;
+    })
+    .catch(function (e) { alert('请求失败: ' + e); });
+}
+
+function wfSave() {
+  if (!wfState.editing) { alert('没有打开的文件'); return; }
+  var content = document.getElementById('wfContent').value;
+  // 尝试 JSON 校验
+  try { JSON.parse(content); } catch (e) {
+    if (!confirm('JSON 格式有误: ' + e.message + '\n仍然保存吗？')) return;
+  }
+  fetch('/api/workflows/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: wfState.editing, content: content })
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.ok) {
+        document.getElementById('wfEditorStatus').textContent = '已保存 ' + new Date().toLocaleTimeString();
+      } else {
+        alert(d.msg || '保存失败');
+      }
+      wfDoBrowse();
+    })
+    .catch(function (e) { alert('请求失败: ' + e); });
+}
+
+function wfNew() {
+  var name = prompt('新建工作流文件名（.json 自动补全）:', '我的工作流.json');
+  if (!name) return;
+  fetch('/api/workflows/new', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: name })
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.ok) {
+        wfState.page = 1;
+        wfDoBrowse();
+        wfOpen(d.path);
+      } else {
+        alert(d.msg || '创建失败');
+      }
+    })
+    .catch(function (e) { alert('请求失败: ' + e); });
+}
+
+function wfDelete(path) {
+  if (!confirm('确定删除该工作流？\n' + path)) return;
+  fetch('/api/workflows/delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paths: [path] })
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.ok && d.results && d.results[0] && d.results[0].ok) {
+        wfDoBrowse();
+      } else {
+        alert((d.results && d.results[0] && d.results[0].msg) || '删除失败');
+      }
+    })
+    .catch(function (e) { alert('请求失败: ' + e); });
+}
+
+function wfRename(path) {
+  var oldName = path.split('/').pop();
+  var newName = prompt('重命名:', oldName);
+  if (!newName || newName === oldName) return;
+  fetch('/api/workflows/rename', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: path, new_name: newName })
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.ok) { wfDoBrowse(); } else { alert(d.msg || '重命名失败'); }
+    })
+    .catch(function (e) { alert('请求失败: ' + e); });
+}
+
+function wfOpenFolder() {
+  fetch('/api/workflows/open_dir').then(function (r) { return r.json(); })
+    .then(function (d) { if (!d.ok) alert(d.msg || '打开失败'); })
+    .catch(function () {});
+}
+
+
+function wfAnalyze(path) {
+  fetch('/api/workflows/analyze?path=' + encodeURIComponent(path))
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d.ok) { alert(d.msg || '解析失败'); return; }
+      var nameEl = document.getElementById('wfAnaName');
+      var bodyEl = document.getElementById('wfAnaBody');
+      var cntEl = document.getElementById('wfAnaCount');
+      if (nameEl) nameEl.textContent = d.name || '';
+      if (cntEl) cntEl.textContent = '共提取 ' + (d.count || 0) + ' 个模型';
+      var models = d.models || [];
+      var html;
+      if (!models.length) {
+        html = '<div style="text-align:center;color:var(--text3);padding:40px 0">未找到模型文件（safetensors/pth/ckpt 等）</div>';
+      } else {
+        html = '<table style="width:100%;border-collapse:collapse;font-size:13px">'
+          + '<thead><tr style="color:var(--text3);text-align:left">'
+          + '<th style="padding:8px 10px;border-bottom:1px solid var(--border)">模型文件</th>'
+          + '<th style="padding:8px 10px;border-bottom:1px solid var(--border)">类型</th>'
+          + '<th style="padding:8px 10px;border-bottom:1px solid var(--border)">来源节点</th>'
+          + '</tr></thead><tbody>';
+        models.forEach(function (m) {
+          html += '<tr>'
+            + '<td style="padding:8px 10px;border-bottom:1px solid var(--border);word-break:break-all;font-family:JetBrains Mono,Consolas,monospace">' + escHtml(m.file) + '</td>'
+            + '<td style="padding:8px 10px;border-bottom:1px solid var(--border)">' + escHtml(m.ext || '') + '</td>'
+            + '<td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text3)">' + escHtml(m.node_type || '') + (m.node ? ' · ' + escHtml(m.node) : '') + '</td>'
+            + '</tr>';
+        });
+        html += '</tbody></table>';
+      }
+      if (bodyEl) bodyEl.innerHTML = html;
+      var m = document.getElementById('wfAnaModal');
+      if (m) m.style.display = 'flex';
+    })
+    .catch(function (e) { alert('请求失败: ' + e); });
+}
+
+function wfAnaClose() {
+  var m = document.getElementById('wfAnaModal');
+  if (m) m.style.display = 'none';
+}
+
+function wfCloseEditor() {
+  var ta = document.getElementById('wfContent');
+  var dirty = false;
+  if (ta && wfState.editing) {
+    // 简单脏检查：保存后 status 显示时间，编辑则清空
+    dirty = document.getElementById('wfEditorStatus').textContent !== '';
+  }
+  document.getElementById('wfEditorModal').style.display = 'none';
+  wfState.editing = null;
+}
+
+function wfFormatJson() {
+  var ta = document.getElementById('wfContent');
+  if (!ta) return;
+  try {
+    var obj = JSON.parse(ta.value);
+    ta.value = JSON.stringify(obj, null, 2);
+    document.getElementById('wfEditorStatus').textContent = '已格式化';
+  } catch (e) {
+    alert('JSON 格式错误: ' + e.message);
+  }
+}
+
+// 编辑器 Ctrl+S
+document.addEventListener('keydown', function (e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    var m = document.getElementById('wfEditorModal');
+    if (m && m.style.display !== 'none') {
+      e.preventDefault();
+      wfSave();
+    }
+  }
+  if (e.key === 'Escape') {
+    var m2 = document.getElementById('wfEditorModal');
+    if (m2 && m2.style.display !== 'none') { wfCloseEditor(); return; }
+    var ma = document.getElementById('wfAnaModal');
+    if (ma && ma.style.display !== 'none') { wfAnaClose(); }
+  }
+});
+
 </script>
 
 <!-- 右键菜单 -->
@@ -1639,8 +3502,49 @@ btnTop.addEventListener('click',function(){mainEl.scrollTo({top:0,behavior:'smoo
   <div class="ctx-item" id="ctxDelete" onclick="ctxDelete()">&#128465; 删除</div>
   <div class="ctx-item" id="ctxRename" onclick="ctxRename()">&#9999; 重命名</div>
   <div class="ctx-sep" id="ctxSep3"></div>
+  <div class="ctx-item" id="ctxSendToInput" onclick="ctxSendToInput()" style="display:none">&#128230; 发送到输入文件夹</div>
   <div class="ctx-item" id="ctxNewFolder" onclick="ctxNewFolder()">&#128193; 新建文件夹</div>
 </div>
+
+<!-- ====== 关机悬浮按钮 ====== -->
+<div id="shutdownFab" title="定时关机">&#128267;</div>
+
+<script>
+// 关机悬浮按钮：可拖拽 + 点击确认关机
+(function(){
+  var fab=document.getElementById('shutdownFab');
+  if(!fab)return;
+  var dragging=false,moved=false,offX=0,offY=0,sx=0,sy=0;
+  fab.addEventListener('mousedown',function(e){
+    if(e.button!==0)return;
+    dragging=true;moved=false;offX=e.clientX-fab.offsetLeft;offY=e.clientY-fab.offsetTop;
+    sx=e.clientX;sy=e.clientY;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove',function(e){
+    if(!dragging)return;
+    if(Math.abs(e.clientX-sx)>4||Math.abs(e.clientY-sy)>4)moved=true;
+    var x=e.clientX-offX,y=e.clientY-offY;
+    x=Math.max(0,Math.min(window.innerWidth-fab.offsetWidth,x));
+    y=Math.max(0,Math.min(window.innerHeight-fab.offsetHeight,y));
+    fab.style.left=x+'px';fab.style.top=y+'px';
+  });
+  document.addEventListener('mouseup',function(){dragging=false});
+  fab.addEventListener('click',function(e){
+    if(moved){moved=false;return;}
+    e.stopPropagation();
+    var delay=60;
+    try{delay=parseInt(document.getElementById('sdly')?document.getElementById('sdly').value:'60',10)||60}catch(err){}
+    if(confirm('确定 '+delay+' 秒后关机吗？\n点击“确定”后将无法撤销，请保存好所有工作！')){
+      fetch('/api/shutdown',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({delay:delay})})
+      .then(function(r){return r.json()}).then(function(j){
+        if(j.ok){alert('⏳ 已计划 '+delay+' 秒后关机。如需取消请刷新页面并再次点击按钮选择取消。')}
+        else{alert('关机指令失败: '+j.msg)}
+      }).catch(function(err){alert('关机指令失败: '+err.message)});
+    }
+  });
+})();
+</script>
 
 </body>
 </html>

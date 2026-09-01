@@ -5,21 +5,33 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+*.whl
 
 # 运行时数据
-models.db
-settings.json
 *.db
+settings.json
+dy_cookie.json
 
 # 缓存与临时文件
-_new_output.js
-_repair_html.py
+_*.py
+_*.js
+_*.txt
+*.bak
+*.bak_enc
+nuitka-crash-report.xml
 
-# 二进制 / 工具
+# 二进制/工具目录
 aria2-137-win64/
+ffmpeg-*/
+venv/
+run.dist/
+run.build/
+nunchaku/
 
 # 杂项
 other/
+启动器*.bat
+这个是打包的地方.txt
 
 # IDE
 .vscode/

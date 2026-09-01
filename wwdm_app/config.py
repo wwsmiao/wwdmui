@@ -8,7 +8,8 @@ IS_LINUX = _platform.system() == "Linux"
 PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(PACKAGE_DIR)  # 项目根目录 C:\ComfyUI\wwdmui
 COMFYUI_DIR = os.path.join(os.path.dirname(BASE_DIR), "ComfyUI")
-DB_PATH = os.path.join(BASE_DIR, "models.db")
+DB_PATH = os.path.join(PACKAGE_DIR, "static", "info", "models.db")
+NOTES_DB_PATH = os.path.join(PACKAGE_DIR, "static", "info", "notes.db")
 SETTINGS_PATH = os.path.join(BASE_DIR, "settings.json")
 ARIA2_RPC_PORT = 6800
 ARIA2_RPC_SECRET = "comfyui_manager"
@@ -45,8 +46,22 @@ DEFAULT_SETTINGS = {
     "comfyui_preview_method": "default",
     "comfyui_cors_origin": "",
     "comfyui_extra_args": "",
+    # pip 镜像
+    "pip_mirror": "default",  # default/tsinghua/aliyun/tencent/douban/ustc
+    # ComfyUI 环境变量预设（启动前注入）
+    "comfyui_presets": [],  # [{"key":"TORCH_COMPILE_OFF","value":"1"},...]
     # 输出管理
-    "output_dir": ""  # 空值表示用 comfyui_dir + output
+    "output_dir": "",  # 空值表示用 comfyui_dir + output
+    "input_dir": "",  # 空值表示用 comfyui_dir + input
+    # 工作流管理
+    "workflow_dir": "",  # 空值表示用 comfyui_dir + user/default/workflows
+    # 抖音提取
+    "douyin_cookie_file": "",    # dy_cookie.json 文件路径
+    "douyin_save_dir": "",       # 图片/视频保存目录
+    "douyin_format": "png",      # 图片格式: png / jpg
+    "douyin_name_template": "{index:02d}.{ext}",  # 命名模板
+    # 关机功能
+    "shutdown_delay": 60  # 默认关机延迟秒数
 }
 
 

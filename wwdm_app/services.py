@@ -1,4 +1,4 @@
-import os, re, sys, time, shutil, tempfile, threading, subprocess
+import os, re, sys, time, json, shutil, tempfile, threading, subprocess
 from .config import (settings, DEFAULT_SETTINGS, IS_WINDOWS, IS_LINUX,
                      ARIA2_RPC_PORT, ARIA2_RPC_SECRET, _DEFAULT_ARIA2C, COMFYUI_DIR)
 from .database import db_get, plugin_get
@@ -61,7 +61,23 @@ def get_git_path():
     return settings.get("git_path", "git")
 
 
-# ---- 镜像转换 ----
+# ---- 插件卸载 ----
+def plugin_uninstall(plugin_name):
+    """删除 custom_nodes 下对应的插件文件夹"""
+    cn_dir = os.path.join(get_comfyui_dir(), "custom_nodes")
+    target = os.path.join(cn_dir, plugin_name)
+    if not os.path.isdir(target):
+        return False, f"插件文件夹不存在: {plugin_name}"
+    try:
+        subprocess.run(["cmd", "/c", "rd", "/s", "/q", target],
+                       check=True, capture_output=True, timeout=30)
+        return True, f"已卸载: {plugin_name}"
+    except subprocess.CalledProcessError as e:
+        err = e.stderr.decode("gbk", errors="replace").strip()
+        return False, err or "删除失败"
+    except Exception as e:
+        return False, str(e)
+
 def convert_to_mirror(url):
     return url.replace("huggingface.co", "hf-mirror.com") if "huggingface.co" in url else url
 
@@ -124,7 +140,7 @@ def aria2_start():
     if not os.path.isfile(path):
         if IS_LINUX and path == "aria2c":
             try:
-                r = subprocess.run(["which", "aria2c"], capture_output=True, text=True, timeout=5)
+                r = subprocess.run(["which", "aria2c"], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
                 if r.returncode != 0:
                     return False, "未找到aria2c (sudo apt install aria2)"
             except Exception:
@@ -567,7 +583,7 @@ VRAM_MODES = {
 
 
 def build_comfyui_cmd(python_path, comfyui_dir):
-    """根据全局设置构建 ComfyUI 启动命令"""
+    """根据全局设置构建 ComfyUI 启动命令 (不含环境变量预设前缀)"""
     from . import config
     s = config.settings
     main_py = os.path.join(comfyui_dir, "main.py")
@@ -595,6 +611,30 @@ def build_comfyui_cmd(python_path, comfyui_dir):
     return cmd
 
 
+def _build_preset_env_prefix():
+    """构建环境变量预设 shell 前缀（用于在 cmd /c 中注入）"""
+    presets = settings.get("comfyui_presets", [])
+    # 去重: 同名变量最后一次出现生效，过滤非法 key
+    kv = {}
+    for p in presets:
+        k = (p.get("key", "") or "").strip()
+        if k and _is_safe_env_key(k):
+            v = (p.get("value", "") or "").strip()
+            kv[k] = v
+    parts = [f"set {k}={v}" for k, v in kv.items()]
+    return " && ".join(parts) + " && " if parts else None
+
+
+def _is_safe_env_key(k):
+    """检查环境变量名是否合法 (不含空格、=、&、| 等危险字符)"""
+    if not k.isidentifier():
+        return False
+    for ch in k:
+        if ch in ('"', "'", "&", "|", ">", "<", "`", "$", "\n", "\r", " ", "=", ";", "\\"):
+            return False
+    return True
+
+
 def start_comfyui(python_path, comfyui_dir):
     global comfyui_proc, comfyui_logs
     if comfyui_proc and comfyui_proc.poll() is None:
@@ -605,6 +645,14 @@ def start_comfyui(python_path, comfyui_dir):
     if not os.path.exists(main_py):
         return {"ok": False, "msg": "未找到 main.py: " + main_py}
     cmd = build_comfyui_cmd(python_path, comfyui_dir)
+    prefix = _build_preset_env_prefix()
+    if prefix:
+        # 用 cmd /c 注入环境变量预设
+        wrapped = "cmd /c " + prefix + " ".join(f'"{a}"' if " " in a else a for a in cmd)
+        cmd = wrapped
+        shell = True
+    else:
+        shell = False
     with comfyui_log_lock:
         comfyui_logs = []
     creationflags = subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0
@@ -612,6 +660,7 @@ def start_comfyui(python_path, comfyui_dir):
         comfyui_proc = subprocess.Popen(
             cmd,
             cwd=comfyui_dir,
+            shell=shell,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             stdin=subprocess.DEVNULL,
@@ -740,7 +789,7 @@ def _start_repair_proc(cmd, cwd, action_name):
     cf = subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0
     repair_proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-        text=True, encoding="utf-8", errors="surrogateescape", creationflags=cf)
+        text=True, encoding="gbk", errors="replace", creationflags=cf)
     threading.Thread(target=_repair_reader, args=(repair_proc,), daemon=True).start()
     return {"ok": True, "msg": action_name + " 已启动", "pid": repair_proc.pid}
 
@@ -777,7 +826,7 @@ def _repair_run_steps(steps, action_name):
             try:
                 proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-                    text=True, encoding="utf-8", errors="surrogateescape", creationflags=cf)
+                    text=True, encoding="gbk", errors="replace", creationflags=cf)
                 for line in proc.stdout:
                     if stop_flag.is_set():
                         proc.terminate()
@@ -812,11 +861,75 @@ def repair_clone(git_path, mirror, target_dir):
                               os.path.dirname(target_dir), "克隆 ComfyUI")
 
 
+def get_comfyui_branches(git_path, comfyui_dir):
+    """获取 ComfyUI 仓库的分支和 tag 列表，返回 {branches:[], tags:[], current:str}"""
+    if not os.path.isdir(os.path.join(comfyui_dir, ".git")):
+        return {"ok": False, "msg": "ComfyUI 目录不是 Git 仓库: " + comfyui_dir}
+    cf = subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0
+    env = os.environ.copy()
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    env["GCM_INTERACTIVE"] = "Never"
+
+    def _run(cmd, cwd):
+        try:
+            p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
+                              encoding="gbk", errors="replace",
+                              creationflags=cf, env=env, timeout=45)
+            return p.stdout.strip(), p.returncode
+        except Exception as e:
+            return str(e), 1
+
+    # fetch latest
+    _run([git_path, "fetch", "--all", "--tags"], comfyui_dir)
+
+    # get current branch
+    cur_out, _ = _run([git_path, "rev-parse", "--abbrev-ref", "HEAD"], comfyui_dir)
+    current = cur_out if cur_out else "unknown"
+
+    # remote branches (origin/* only, distinct names)
+    br_out, _ = _run([git_path, "branch", "-r"], comfyui_dir)
+    branches = []
+    for line in br_out.split("\n"):
+        b = line.strip().lstrip("* ").strip()
+        if b.startswith("origin/") and "HEAD" not in b:
+            name = b[len("origin/"):]
+            if name not in branches:
+                branches.append(name)
+
+    # tags (latest 50, sorted by version-ish)
+    tag_out, _ = _run([git_path, "tag", "--sort=-creatordate"], comfyui_dir)
+    tags = [t.strip() for t in tag_out.split("\n") if t.strip()][:50]
+
+    return {"ok": True, "current": current, "branches": branches, "tags": tags}
+
+
+def repair_comfyui_update(git_path, comfyui_dir, target):
+    """更新 ComfyUI：target 为空则 git pull 当前分支；否则 checkout target 后 pull"""
+    if not os.path.isdir(os.path.join(comfyui_dir, ".git")):
+        return {"ok": False, "msg": "ComfyUI 目录不是 Git 仓库: " + comfyui_dir}
+    target = (target or "").strip()
+    label = "更新 ComfyUI 到最新版" if not target else f"更新 ComfyUI → {target}"
+    if target:
+        # fetch tags & branches, then checkout target and pull
+        steps = [
+            ("获取远端分支/标签", [git_path, "fetch", "--all", "--tags"], comfyui_dir),
+            (f"切换到 {target}", [git_path, "checkout", target], comfyui_dir),
+            ("拉取最新代码", [git_path, "pull"], comfyui_dir),
+        ]
+        return _repair_run_steps(steps, label)
+    else:
+        # just pull current branch
+        steps = [
+            ("拉取最新代码 (git pull)", [git_path, "pull"], comfyui_dir),
+        ]
+        return _repair_run_steps(steps, label)
+
+
 def repair_requirements(python_path, comfyui_dir):
     req = os.path.join(comfyui_dir, "requirements.txt")
     if not os.path.exists(req):
         return {"ok": False, "msg": "未找到 requirements.txt: " + req}
-    return _start_repair_proc([python_path, "-m", "pip", "install", "-r", req],
+    return _start_repair_proc(_pip_install_cmd(python_path, ["-r", req]),
                               comfyui_dir, "安装 requirements")
 
 
@@ -861,8 +974,20 @@ def repair_stop():
 
 
 def repair_purge_cache(python_path):
-    return _start_repair_proc([python_path, "-m", "pip", "cache", "purge"],
-                              os.path.dirname(python_path), "清除 pip 缓存")
+    """清除 pip 缓存 — 兼容新旧 pip，并手动删除缓存目录"""
+    pip_dir = os.path.join(os.path.dirname(python_path), "..", "Lib", "site-packages") if IS_WINDOWS else None
+    # 先尝试 pip cache purge（pip >= 20.1）
+    steps = [
+        ("pip cache purge", [python_path, "-m", "pip", "cache", "purge"], os.path.dirname(python_path)),
+    ]
+    # 备用：手动清 pip 缓存目录
+    if IS_WINDOWS:
+        localapp = os.environ.get("LOCALAPPDATA", "")
+        if localapp:
+            pip_dir = os.path.join(localapp, "pip", "cache")
+            if os.path.isdir(pip_dir):
+                steps.append(("手动清理 %LOCALAPPDATA%\\pip\\cache", ["cmd", "/c", "rd", "/s", "/q", pip_dir], None))
+    return _repair_run_steps(steps, "清除 pip 缓存")
 
 
 def repair_status():
@@ -881,27 +1006,37 @@ def repair_logs_get(since=0):
 
 # ---- 镜像源 ----
 _PIP_MIRRORS = {
-    "official": "",                        # 官方源，不加 -i
+    "default": "",                           # 官方源（国外），不加 -i
     "tsinghua": "https://pypi.tuna.tsinghua.edu.cn/simple",
     "aliyun": "https://mirrors.aliyun.com/pypi/simple/",
+    "tencent": "https://mirrors.cloud.tencent.com/pypi/simple",
+    "douban": "http://pypi.douban.com/simple/",
+    "ustc": "https://pypi.mirrors.ustc.edu.cn/simple",
 }
+
+def _pip_install_cmd(python_path, packages, cwd=None):
+    mirror = settings.get("pip_mirror", "default")
+    mirror_url = _PIP_MIRRORS.get(mirror, "")
+    cmd = [python_path, "-m", "pip", "install"]
+    if isinstance(packages, list):
+        cmd += packages
+    else:
+        cmd.append(packages)
+    if mirror_url:
+        cmd += ["-i", mirror_url, "--trusted-host", mirror_url.split("/")[2]]
+    return cmd
+
+
 
 
 def repair_pip_install(python_path, packages, mirror):
-    """安装用户指定的 pip 依赖，可选镜像源"""
     pkgs = [p.strip() for p in packages.split() if p.strip()]
     if not pkgs:
-        return {"ok": False, "msg": "请填写要安装的依赖包名"}
-    mirror_url = _PIP_MIRRORS.get(mirror, "")
-    cmd = [python_path, "-m", "pip", "install"] + pkgs
-    if mirror_url:
-        cmd += ["-i", mirror_url]
-    # 添加常用信任参数
-    cmd += ["--trusted-host", mirror_url.split("/")[2]] if mirror_url and "://" in mirror_url else []
-    if mirror_url and "://" in mirror_url:
-        host = mirror_url.split("/")[2]
-        cmd += ["--trusted-host", host]
-    label = f"pip install {' '.join(pkgs)}" + (f" (镜像: {mirror})" if mirror_url else "")
+        return {"ok": False, "msg": "Please fill dependency package names"}
+    cmd = _pip_install_cmd(python_path, pkgs)
+    mirror_name = settings.get("pip_mirror", "default")
+    mirror_url = _PIP_MIRRORS.get(mirror_name, "")
+    label = f"pip install {' '.join(pkgs)}" + (f" (mirror: {mirror_name})" if mirror_url else "")
     return _repair_run_steps([(label, cmd, os.path.dirname(python_path))],
                             f"安装依赖 {' '.join(pkgs)}")
 
@@ -922,30 +1057,41 @@ def repair_download_file(aria2c_path, url, save_path):
     )
 
 
-def repair_single_plugin(git_path, python_path, comfyui_dir, plugin_name):
-    """跨平台：修复单个插件 — git pull + pip install -r requirements.txt"""
+def repair_single_plugin(git_path, python_path, comfyui_dir, plugin_name, mirror=None):
+    """跨平台：修复单个插件 — git pull + pip install -r requirements.txt
+    mirror: 可选镜像前缀，如 'https://api.gitproxy.dev/github.com/'，用于 git pull 加速
+    """
     cn_dir = os.path.join(comfyui_dir, "custom_nodes")
     plugin_dir = os.path.join(cn_dir, plugin_name)
     if not os.path.isdir(plugin_dir):
         return {"ok": False, "msg": f"插件目录不存在: {plugin_dir}"}
     if not os.path.isdir(os.path.join(plugin_dir, ".git")):
         return {"ok": False, "msg": f"不是 Git 仓库: {plugin_dir}"}
+    # git pull 命令（可选镜像加速）
+    pull_args = [git_path]
+    if mirror:
+        pull_args += ["-c", f"url.{mirror}.insteadOf=https://github.com/"]
+    pull_args.append("pull")
+    pull_label = "git pull" + (" [镜像]" if mirror else "")
     req_file = os.path.join(plugin_dir, "requirements.txt")
     steps = [
-        ("git pull", [git_path, "pull"], plugin_dir),
+        (pull_label, list(pull_args), plugin_dir),
     ]
     if os.path.isfile(req_file):
         steps.append(
-            ("安装 requirements.txt", [python_path, "-m", "pip", "install", "-r", req_file], plugin_dir)
+            ("安装 requirements.txt", _pip_install_cmd(python_path, ["-r", req_file]), plugin_dir)
         )
     else:
         with repair_log_lock:
             repair_logs.append("未找到 requirements.txt，跳过依赖安装")
-    return _repair_run_steps(steps, f"修复插件 {plugin_name}")
+    title = f"修复插件 {plugin_name}" + (" [镜像]" if mirror else "")
+    return _repair_run_steps(steps, title)
 
 
-def repair_all_plugins(git_path, python_path, comfyui_dir):
-    """跨平台：扫描 custom_nodes，逐个 git pull + pip install"""
+def repair_all_plugins(git_path, python_path, comfyui_dir, mirror=None):
+    """跨平台：扫描 custom_nodes，逐个 git pull + pip install
+    mirror: 可选镜像前缀，如 'https://api.gitproxy.dev/github.com/'，用于 git pull 时加速
+    """
     cn_dir = os.path.join(comfyui_dir, "custom_nodes")
     if not os.path.isdir(cn_dir):
         return {"ok": False, "msg": f"custom_nodes 目录不存在: {cn_dir}"}
@@ -956,15 +1102,26 @@ def repair_all_plugins(git_path, python_path, comfyui_dir):
             plugins.append(name)
     if not plugins:
         return {"ok": False, "msg": "未找到任何可修复的 Git 插件"}
+    # 加速拉取：-c url.<mirror>.insteadOf=https://github.com/
+    pull_args = [git_path]
+    if mirror:
+        pull_args += ["-c", f"url.{mirror}.insteadOf=https://github.com/"]
+    pull_args.append("pull")
     steps = []
     for i, pn in enumerate(plugins, 1):
         pd = os.path.join(cn_dir, pn)
-        steps.append((f"[{i}/{len(plugins)}] {pn} — git pull", [git_path, "pull"], pd))
+        label = f"[{i}/{len(plugins)}] {pn} — git pull"
+        if mirror:
+            label += " [镜像]"
+        steps.append((label, list(pull_args), pd))
         req = os.path.join(pd, "requirements.txt")
         if os.path.isfile(req):
             steps.append((f"[{i}/{len(plugins)}] {pn} — 安装依赖",
-                         [python_path, "-m", "pip", "install", "-r", req], pd))
-    return _repair_run_steps(steps, f"批量修复 {len(plugins)} 个插件")
+                         _pip_install_cmd(python_path, ["-r", req]), pd))
+    title = f"批量修复 {len(plugins)} 个插件"
+    if mirror:
+        title += " [镜像]"
+    return _repair_run_steps(steps, title)
 
 
 def kill_comfyui_processes():
@@ -978,7 +1135,7 @@ def kill_comfyui_processes():
             result = subprocess.run(
                 ["wmic", "process", "where", "name='python.exe'",
                  "get", "processid,commandline", "/format:csv"],
-                capture_output=True, text=True, timeout=15, creationflags=cf)
+                capture_output=True, text=True, encoding="gbk", errors="replace", timeout=15, creationflags=cf)
             for line in result.stdout.split("\n"):
                 low = line.strip().lower()
                 if "comfyui" not in low:
@@ -999,7 +1156,7 @@ def kill_comfyui_processes():
             try:
                 nr = subprocess.run(
                     ["netstat", "-ano"],
-                    capture_output=True, text=True, timeout=10, creationflags=cf)
+                    capture_output=True, text=True, encoding="gbk", errors="replace", timeout=10, creationflags=cf)
                 for ln in nr.stdout.split("\n"):
                     if f":{port}" in ln and "LISTENING" in ln:
                         parts = ln.strip().split()
@@ -1016,7 +1173,7 @@ def kill_comfyui_processes():
         else:
             # Linux / macOS: pgrep -f comfyui + 进程树终止
             result = subprocess.run(["pgrep", "-f", "comfyui"],
-                                  capture_output=True, text=True, timeout=10)
+                                  capture_output=True, text=True, encoding="gbk", errors="replace", timeout=10)
             for pid in result.stdout.strip().split("\n"):
                 pid = pid.strip()
                 if pid and pid != my_pid and pid.isdigit():
@@ -1034,7 +1191,7 @@ def kill_comfyui_processes():
             port = settings.get("comfyui_port", "") or "8188"
             try:
                 lr = subprocess.run(["lsof", "-ti", f":{port}"],
-                                  capture_output=True, text=True, timeout=5)
+                                  capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
                 for pid in lr.stdout.strip().split("\n"):
                     pid = pid.strip()
                     if pid and pid.isdigit():
@@ -1306,6 +1463,633 @@ def copy_output_files(root_dir, rel_paths, dest_rel):
     return {"ok": True, "results": results}
 
 
+def send_to_input_dir(output_root, rel_paths, input_root):
+    """将输出目录的文件/文件夹复制到输入目录（跨根目录复制）"""
+    if not os.path.isdir(input_root):
+        os.makedirs(input_root, exist_ok=True)
+    results = []
+    for rp in rel_paths:
+        src = _safe_path(output_root, rp)
+        if not src or not os.path.exists(src):
+            results.append({"path": rp, "ok": False, "msg": "源路径无效"})
+            continue
+        # 目标: input_root / basename
+        dst = os.path.join(input_root, os.path.basename(src))
+        try:
+            if os.path.isdir(src):
+                if os.path.exists(dst):
+                    shutil.rmtree(dst)
+                shutil.copytree(src, dst)
+            else:
+                os.makedirs(input_root, exist_ok=True)
+                shutil.copy2(src, dst)
+            results.append({"path": rp, "ok": True, "msg": "已发送"})
+        except Exception as e:
+            results.append({"path": rp, "ok": False, "msg": str(e)})
+    return {"ok": True, "results": results}
+
+
+# ============================================================
+# 工作流管理 — 文件浏览
+# ============================================================
+
+# 工作流允许的文件扩展名（JSON 及文本类）
+_WF_EXTS = {".json", ".txt", ".md", ".png"}
+
+
+def _workflow_type(name):
+    """工作流文件类型：json / text / image / other"""
+    ext = os.path.splitext(name)[1].lower()
+    if ext == ".json":
+        return "json"
+    if ext in (".txt", ".md"):
+        return "text"
+    if ext in _IMG_EXTS:
+        return "image"
+    return "other"
+
+
+def workflows_browse(root_dir, rel_path="", page=1, page_size=20,
+                     search="", sort="name_asc"):
+    """浏览工作流目录：文件夹在前、文件在后，支持分页/搜索/排序。
+    与 browse_output_dir 类似，但不过滤非媒体文件（保留全部类型）。"""
+    target = _safe_path(root_dir, rel_path)
+    if not target:
+        return {"ok": False, "msg": "无效路径"}
+    if not os.path.isdir(target):
+        return {"ok": False, "msg": "目录不存在"}
+
+    # 面包屑
+    breadcrumbs = []
+    try:
+        rel_norm = os.path.relpath(target, root_dir)
+    except ValueError:
+        rel_norm = ""
+    if rel_norm == ".":
+        rel_norm = ""
+    parts = rel_norm.replace("\\", "/").split("/") if rel_norm else []
+    acc = ""
+    for p in parts:
+        if not p:
+            continue
+        acc = os.path.join(acc, p) if acc else p
+        breadcrumbs.append({"name": p, "path": acc.replace("\\", "/")})
+
+    try:
+        entries = os.listdir(target)
+    except OSError:
+        return {"ok": False, "msg": "无法读取目录"}
+
+    folders_raw = []
+    files_raw = []
+    for name in entries:
+        full = os.path.join(target, name)
+        if os.path.isdir(full):
+            child_rel = os.path.join(rel_path, name) if rel_path else name
+            try:
+                st = os.stat(full)
+                folders_raw.append({
+                    "name": name, "path": child_rel.replace("\\", "/"),
+                    "modified": st.st_mtime, "is_dir": True,
+                })
+            except OSError:
+                pass
+        elif os.path.isfile(full):
+            ft = _workflow_type(name)
+            if ft == "other":
+                continue
+            try:
+                st = os.stat(full)
+                files_raw.append({
+                    "name": name,
+                    "path": (os.path.join(rel_path, name).replace("\\", "/") if rel_path else name),
+                    "type": ft, "size": st.st_size,
+                    "modified": st.st_mtime, "is_dir": False,
+                })
+            except OSError:
+                pass
+
+    # 搜索
+    if search:
+        q = search.lower()
+        folders_raw = [f for f in folders_raw if q in f["name"].lower()]
+        files_raw = [f for f in files_raw if q in f["name"].lower()]
+
+    # 排序
+    rev = sort.endswith("_desc")
+    if sort.startswith("name"):
+        folders_raw.sort(key=lambda x: x["name"].lower(), reverse=rev)
+        files_raw.sort(key=lambda x: x["name"].lower(), reverse=rev)
+    elif sort.startswith("date"):
+        folders_raw.sort(key=lambda x: x["modified"], reverse=not rev)
+        files_raw.sort(key=lambda x: x["modified"], reverse=not rev)
+    else:
+        folders_raw.sort(key=lambda x: x["name"].lower())
+        files_raw.sort(key=lambda x: x["name"].lower())
+
+    # 分页
+    total = len(folders_raw) + len(files_raw)
+    ps = max(1, min(100, int(page_size)))
+    tp = max(1, (total + ps - 1) // ps) if total else 1
+    pg = max(1, min(tp, int(page)))
+    start = (pg - 1) * ps
+    end = start + ps
+    all_items = folders_raw + files_raw
+    paged = all_items[start:end]
+
+    return {
+        "ok": True,
+        "current_path": rel_norm.replace("\\", "/") if rel_norm else "",
+        "breadcrumbs": breadcrumbs,
+        "parent_path": os.path.dirname(rel_norm).replace("\\", "/") if rel_norm else None,
+        "items": paged,
+        "page": pg, "page_size": ps, "total": total, "total_pages": tp,
+        "search": search, "sort": sort,
+    }
+
+
+def workflows_get(root_dir, rel_path):
+    """读取工作流文件内容（文本形式）"""
+    t = _safe_path(root_dir, rel_path)
+    if not t or not os.path.isfile(t):
+        return {"ok": False, "msg": "文件不存在或路径无效"}
+    try:
+        with open(t, "r", encoding="utf-8") as f:
+            content = f.read()
+        return {"ok": True, "name": os.path.basename(t), "path": rel_path, "content": content}
+    except Exception as e:
+        return {"ok": False, "msg": "读取失败: " + str(e)}
+
+
+def workflows_save(root_dir, rel_path, content):
+    """保存工作流文件（新建或覆盖）。返回 {ok, path, msg}。"""
+    t = _safe_path(root_dir, rel_path)
+    if not t:
+        return {"ok": False, "msg": "无效路径"}
+    os.makedirs(os.path.dirname(t), exist_ok=True)
+    try:
+        with open(t, "w", encoding="utf-8") as f:
+            f.write(content)
+        return {"ok": True, "path": rel_path.replace("\\", "/"), "msg": "已保存"}
+    except Exception as e:
+        return {"ok": False, "msg": "保存失败: " + str(e)}
+
+
+def workflows_new(root_dir, name):
+    """在根目录新建空白工作流 JSON 文件"""
+    safe_name = os.path.basename(name)
+    if not safe_name:
+        return {"ok": False, "msg": "无效的文件名"}
+    if not safe_name.lower().endswith(".json"):
+        safe_name += ".json"
+    t = os.path.join(root_dir, safe_name)
+    if os.path.exists(t):
+        return {"ok": False, "msg": "文件已存在: " + safe_name}
+    try:
+        with open(t, "w", encoding="utf-8") as f:
+            f.write('{\n  "nodes": [],\n  "links": [],\n  "version": 0.4\n}\n')
+        return {"ok": True, "name": safe_name, "path": safe_name, "msg": "已创建"}
+    except Exception as e:
+        return {"ok": False, "msg": "创建失败: " + str(e)}
+
+
+
+
+def workflows_analyze(root_dir, rel_path):
+    """解析工作流 JSON，提取模型文件名（.safetensors/.pth/.ckpt/.gguf/.onnx 等）。
+
+    遍历 nodes[].widgets_values 及 nodes[].inputs 中的默认值，
+    找出所有看起来像模型文件名的字符串（带常见模型扩展名）。
+    返回 {ok, name, models: [{file, ext, node, node_type}]}。
+    """
+    t = _safe_path(root_dir, rel_path)
+    if not t or not os.path.isfile(t):
+        return {"ok": False, "msg": "文件不存在或路径无效"}
+    try:
+        with open(t, "r", encoding="utf-8") as f:
+            content = f.read()
+    except Exception as e:
+        return {"ok": False, "msg": "读取失败: " + str(e)}
+
+    # 尝试解析 JSON
+    try:
+        data = json.loads(content)
+    except Exception:
+        # 非 JSON 文件（.txt/.md/.png）：用正则兜底扫描
+        return _workflows_analyze_text(content, rel_path)
+
+    nodes = data.get("nodes") if isinstance(data, dict) else None
+    if not isinstance(nodes, list):
+        return {"ok": False, "msg": "工作流 JSON 结构无效（缺少 nodes 数组）"}
+
+    # 常见模型扩展名
+    model_exts = (".safetensors", ".pth", ".pt", ".ckpt", ".gguf", ".onnx",
+                  ".bin", ".sft", ".pt2", ".vae.pt", ".vae.safetensors",
+                  ".safetensors.bak", ".pth.tar", ".tar", ".zip", ".json")
+    # 按扩展名排序，长的优先匹配（如 .safetensors 在 .safetensors.bak 之前）
+    model_exts = tuple(sorted(model_exts, key=len, reverse=True))
+
+    found = []
+    seen = set()
+
+    def add_model(fname, node_name, node_type):
+        if not fname or not isinstance(fname, str):
+            return
+        fname = fname.strip()
+        if not fname:
+            return
+        low = fname.lower()
+        if not any(low.endswith(e) for e in model_exts):
+            return
+        if fname in seen:
+            return
+        seen.add(fname)
+        found.append({
+            "file": fname,
+            "ext": os.path.splitext(fname)[1].lower(),
+            "node": node_name or "",
+            "node_type": node_type or "",
+        })
+
+    for node in nodes:
+        if not isinstance(node, dict):
+            continue
+        ntype = node.get("type", "")
+        nname = node.get("title", "") or node.get("type", "")
+        # widgets_values：常含 ckpt_name / lora_name 等模型选择值
+        wv = node.get("widgets_values")
+        if isinstance(wv, list):
+            for v in wv:
+                if isinstance(v, str):
+                    add_model(v, nname, ntype)
+                elif isinstance(v, list):
+                    for sv in v:
+                        if isinstance(sv, str):
+                            add_model(sv, nname, ntype)
+        # inputs 中的 widget 默认值（部分节点结构）
+        for inp in node.get("inputs") or []:
+            if not isinstance(inp, dict):
+                continue
+            w = inp.get("widget")
+            if isinstance(w, dict) and w.get("name") and inp.get("value") is not None:
+                v = inp["value"]
+                if isinstance(v, str):
+                    add_model(v, nname, ntype)
+            if inp.get("value") and isinstance(inp["value"], str):
+                add_model(inp["value"], nname, ntype)
+
+    # 去重后排序（保持出现顺序）
+    return {
+        "ok": True,
+        "name": os.path.basename(t),
+        "path": rel_path,
+        "models": found,
+        "count": len(found),
+        "type": "json",
+    }
+
+
+def _workflows_analyze_text(content, rel_path):
+    """非 JSON 工作流（.txt/.md/.png）用正则提取模型文件名"""
+    model_exts = (".safetensors", ".pth", ".pt", ".ckpt", ".gguf", ".onnx",
+                  ".bin", ".sft", ".pt2", ".vae.pt", ".vae.safetensors")
+    model_exts = tuple(sorted(model_exts, key=len, reverse=True))
+    ext_alt = "|".join(re.escape(e.lstrip(".")) for e in model_exts)
+    # 文件名正则：允许中文、字母、数字、_ - . 空格、路径分隔符
+    pat = re.compile(
+        r"[A-Za-z0-9_\-\u4e00-\u9fff /\\.]+\.(?:" + ext_alt + r")\b",
+        re.I,
+    )
+    found = []
+    seen = set()
+    for m in pat.finditer(content):
+        fname = m.group(0).strip()
+        base = fname.replace("\\", "/").split("/")[-1].strip()
+        if not base or base in seen:
+            continue
+        seen.add(base)
+        found.append({"file": base, "ext": os.path.splitext(base)[1].lower(),
+                      "node": "", "node_type": ""})
+    return {
+        "ok": True,
+        "name": os.path.basename(rel_path),
+        "path": rel_path,
+        "models": found,
+        "count": len(found),
+        "type": "text",
+    }
+
+
+
+def _douyin_extract_links(text):
+    return re.findall(r"(https?://[^\s]+)", text)
+
+def _douyin_extract_note_id(url):
+    m = re.search(r"https?://(?:www\.)?douyin\.com/note/([^/?#]+)", url, re.I)
+    return m.group(1) if m else None
+
+def _douyin_extract_aweme_id(url):
+    for p in [
+        r"https?://(?:www\.)?douyin\.com/video/([^/?#]+)",
+        r"https?://(?:www\.)?douyin\.com/share/video/([^/?#]+)",
+        r"https?://(?:www\.)?iesdouyin\.com/share/video/([^/?#]+)",
+    ]:
+        m = re.search(p, url, re.I)
+        if m:
+            return m.group(1)
+    return None
+
+def _douyin_extract_balanced_arr(text, start):
+    import json as _json
+    depth = 0
+    in_str = False
+    esc = False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == '\\':
+                esc = True
+            elif ch == '"':
+                in_str = False
+        else:
+            if ch == '"':
+                in_str = True
+            elif ch == '[':
+                depth += 1
+            elif ch == ']':
+                depth -= 1
+                if depth == 0:
+                    raw = text[start:i+1].replace('\\"', '"')
+                    try:
+                        return _json.loads(raw)
+                    except (ValueError, _json.JSONDecodeError):
+                        return None
+    return None
+
+def _douyin_dedup_urls(urls):
+    seen = set()
+    unique = []
+    for u in urls:
+        m = re.search(r'douyinpic\.com/(tos-cn-[^~]+~[^.?]+)', u)
+        key = m.group(1) if m else u
+        if key not in seen:
+            seen.add(key)
+            unique.append(u)
+    return unique
+
+def _douyin_extract_urls_by_key(html, keys):
+    import json as _json
+    for key in keys:
+        ek = re.escape(key)
+        for pat in [rf'"{ek}"\s*:\s*\[', re.escape(f'\\"{key}\\"\\:\\[').replace('\\\\\\\\', '\\\\')]:
+            for m in re.finditer(pat, html):
+                arr = _douyin_extract_balanced_arr(html, m.end() - 1)
+                if isinstance(arr, list):
+                    urls = [u.rstrip('\\') for u in arr if isinstance(u, str) and 'douyinpic.com' in u]
+                    if urls:
+                        return urls
+    return None
+
+def douyin_extract_image_urls(html: str):
+    """从抖音页面 HTML 提取图片 URL，返回去重后的列表。"""
+    # 1. downloadUrlList
+    dl = _douyin_extract_urls_by_key(html, ["downloadUrlList"])
+    if dl:
+        return _douyin_dedup_urls(dl)
+    # 2. urlList
+    ul = _douyin_extract_urls_by_key(html, ["urlList"])
+    if ul:
+        aw = [u for u in ul if 'aweme_images' in u]
+        return _douyin_dedup_urls(aw or ul)
+    # 3. Regex fallback
+    fb = re.findall(
+        r'https?://(?:p\d+-)?pc(?:-sign)?\.douyinpic\.com/[^"\s]+?~tplv-dy-aweme-images:q75\.(?:jpe?g|webp)[^"\s]*',
+        html, re.I
+    )
+    if fb:
+        fb = [u.rstrip('\\').replace('\\u0026', '&') for u in fb]
+        return _douyin_dedup_urls(fb)
+    return []
+
+def douyin_load_cookie(cookie_file: str):
+    """加载 Cookie 文件（支持 JSON 或原始字符串），返回 requests.Session。"""
+    import json as _json, requests as _requests
+    with open(cookie_file, 'r', encoding='utf-8') as f:
+        raw_content = f.read().strip()
+    sess = _requests.Session()
+    items = []
+    # 尝试 JSON 格式
+    try:
+        data = _json.loads(raw_content)
+    except (ValueError, _json.JSONDecodeError):
+        # 非 JSON → 原始 Cookie 字符串
+        sess.cookies = _requests.utils.cookiejar_from_dict(
+            {k.strip(): v.strip() for k, _, v in (p.partition('=') for p in raw_content.split(';') if '=' in p)})
+        return sess
+    if isinstance(data, list):
+        items = data
+    elif isinstance(data, dict):
+        if isinstance(data.get("cookie"), str):
+            sess.cookies = _requests.utils.cookiejar_from_dict(
+                {k.strip(): v.strip() for k, _, v in (p.partition('=') for p in data["cookie"].split(';') if '=' in p)})
+            return sess
+        elif isinstance(data.get("cookies"), list):
+            items = data["cookies"]
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        n = item.get("name")
+        v = item.get("value")
+        if not n or v is None:
+            continue
+        sess.cookies.set(n, v,
+            domain=item.get("domain", ""),
+            path=item.get("path", "/"),
+            secure=bool(item.get("secure", False)))
+    return sess
+
+
+def douyin_get_cookie_string(cookie_file: str) -> str:
+    """从 cookie 文件提取原始 Cookie: header 字符串（用于 aria2 --header）。"""
+    import json as _json
+    with open(cookie_file, 'r', encoding='utf-8') as f:
+        raw = f.read().strip()
+    # 尝试 JSON
+    try:
+        data = _json.loads(raw)
+    except (ValueError, _json.JSONDecodeError):
+        return raw
+    if isinstance(data, dict):
+        if isinstance(data.get("cookie"), str):
+            return data["cookie"]
+        if isinstance(data.get("cookies"), list):
+            return "; ".join(f"{c['name']}={c['value']}" for c in data["cookies"] if c.get("name"))
+    if isinstance(data, list):
+        return "; ".join(f"{c['name']}={c['value']}" for c in data if c.get("name"))
+    return raw
+
+
+def _douyin_aria2_headers(cookie_file: str = ""):
+    """构建 aria2 --header 参数列表：逗号分隔的 name: 值（aria2 JSON-RPC header 格式）。"""
+    hdrs = [
+        "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Referer: https://www.douyin.com/",
+    ]
+    if cookie_file:
+        try:
+            cookie_str = douyin_get_cookie_string(cookie_file)
+            if cookie_str:
+                hdrs.append(f"Cookie: {cookie_str}")
+        except Exception:
+            pass
+    return hdrs
+
+def douyin_fetch(raw_text_or_url: str, cookie_file: str):
+    """抓取抖音页面，支持多个链接并发抓取。
+    返回 {ok, results: [{target_url, aweme_id, note_id, desc, type, video_url, cover_url, image_urls, image_count}], msg?}。
+    单链接时 results 数组仍然返回一个元素。"""
+    import json as _json, requests as _requests
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    # Step 1: 先提取所有链接
+    links = _douyin_extract_links(raw_text_or_url)
+    if not links:
+        return {"ok": False, "msg": "未检测到有效链接，请粘贴包含 https:// 的抖音地址"}
+
+    # 加载 session（所有请求复用一个）
+    try:
+        sess = douyin_load_cookie(cookie_file)
+    except Exception as e:
+        return {"ok": False, "msg": f"Cookie 加载失败: {e}"}
+
+    def _fetch_one(url: str):
+        """抓取单个链接，返回结果字典。"""
+        try:
+            resp = sess.get(url, headers=_DOUYIN_HEADERS, allow_redirects=True, timeout=(10, 30))
+            resp.raise_for_status()
+            final_url = resp.url
+            html = resp.text
+        except Exception as e:
+            return {"target_url": url, "type": "error", "msg": f"页面请求失败: {e}"}
+
+        aweme_id = _douyin_extract_aweme_id(final_url)
+        if not aweme_id:
+            m = re.search(r'"aweme_id":"([^"]+)"', html)
+            if m:
+                aweme_id = m.group(1)
+
+        note_id = _douyin_extract_note_id(final_url)
+        desc = None
+        cover_url = None
+        video_url = None
+        image_urls = []
+
+        # 优先尝试 API
+        if aweme_id:
+            try:
+                api = "https://www.douyin.com/aweme/v1/web/aweme/detail/"
+                params = {"aweme_id": aweme_id, "device_platform": "web", "aid": "6383", "channel": "channel_pc_web"}
+                hdrs = {**_DOUYIN_HEADERS, "X-Requested-With": "XMLHttpRequest"}
+                ar = sess.get(api, params=params, headers=hdrs, timeout=(10, 30))
+                ar.raise_for_status()
+                ad = ar.json()
+                detail = ad.get("aweme_detail") or {}
+                desc = detail.get("desc")
+                cover_info = detail.get("cover") or {}
+                if isinstance(cover_info, dict) and cover_info.get("url_list"):
+                    cover_url = cover_info["url_list"][0]
+                video_info = (detail.get("video") or {}).get("play_addr") or {}
+                vurls = video_info.get("url_list") or []
+                if vurls:
+                    video_url = vurls[0]
+            except Exception:
+                pass
+
+        if not video_url:
+            image_urls = douyin_extract_image_urls(html)
+
+        return {
+            "target_url": url,
+            "aweme_id": aweme_id,
+            "note_id": note_id,
+            "desc": desc,
+            "type": "video" if video_url else ("note" if image_urls else "unknown"),
+            "video_url": video_url,
+            "cover_url": cover_url,
+            "image_urls": image_urls,
+            "image_count": len(image_urls),
+        }
+
+    # 并发抓取所有链接
+    results = []
+    max_workers = min(len(links), 5)
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_map = {executor.submit(_fetch_one, url): url for url in links}
+        for future in as_completed(future_map):
+            try:
+                results.append(future.result())
+            except Exception as e:
+                results.append({"target_url": future_map[future], "type": "error", "msg": str(e)})
+
+    # 按原始链接顺序排列
+    url_order = {url: i for i, url in enumerate(links)}
+    results.sort(key=lambda r: url_order.get(r.get("target_url", ""), 999))
+
+    return {"ok": True, "results": results, "total": len(results)}
+
+def douyin_download_images(urls: list, save_dir: str, name_template: str = "{index:02d}.{ext}", cookie_file: str = ""):
+    """通过 aria2c 批量下载图片。返回 {ok, gids, save_dir}。"""
+    os.makedirs(save_dir, exist_ok=True)
+    gids = []
+    total = len(urls)
+    header = _douyin_aria2_headers(cookie_file)
+    for idx, url in enumerate(urls, start=1):
+        # 生成文件名
+        uri_part = "img"
+        m = re.search(r'/([^/?]+?)(?:\.(?:jpe?g|png|webp)[^"\\s]*|$)', url, re.I)
+        if m:
+            uri_part = m.group(1)[:40]
+        name = name_template.replace("{index:02d}", f"{idx:02d}").replace("{index:03d}", f"{idx:03d}")\
+            .replace("{index}", str(idx)).replace("{uri}", uri_part).replace("{ext}", "png")\
+            .replace("{datetime}", time.strftime("%Y%m%d_%H%M%S")).replace("{date}", time.strftime("%Y%m%d"))\
+            .replace("{time}", time.strftime("%H%M%S"))
+        out_file = os.path.join(save_dir, name)
+        opts = {"dir": save_dir, "out": name, "continue": "true"}
+        if header:
+            opts["header"] = header
+        r, e = aria2_rpc("aria2.addUri", [[url], opts])
+        if e:
+            print(f"  [WARN] image {idx}/{total} aria2 addUri failed: {e}")
+            continue
+        gids.append({"idx": idx, "url": url, "gid": r, "out": out_file})
+    return {"ok": True, "gids": gids, "total": total, "added": len(gids), "save_dir": save_dir}
+
+
+def douyin_download_video(video_url: str, save_dir: str, name: str = "video.mp4", cookie_file: str = ""):
+    """通过 aria2c 下载视频文件。返回 {ok, gid, out}。"""
+    os.makedirs(save_dir, exist_ok=True)
+    opts = {"dir": save_dir, "out": name, "continue": "true"}
+    header = _douyin_aria2_headers(cookie_file)
+    if header:
+        opts["header"] = header
+    r, e = aria2_rpc("aria2.addUri", [[video_url], opts])
+    if e:
+        return {"ok": False, "msg": f"aria2 添加视频任务失败: {e}"}
+    return {"ok": True, "gid": r, "out": os.path.join(save_dir, name)}
+
+
+def douyin_download_status(gid):
+    """查询 aria2 单个任务的下载进度"""
+    r, e = aria2_rpc("aria2.tellStatus", [gid])
+    if e or not r:
+        return {"status": "error", "msg": e or "未知", "progress": 0, "total": 0, "completed": 0, "speed": 0}
+    t = int(r.get("totalLength", 0))
+    c = int(r.get("completedLength", 0))
+    sp = int(r.get("downloadSpeed", 0))
+    pct = round((c / t * 100), 1) if t > 0 else 0
+    return {"status": r.get("status", "?"), "progress": pct, "total": t, "completed": c, "speed": sp, "name": r.get("files", [{}])[0].get("path", "") if r.get("files") else ""}
+
 def create_output_dir(root_dir, rel_path):
     """创建新目录"""
     t = _safe_path(root_dir, rel_path)
@@ -1318,6 +2102,25 @@ def create_output_dir(root_dir, rel_path):
         return {"ok": True, "msg": "目录已创建"}
     except Exception as e:
         return {"ok": False, "msg": str(e)}
+
+
+def upload_output_files(root_dir, dest_rel, files):
+    """上传单个或多个文件到输出目录"""
+    dest = _safe_path(root_dir, dest_rel)
+    if not dest or not os.path.isdir(dest):
+        return {"ok": False, "msg": "目标目录无效"}
+    results = []
+    for f in files:
+        if not f.filename:
+            continue
+        fn = os.path.basename(f.filename)
+        tgt = os.path.join(dest, fn)
+        try:
+            f.save(tgt)
+            results.append({"name": fn, "ok": True, "msg": "已上传"})
+        except Exception as e:
+            results.append({"name": fn, "ok": False, "msg": str(e)})
+    return {"ok": True, "results": results}
 
 
 def cleanup_all():
@@ -1338,3 +2141,48 @@ def cleanup_all():
         aria2_proc = None
     except Exception:
         pass
+
+
+# ========== 关机功能 ==========
+_shutdown_timer = None
+_shutdown_lock = threading.Lock()
+
+
+def schedule_shutdown(delay):
+    """定时关机：delay 秒后执行系统关机。返回 {ok, msg}。"""
+    global _shutdown_timer
+    delay = max(0, min(int(delay), 3600))
+    with _shutdown_lock:
+        if _shutdown_timer is not None:
+            _shutdown_timer.cancel()
+            _shutdown_timer = None
+
+    def _do():
+        global _shutdown_timer
+        with _shutdown_lock:
+            _shutdown_timer = None
+        try:
+            if config.IS_WINDOWS:
+                subprocess.run(["shutdown", "/s", "/t", "0"], timeout=10)
+            else:
+                subprocess.run(["shutdown", "-h", "now"], timeout=10)
+        except Exception:
+            pass
+
+    t = threading.Timer(delay, _do)
+    t.daemon = True
+    with _shutdown_lock:
+        _shutdown_timer = t
+    t.start()
+    return {"ok": True, "msg": f"已计划 {delay} 秒后关机"}
+
+
+def cancel_shutdown():
+    """取消已计划的定时关机。返回 {ok, msg}。"""
+    global _shutdown_timer
+    with _shutdown_lock:
+        if _shutdown_timer is None:
+            return {"ok": False, "msg": "没有待执行的关机任务"}
+        _shutdown_timer.cancel()
+        _shutdown_timer = None
+    return {"ok": True, "msg": "已取消关机"}
