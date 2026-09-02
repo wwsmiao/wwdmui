@@ -6,6 +6,7 @@
 <link rel="icon" href="https://i2.wp.com/wx2.sinaimg.cn/large/006dp3hUgy1ieudx0sa2uj301s01s0si.jpg" type="image/x-icon">
 <title>薇薇的猫-comfyui管理器</title>
   <link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/fonts/bootstrap-icons.css">
 </head>
 <body>
 <div class="banner">
@@ -19,24 +20,24 @@
 <!-- ====== SIDEBAR ====== -->
 <div id="sidebar">
   <div id="sidebar-hd">
-    <button id="sidebar-btn" onclick="toggleSidebar()">&#9776;</button>
+    <button id="sidebar-btn" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
     <span>薇薇的猫-comfyui</span>
   </div>
   <div class="nav">
-    <div class="mi active" data-page="launcher" onclick="switchPage(event,'launcher')"><span class="mi-icon">&#128640;</span><span class="mt">wwdmc启动器</span></div>
-    <div class="mi" data-page="models" onclick="switchPage(event,'models')"><span class="mi-icon">&#128230;</span><span class="mt">模型管理</span></div>
-    <div class="mi" data-page="plugins" onclick="switchPage(event,'plugins')"><span class="mi-icon">&#128187;</span><span class="mt">插件管理</span></div>
-    <div class="mi" data-page="input" onclick="switchPage(event,'input')"><span class="mi-icon">&#128229;</span><span class="mt">输入管理</span></div>
-    <div class="mi" data-page="output" onclick="switchPage(event,'output')"><span class="mi-icon">&#128193;</span><span class="mt">输出管理</span></div>
-    <div class="mi" data-page="settings" onclick="switchPage(event,'settings')"><span class="mi-icon">&#9881;&#65039;</span><span class="mt">全局设置</span></div>
-    <div class="mi" data-page="repair" onclick="switchPage(event,'repair')"><span class="mi-icon">&#128736;</span><span class="mt">修复安装</span></div>
-    <div class="mi" data-page="douyin" onclick="switchPage(event,'douyin')"><span class="mi-icon">&#127925;</span><span class="mt">抖音提取</span></div>
-    <div class="mi" data-page="notes" onclick="switchPage(event,'notes')"><span class="mi-icon">&#128221;</span><span class="mt">笔记本</span></div>
-    <div class="mi" data-page="workflows" onclick="switchPage(event,'workflows')"><span class="mi-icon">&#128295;</span><span class="mt">工作流</span></div>
-    <div class="mi" data-page="help" onclick="switchPage(event,'help')"><span class="mi-icon">&#10067;</span><span class="mt">帮助</span></div>
-    <div class="mi" data-page="about" onclick="switchPage(event,'about')"><span class="mi-icon">&#8505;&#65039;</span><span class="mt">关于</span></div>
+    <div class="mi active" data-page="launcher" onclick="switchPage(event,'launcher')"><span class="mi-icon"><i class="bi bi-rocket-takeoff"></i></span><span class="mt">wwdmc启动器</span></div>
+    <div class="mi" data-page="models" onclick="switchPage(event,'models')"><span class="mi-icon"><i class="bi bi-box-seam"></i></span><span class="mt">模型管理</span></div>
+    <div class="mi" data-page="plugins" onclick="switchPage(event,'plugins')"><span class="mi-icon"><i class="bi bi-puzzle"></i></span><span class="mt">插件管理</span></div>
+    <div class="mi" data-page="input" onclick="switchPage(event,'input')"><span class="mi-icon"><i class="bi bi-box-arrow-in-down"></i></span><span class="mt">输入管理</span></div>
+    <div class="mi" data-page="output" onclick="switchPage(event,'output')"><span class="mi-icon"><i class="bi bi-folder2-open"></i></span><span class="mt">输出管理</span></div>
+    <div class="mi" data-page="workflows" onclick="switchPage(event,'workflows')"><span class="mi-icon"><i class="bi bi-diagram-3"></i></span><span class="mt">工作流管理</span></div>
+    <div class="mi" data-page="settings" onclick="switchPage(event,'settings')"><span class="mi-icon"><i class="bi bi-gear"></i></span><span class="mt">全局设置</span></div>
+    <div class="mi" data-page="repair" onclick="switchPage(event,'repair')"><span class="mi-icon"><i class="bi bi-wrench-adjustable"></i></span><span class="mt">修复安装</span></div>
+    <div class="mi" data-page="douyin" onclick="switchPage(event,'douyin')"><span class="mi-icon"><i class="bi bi-music-note-beamed"></i></span><span class="mt">抖音提取</span></div>
+    <div class="mi" data-page="notes" onclick="switchPage(event,'notes')"><span class="mi-icon"><i class="bi bi-journal-text"></i></span><span class="mt">笔记本</span></div>
+    <div class="mi" data-page="help" onclick="switchPage(event,'help')"><span class="mi-icon"><i class="bi bi-question-circle"></i></span><span class="mt">帮助</span></div>
+    <div class="mi" data-page="about" onclick="switchPage(event,'about')"><span class="mi-icon"><i class="bi bi-info-circle"></i></span><span class="mt">关于</span></div>
   </div>
-  <div id="sidebar-ft">v3.5 &copy; 薇薇的猫</div>
+  <div id="sidebar-ft">v3.7 &copy; 薇薇的猫</div>
 </div>
 
 <!-- ====== MAIN ====== -->
@@ -44,42 +45,42 @@
 
 <!-- ====== wwdmc启动器 ====== -->
 <div id="page-launcher" class="page active">
-  <h1 class="ptitle"><span class="mi-icon">&#128640;</span>wwdmc 启动器</h1>
+  <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-rocket-takeoff"></i></span>wwdmc 启动器</h1>
   <div class="card">
     <div class="dlbar" style="margin-bottom:12px">
-      <button class="btn btn1" id="cuiStartBtn" onclick="cuiStart()">&#9654; 启动 ComfyUI</button>
-      <button class="btn btn3" id="cuiStopBtn" onclick="cuiStop()" disabled>&#9632; 停止 ComfyUI</button> <button class="btn btn3" onclick="repairKillComfyUI()" title="强制结束所有 ComfyUI Python 进程">&#128163; 强制结束</button>
-      <button class="btn btn6 btn-sm" id="cuiAutoBtn" onclick="cuiToggleAuto()" title="自动滚动到最新日志">&#128899; 自动</button>
+      <button class="btn btn1" id="cuiStartBtn" onclick="cuiStart()"><i class="bi bi-play-fill"></i> 启动 ComfyUI</button>
+      <button class="btn btn3" id="cuiStopBtn" onclick="cuiStop()" disabled><i class="bi bi-stop-fill"></i> 停止 ComfyUI</button> <button class="btn btn3" onclick="repairKillComfyUI()" title="强制结束所有 ComfyUI Python 进程"><i class="bi bi-lightning-charge-fill"></i> 强制结束</button>
+      <button class="btn btn6 btn-sm" id="cuiAutoBtn" onclick="cuiToggleAuto()" title="自动滚动到最新日志"><i class="bi bi-arrow-down-circle"></i> 自动</button>
       <span style="flex:1"></span>
       <span id="cuiStatus" style="color:var(--text2);font-size:12.5px">准备就绪</span>
     </div>
     <div style="margin-bottom:10px;font-size:10px;color:var(--cyan);word-break:break-all;line-height:1.5" id="cuiCmdPreview2"></div>
-    <div style="background:#050810;border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;max-height:520px;overflow-y:auto;font-family:var(--font);font-size:11.5px;line-height:1.65;color:var(--text2);white-space:pre-wrap;word-break:break-all" id="cuiLog">等待启动 ComfyUI ...</div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;max-height:520px;overflow-y:auto;font-family:var(--font);font-size:11.5px;line-height:1.65;color:var(--text2);white-space:pre-wrap;word-break:break-all" id="cuiLog">等待启动 ComfyUI ...</div>
   </div>
 </div>
 
 <!-- ====== 模型管理（含下载） ====== -->
 <div id="page-models" class="page">
-  <h1 class="ptitle"><span class="mi-icon">&#128230;</span>模型管理</h1>
+  <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-box-seam"></i></span>模型管理</h1>
   <div class="dlbar">
     <div class="a2stat"><span class="a2dot off" id="a2dot"></span><span id="a2text" style="font-size:12.5px">aria2c 未运行</span></div>
-    <button class="btn btn2 btn-sm" onclick="a2Start()">&#9654; 启动</button>
-    <button class="btn btn3 btn-sm" onclick="a2Stop()">&#9632; 停止</button>
+    <button class="btn btn2 btn-sm" onclick="a2Start()"><i class="bi bi-play-fill"></i> 启动</button>
+    <button class="btn btn3 btn-sm" onclick="a2Stop()"><i class="bi bi-stop-fill"></i> 停止</button>
     <span style="flex:1"></span>
     <input type="text" id="sinput" placeholder="搜索模型..." onkeydown="if(event.key==='Enter'){mPage=1;loadModels()}" style="width:200px">
-    <button class="btn btn1 btn-sm" onclick="mPage=1;loadModels()">搜索</button>
+    <button class="btn btn1 btn-sm" onclick="mPage=1;loadModels()"><i class="bi bi-search"></i> 搜索</button>
   </div>
   <div class="sbar" style="margin-bottom:12px">
     <select id="ssort" onchange="mPage=1;loadModels()" style="width:160px">
       <option value="id_asc">ID 升序</option><option value="id_desc">ID 降序</option>
       <option value="name_asc">名称 A-Z</option><option value="name_desc">名称 Z-A</option>
     </select>
-    <button class="btn btn6 btn-sm" onclick="resetModels()" title="重置搜索与排序">↺ 重置</button>
-    <button class="btn btn2" onclick="openModal()">+ 新增</button>
-    <button class="btn btn5" onclick="openBatModal()">📋 批量新增</button>
+    <button class="btn btn6 btn-sm" onclick="resetModels()" title="重置搜索与排序"><i class="bi bi-arrow-counterclockwise"></i> 重置</button>
+    <button class="btn btn2" onclick="openModal()"><i class="bi bi-plus-lg"></i> 新增</button>
+    <button class="btn btn5" onclick="openBatModal()"><i class="bi bi-clipboard-plus"></i> 批量新增</button>
     <div class="bbar" style="margin:0 0 0 0;flex:1">
-      <button class="btn btn2 btn-sm" onclick="batchDl(false)">批量下载</button>
-      <button class="btn btn5 btn-sm" onclick="batchDl(true)">&#127760; 国内批量</button>
+      <button class="btn btn2 btn-sm" onclick="batchDl(false)"><i class="bi bi-download"></i> 批量下载</button>
+      <button class="btn btn5 btn-sm" onclick="batchDl(true)"><i class="bi bi-globe2"></i> 国内批量</button>
       <span style="flex:1"></span>
       <span style="font-size:11.5px;color:var(--text3)">并发: <strong id="mcd" style="color:var(--cyan)">3</strong></span>
       <span id="mcount" style="color:var(--text3);font-size:12px"></span>
@@ -90,9 +91,9 @@
     <tbody id="mtbody"></tbody></table>
   </div>
     <div class="paginate" id="mpag" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border);margin-top:8px;flex-wrap:wrap">
-      <button class="btn btn6 btn-xs" id="mprev" onclick="mPage--;loadModels()" disabled>← 上一页</button>
+      <button class="btn btn6 btn-xs" id="mprev" onclick="mPage--;loadModels()" disabled><i class="bi bi-chevron-left"></i> 上一页</button>
       <span id="minfo" style="font-size:12px;color:var(--text2)"></span>
-      <button class="btn btn6 btn-xs" id="mnext" onclick="mPage++;loadModels()" disabled>下一页 →</button>
+      <button class="btn btn6 btn-xs" id="mnext" onclick="mPage++;loadModels()" disabled><i class="bi bi-chevron-right"></i> 下一页</button>
       <span style="margin-left:12px;font-size:11.5px;color:var(--text3)">每页</span>
       <select id="mps" onchange="mPageSize=+this.value;mPage=1;loadModels()" style="width:auto;padding:3px 6px;background:var(--card);color:var(--text1);border:1px solid var(--border);border-radius:4px;font-size:11.5px">
         <option value="20" selected>20</option><option value="50">50</option><option value="100">100</option><option value="200">200</option>
@@ -105,26 +106,26 @@
 
 <!-- ====== 插件管理（含克隆） ====== -->
 <div id="page-plugins" class="page">
-  <h1 class="ptitle"><span class="mi-icon">&#128187;</span>插件管理</h1>
+  <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-puzzle"></i></span>插件管理</h1>
   <div class="dlbar">
     <div class="a2stat"><span class="a2dot off" id="gitdot"></span><span id="gittext" style="font-size:12.5px">Git 状态</span></div>
-    <button class="btn btn6 btn-sm" onclick="checkGit()">检测 Git</button>
+    <button class="btn btn6 btn-sm" onclick="checkGit()"><i class="bi bi-git"></i> 检测 Git</button>
     <span style="flex:1"></span>
     <input type="text" id="ps" placeholder="搜索插件..." onkeydown="if(event.key==='Enter'){plPage=1;loadPlugins()}" style="width:200px">
-    <button class="btn btn1 btn-sm" onclick="plPage=1;loadPlugins()">搜索</button>
+    <button class="btn btn1 btn-sm" onclick="plPage=1;loadPlugins()"><i class="bi bi-search"></i> 搜索</button>
   </div>
   <div class="sbar" style="margin-bottom:12px">
-    <button class="btn btn6 btn-sm" onclick="openPluginDir()" title="打开插件文件夹" style="font-size:15px;padding:2px 7px">&#128193;</button>
+    <button class="btn btn6 btn-sm" onclick="openPluginDir()" title="打开插件文件夹" style="font-size:15px;padding:2px 7px"><i class="bi bi-folder2-open"></i></button>
     <select id="plsort" onchange="plPage=1;loadPlugins()" style="width:160px">
       <option value="id_asc">ID 升序</option><option value="id_desc">ID 降序</option>
       <option value="name_asc">名称 A-Z</option><option value="name_desc">名称 Z-A</option>
       <option value="installed">已安装插件</option>
     </select>
-    <button class="btn btn6 btn-sm" onclick="resetPlugins()" title="重置搜索与排序">↺ 重置</button>
-    <button class="btn btn2" onclick="openPluginModal()">+ 新增</button>
+    <button class="btn btn6 btn-sm" onclick="resetPlugins()" title="重置搜索与排序"><i class="bi bi-arrow-counterclockwise"></i> 重置</button>
+    <button class="btn btn2" onclick="openPluginModal()"><i class="bi bi-plus-lg"></i> 新增</button>
     <div class="bbar" style="margin:0 0 0 0;flex:1">
-      <button class="btn btn-teal btn-sm" onclick="batchClone(false)">批量克隆</button>
-      <button class="btn btn5 btn-sm" onclick="batchClone(true)">&#127760; 国内批量</button>
+      <button class="btn btn-teal btn-sm" onclick="batchClone(false)"><i class="bi bi-files"></i> 批量克隆</button>
+      <button class="btn btn5 btn-sm" onclick="batchClone(true)"><i class="bi bi-globe2"></i> 国内批量</button>
       <span style="flex:1"></span>
       <span style="font-size:11.5px;color:var(--text3)">并发: <strong id="cld" style="color:var(--teal)">2</strong></span>
       <span id="plmcount" style="color:var(--text3);font-size:12px"></span>
@@ -135,9 +136,9 @@
     <tbody id="pltbody"></tbody></table>
   </div>
     <div class="paginate" id="plpag" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border);margin-top:8px;flex-wrap:wrap">
-      <button class="btn btn6 btn-xs" id="plprev" onclick="plPage--;loadPlugins()" disabled>← 上一页</button>
+      <button class="btn btn6 btn-xs" id="plprev" onclick="plPage--;loadPlugins()" disabled><i class="bi bi-chevron-left"></i> 上一页</button>
       <span id="plinfo" style="font-size:12px;color:var(--text2)"></span>
-      <button class="btn btn6 btn-xs" id="plnext" onclick="plPage++;loadPlugins()" disabled>下一页 →</button>
+      <button class="btn btn6 btn-xs" id="plnext" onclick="plPage++;loadPlugins()" disabled><i class="bi bi-chevron-right"></i> 下一页</button>
       <span style="margin-left:12px;font-size:11.5px;color:var(--text3)">每页</span>
       <select id="plps" onchange="plPageSize=+this.value;plPage=1;loadPlugins()" style="width:auto;padding:3px 6px;background:var(--card);color:var(--text1);border:1px solid var(--border);border-radius:4px;font-size:11.5px">
         <option value="20" selected>20</option><option value="50">50</option><option value="100">100</option><option value="200">200</option>
@@ -157,7 +158,7 @@
     <div class="card">
       <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:10px">
         <textarea id="dyUrl" class="sinput sinput-wide" placeholder="粘贴抖音链接即可（视频/笔记），支持多链接&#10;&#10;例如：&#10;https://www.douyin.com/video/XXXX&#10;https://v.douyin.com/XXXX&#10;https://www.douyin.com/note/XXXX" style="flex:1;min-width:260px;height:120px;resize:vertical;font-size:13px;line-height:1.6"></textarea>
-        <button class="btn btn1" id="dyFetchBtn" onclick="dyFetch()" style="flex-shrink:0;align-self:stretch;font-size:15px;padding:0 24px">&#128269;<br>提取</button>
+        <button class="btn btn1" id="dyFetchBtn" onclick="dyFetch()" style="flex-shrink:0;align-self:stretch;font-size:15px;padding:0 24px"><i class="bi bi-search"></i><br>提取</button>
       </div>
       <div id="dyStatus" style="color:var(--text2);font-size:12.5px;min-height:18px"></div>
     </div>
@@ -176,8 +177,8 @@
       <!-- 图片网格 -->
       <div id="dyGridWrap" style="display:none">
         <div style="margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <button class="btn btn6 btn-xs" onclick="dySelectAll()">&#9745; 全选</button>
-          <button class="btn btn6 btn-xs" onclick="dyDeselectAll()">&#9744; 取消全选</button>
+          <button class="btn btn6 btn-xs" onclick="dySelectAll()"><i class="bi bi-check2-square"></i> 全选</button>
+          <button class="btn btn6 btn-xs" onclick="dyDeselectAll()"><i class="bi bi-square"></i> 取消全选</button>
           <span id="dySelCount" style="font-size:12px;color:var(--text2)">已选 0 / 0</span>
         </div>
         <div id="dyGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
@@ -192,15 +193,15 @@
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
         <div class="slabel-block"><div class="slabel">保存目录</div></div>
         <input type="text" id="dySaveDir" class="sinput sinput-wide" placeholder="C:\tmp\douyin-tiqu\images" style="flex:1;min-width:220px">
-        <button class="btn btn6" onclick="dyOpenSaveDir()" title="打开文件夹" style="font-size:18px;padding:4px 8px">&#128193;</button>
+        <button class="btn btn6" onclick="dyOpenSaveDir()" title="打开文件夹" style="font-size:18px;padding:4px 8px"><i class="bi bi-folder2-open"></i></button>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:14px" id="dyTmplRow">
         <div class="slabel-block" style="flex-shrink:0;margin-top:4px"><div class="slabel">命名模板</div><div class="shint">{index} {uri} {ext} {datetime}</div></div>
         <input type="text" id="dyNameTmpl" class="sinput sinput-wide" placeholder="{index:02d}.{ext}" style="flex:1;min-width:200px">
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn2" id="dyDlBtn" onclick="dyDownload()" disabled>开始下载</button>
-        <button class="btn btn6" id="dyDlDeselectBtn" onclick="dyDeselectAll();dyUpdateDlBtn()" style="display:none">取消选择</button>
+        <button class="btn btn2" id="dyDlBtn" onclick="dyDownload()" disabled><i class="bi bi-download"></i> 开始下载</button>
+        <button class="btn btn6" id="dyDlDeselectBtn" onclick="dyDeselectAll();dyUpdateDlBtn()" style="display:none"><i class="bi bi-x-circle"></i> 取消选择</button>
       </div>
       <div id="dyDlStatus" style="color:var(--text2);font-size:12px;margin-top:10px;min-height:18px"></div>
       <div id="dyDlProgress" style="display:none;margin-top:8px">
@@ -230,11 +231,11 @@
     <div id="notes-list-pane" class="notes-pane notes-list-pane">
       <div class="notes-pane-hd">
         <div class="notes-pane-title">&#128221; 笔记本</div>
-        <button class="btn btn1" onclick="noteNew()" title="新建笔记">&#43; 新建</button>
+        <button class="btn btn1" onclick="noteNew()" title="新建笔记"><i class="bi bi-plus-lg"></i> 新建</button>
       </div>
       <div class="notes-search-row">
         <input type="text" id="noteSearch" class="sinput" placeholder="搜索笔记..." oninput="noteDebounceSearch()" style="flex:1">
-        <button class="btn btn6" onclick="noteSearch()" title="搜索" style="padding:6px 10px">&#128269;</button>
+        <button class="btn btn6" onclick="noteSearch()" title="搜索" style="padding:6px 10px"><i class="bi bi-search"></i></button>
       </div>
       <div id="noteTagBar" class="notes-tagbar"></div>
       <div id="noteList" class="notes-list"></div>
@@ -259,8 +260,8 @@
             <input type="text" id="noteTitle" class="sinput" placeholder="笔记标题" style="flex:1;font-size:16px;font-weight:600;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;padding:8px 4px">
           </div>
           <div class="notes-color-row" id="noteColorRow">
-            <span class="notes-color" style="background:#00d4ff" data-c="#00d4ff" title="青色"></span>
-            <span class="notes-color" style="background:#a855f7" data-c="#a855f7" title="紫色"></span>
+            <span class="notes-color" style="background:#4a6fa5" data-c="#4a6fa5" title="蓝灰"></span>
+            <span class="notes-color" style="background:#c38d94" data-c="#c38d94" title="玫瑰"></span>
             <span class="notes-color" style="background:#10b981" data-c="#10b981" title="绿色"></span>
             <span class="notes-color" style="background:#f59e0b" data-c="#f59e0b" title="橙色"></span>
             <span class="notes-color" style="background:#ef4444" data-c="#ef4444" title="红色"></span>
@@ -269,30 +270,30 @@
             <span class="notes-color" style="background:#f472b6" data-c="#f472b6" title="粉色"></span>
           </div>
           <input type="text" id="noteTag" class="sinput" placeholder="标签" style="width:110px" title="标签，用于分类筛选">
-          <button class="btn btn6" id="notePinBtn" onclick="noteTogglePin()" title="置顶">&#128204;</button>
-          <button class="btn btn6" onclick="notePreviewToggle()" id="notePreviewBtn" title="预览">&#128065;</button>
-          <button class="btn btn7" onclick="noteDelete()" title="删除笔记">&#128465;</button>
-          <button class="btn btn1" onclick="noteSave()">&#128190; 保存</button>
+          <button class="btn btn6" id="notePinBtn" onclick="noteTogglePin()" title="置顶"><i class="bi bi-pin-angle"></i></button>
+          <button class="btn btn6" onclick="notePreviewToggle()" id="notePreviewBtn" title="预览"><i class="bi bi-eye"></i></button>
+          <button class="btn btn7" onclick="noteDelete()" title="删除笔记"><i class="bi bi-trash"></i></button>
+          <button class="btn btn1" onclick="noteSave()"><i class="bi bi-save"></i> 保存</button>
         </div>
 
         <!-- 工具栏 -->
         <div class="notes-toolbar" id="noteToolbar">
-          <button class="ntb" onclick="noteInsert('**','**')" title="粗体"><b>B</b></button>
-          <button class="ntb" onclick="noteInsert('*','*')" title="斜体"><i>I</i></button>
-          <button class="ntb" onclick="noteInsert('~~','~~')" title="删除线"><s>S</s></button>
+          <button class="ntb" onclick="noteInsert('**','**')" title="粗体"><i class="bi bi-type-bold"></i></button>
+          <button class="ntb" onclick="noteInsert('*','*')" title="斜体"><i class="bi bi-type-italic"></i></button>
+          <button class="ntb" onclick="noteInsert('~~','~~')" title="删除线"><i class="bi bi-type-strikethrough"></i></button>
           <span class="ntb-sep"></span>
-          <button class="ntb" onclick="noteInsert('# ','',true)" title="标题1">H1</button>
-          <button class="ntb" onclick="noteInsert('## ','',true)" title="标题2">H2</button>
-          <button class="ntb" onclick="noteInsert('### ','',true)" title="标题3">H3</button>
+          <button class="ntb" onclick="noteInsert('# ','',true)" title="标题1"><i class="bi bi-type-h1"></i></button>
+          <button class="ntb" onclick="noteInsert('## ','',true)" title="标题2"><i class="bi bi-type-h2"></i></button>
+          <button class="ntb" onclick="noteInsert('### ','',true)" title="标题3"><i class="bi bi-type-h3"></i></button>
           <span class="ntb-sep"></span>
-          <button class="ntb" onclick="noteInsert('- ','',true)" title="无序列表">&#8226; 列表</button>
-          <button class="ntb" onclick="noteInsert('1. ','',true)" title="有序列表">1. 列表</button>
-          <button class="ntb" onclick="noteInsert('> ','',true)" title="引用">&#10077; 引用</button>
-          <button class="ntb" onclick="noteInsert('\x60\x60\x60\n','\n\x60\x60\x60')" title="代码块">&lt;/&gt; 代码</button>
-          <button class="ntb" onclick="noteInsert('[','](https://)')" title="链接">&#128279; 链接</button>
+          <button class="ntb" onclick="noteInsert('- ','',true)" title="无序列表"><i class="bi bi-list-ul"></i> 列表</button>
+          <button class="ntb" onclick="noteInsert('1. ','',true)" title="有序列表"><i class="bi bi-list-ol"></i> 列表</button>
+          <button class="ntb" onclick="noteInsert('> ','',true)" title="引用"><i class="bi bi-quote"></i> 引用</button>
+          <button class="ntb" onclick="noteInsert('\x60\x60\x60\n','\n\x60\x60\x60')" title="代码块"><i class="bi bi-code-slash"></i> 代码</button>
+          <button class="ntb" onclick="noteInsert('[','](https://)')" title="链接"><i class="bi bi-link-45deg"></i> 链接</button>
           <span class="ntb-sep"></span>
-          <button class="ntb" onclick="noteInsert('![','](图片URL)')" title="图片">&#128444; 图片</button>
-          <button class="ntb" onclick="noteInsert('---\n','')" title="分隔线">&#9472; 分隔线</button>
+          <button class="ntb" onclick="noteInsert('![','](图片URL)')" title="图片"><i class="bi bi-image"></i> 图片</button>
+          <button class="ntb" onclick="noteInsert('---\n','')" title="分隔线"><i class="bi bi-dash-lg"></i> 分隔线</button>
         </div>
 
         <div id="noteEditorBody" style="flex:1;min-height:0;position:relative">
@@ -321,32 +322,32 @@
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
       <span id="wfBread" style="color:var(--cyan);font-size:13px"></span>
       <span style="flex:1"></span>
-      <button class="btn btn1" onclick="wfNew()" title="新建工作流">&#43; 新建</button>
-      <button class="btn btn6" onclick="wfOpenFolder()" title="在资源管理器中打开工作流文件夹" style="font-size:18px;padding:4px 8px">&#128193;</button>
-      <button class="btn btn6" onclick="wfDoBrowse()" title="刷新" style="font-size:15px;padding:4px 8px">&#8635;</button>
+      <button class="btn btn1" onclick="wfNew()" title="新建工作流"><i class="bi bi-plus-lg"></i> 新建</button>
+      <button class="btn btn4" onclick="wfBackup()" title="备份工作流目录"><i class="bi bi-cloud-arrow-up"></i> 备份</button>
+      <button class="btn btn6" onclick="wfOpenFolder()" title="在资源管理器中打开工作流文件夹" style="font-size:18px;padding:4px 8px"><i class="bi bi-folder2-open"></i></button>
+      <button class="btn btn6" onclick="wfDoBrowse()" title="刷新" style="font-size:15px;padding:4px 8px"><i class="bi bi-arrow-clockwise"></i></button>
     </div>
 
-    <!-- 搜索 + 排序 + 分页 -->
+    <!-- 搜索 + 排序 + 分页控制 -->
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-      <input type="text" id="wfSearch" class="sinput" placeholder="搜索工作流..." style="width:200px" onkeydown="if(event.key==='Enter')wfDoBrowse()">
-      <button class="btn btn6" onclick="wfClearSearch()" title="清除搜索" style="font-size:14px;padding:4px 8px;min-width:28px">&#8634;</button>
-      <button class="btn btn6" onclick="wfDoBrowse()" style="font-size:12px">&#128269; 搜索</button>
+      <input type="text" id="wfSearch" class="sinput" placeholder="搜索文件名/文件夹..." style="width:180px" onkeydown="if(event.key==='Enter')wfDoBrowse()">
+      <button class="btn btn6" onclick="wfClearSearch()" title="清除搜索" style="font-size:14px;padding:4px 8px;min-width:28px"><i class="bi bi-backspace"></i></button>
+      <button class="btn btn6" onclick="wfDoBrowse()" style="font-size:12px"><i class="bi bi-search"></i> 搜索</button>
       <select id="wfSort" class="sinput" style="width:120px" onchange="wfDoBrowse()">
-        <option value="name_asc">名称 &uarr;</option><option value="name_desc">名称 &darr;</option>
+        <option value="name_asc">名称 ↑</option><option value="name_desc">名称 ↓</option>
         <option value="date_desc">最新优先</option><option value="date_asc">最早优先</option>
       </select>
-      <span style="flex:1"></span>
-      <span id="wfPageInfo" style="color:var(--text3);font-size:12px"></span>
-      <button class="btn btn6" onclick="wfPrevPage()" style="font-size:11px;padding:3px 8px">&larr; 上一页</button>
-      <button class="btn btn6" onclick="wfNextPage()" style="font-size:11px;padding:3px 8px">下一页 &rarr;</button>
+      <select id="wfPS" class="sinput" style="width:80px" onchange="wfDoBrowse()">
+        <option value="12">12条</option><option value="20" selected>20条</option><option value="40">40条</option><option value="60">60条</option>
+      </select>
+      <span id="wfPageInfo" style="color:var(--text2);font-size:13px;margin-left:8px"></span>
     </div>
 
-    <!-- 文件列表 -->
-    <div id="wfList" class="wf-list" style="min-height:300px"></div>
-    <div id="wfEmpty" class="wf-empty" style="display:none;text-align:center;padding:60px 0;color:var(--text3)">
-      <div style="font-size:48px;opacity:0.3">&#128295;</div>
-      <div style="margin-top:10px">暂无工作流文件</div>
-    </div>
+    <!-- 内容区域 -->
+    <div id="wfList" class="wf-list" style="min-height:200px"></div>
+
+    <!-- 分页 -->
+    <div id="wfPager" style="display:flex;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap"></div>
   </div>
 </div>
 
@@ -356,9 +357,9 @@
     <div class="wf-modal-hd">
       <span id="wfEditorTitle" style="font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">工作流编辑器</span>
       <span id="wfEditorStatus" style="color:var(--text3);font-size:11.5px;margin-right:10px"></span>
-      <button class="btn btn6" onclick="wfFormatJson()" title="格式化 JSON" style="font-size:11px;padding:3px 8px">&#9881; 格式化</button>
-      <button class="btn btn1" onclick="wfSave()" style="font-size:12px;padding:4px 10px">&#128190; 保存</button>
-      <button class="btn btn7" onclick="wfCloseEditor()" style="font-size:12px;padding:4px 10px;margin-left:6px">&#10005; 关闭</button>
+      <button class="btn btn6" onclick="wfFormatJson()" title="格式化 JSON" style="font-size:11px;padding:3px 8px"><i class="bi bi-braces"></i> 格式化</button>
+      <button class="btn btn1" onclick="wfSave()" style="font-size:12px;padding:4px 10px"><i class="bi bi-save"></i> 保存</button>
+      <button class="btn btn7" onclick="wfCloseEditor()" style="font-size:12px;padding:4px 10px;margin-left:6px"><i class="bi bi-x-lg"></i> 关闭</button>
     </div>
     <textarea id="wfContent" class="sinput" spellcheck="false"
       style="width:100%;flex:1;min-height:0;resize:none;background:var(--bg2);border:none;outline:none;padding:14px;font-size:13px;line-height:1.6;color:var(--text);font-family:'JetBrains Mono',Consolas,monospace"></textarea>
@@ -372,7 +373,8 @@
     <div class="wf-modal-hd">
       <span id="wfAnaName" style="font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">模型解析</span>
       <span id="wfAnaCount" style="color:var(--text3);font-size:11.5px;margin-right:10px"></span>
-      <button class="btn btn7" onclick="wfAnaClose()" style="font-size:12px;padding:4px 10px">&#10005; 关闭</button>
+      <button class="btn btn2" onclick="wfAnaCopy()" title="复制所有模型名称" style="font-size:12px;padding:4px 10px"><i class="bi bi-clipboard"></i> 复制全部</button>
+      <button class="btn btn7" onclick="wfAnaClose()" style="font-size:12px;padding:4px 10px"><i class="bi bi-x-lg"></i> 关闭</button>
     </div>
     <div id="wfAnaBody" style="flex:1;overflow:auto;padding:6px 4px"></div>
   </div>
@@ -381,7 +383,7 @@
 <!-- ====== 帮助 ====== -->
 <div id="page-help" class="page center-page">
   <div class="center-wrap">
-    <h1 class="ptitle"><span class="mi-icon">&#10067;</span>使用帮助</h1>
+    <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-question-circle"></i></span>使用帮助</h1>
     <div class="card" style="line-height:2">
       <div style="max-width:800px;margin:0 auto">
         <div style="font-size:16px;font-weight:700;color:var(--cyan);margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid var(--border)">薇薇的猫 ComfyUI 整合包 · 使用指南</div>
@@ -391,15 +393,15 @@
           <a href="https://www.bilibili.com/video/BV1R6Nu6eEhE" target="_blank" style="flex:1;min-width:280px;display:flex;align-items:center;gap:14px;padding:18px 20px;background:linear-gradient(135deg,rgba(251,114,153,0.12),rgba(251,114,153,0.04));border:1px solid rgba(251,114,153,0.25);border-radius:var(--radius);text-decoration:none;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(251,114,153,0.5)';this.style.background='linear-gradient(135deg,rgba(251,114,153,0.18),rgba(251,114,153,0.06))'" onmouseout="this.style.borderColor='rgba(251,114,153,0.25)';this.style.background='linear-gradient(135deg,rgba(251,114,153,0.12),rgba(251,114,153,0.04))'">
             <span style="font-size:32px;line-height:1">&#127916;</span>
             <div>
-              <div style="font-size:14px;font-weight:700;margin-bottom:4px;color:white;">&#9654; 视频教程</div>
-              <div style="font-size:12px;color:white;">哔哩哔哩观看完整安装 &amp; 使用教学</div>
+              <div style="font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text);">&#9654; 视频教程</div>
+              <div style="font-size:12px;color:var(--text2);">哔哩哔哩观看完整安装 &amp; 使用教学</div>
             </div>
           </a>
-          <a href="https://space.bilibili.com/472768517" target="_blank" style="flex:1;min-width:280px;display:flex;align-items:center;gap:14px;padding:18px 20px;background:linear-gradient(135deg,rgba(0,212,255,0.1),rgba(0,212,255,0.03));border:1px solid rgba(0,212,255,0.2);border-radius:var(--radius);text-decoration:none;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(0,212,255,0.45)';this.style.background='linear-gradient(135deg,rgba(0,212,255,0.15),rgba(0,212,255,0.05))'" onmouseout="this.style.borderColor='rgba(0,212,255,0.2)';this.style.background='linear-gradient(135deg,rgba(0,212,255,0.1),rgba(0,212,255,0.03))'">
+          <a href="https://space.bilibili.com/472768517" target="_blank" style="flex:1;min-width:280px;display:flex;align-items:center;gap:14px;padding:18px 20px;background:linear-gradient(135deg,rgba(74,111,165,0.08),rgba(74,111,165,0.02));border:1px solid rgba(74,111,165,0.20);border-radius:var(--radius);text-decoration:none;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(74,111,165,0.45)';this.style.background='linear-gradient(135deg,rgba(74,111,165,0.15),rgba(74,111,165,0.05))'" onmouseout="this.style.borderColor='rgba(74,111,165,0.20)';this.style.background='linear-gradient(135deg,rgba(74,111,165,0.10),rgba(74,111,165,0.03))'">
             <span style="font-size:32px;line-height:1">&#128100;</span>
             <div>
-              <div style="font-size:14px;font-weight:700;color:var(--cyan);margin-bottom:4px;color:white;">薇薇的猫 · B站主页</div>
-              <div style="font-size:12px;color:white;">如果有用记得点个关注哦</div>
+              <div style="font-size:14px;font-weight:700;color:var(--cyan);margin-bottom:4px;">薇薇的猫 · B站主页</div>
+              <div style="font-size:12px;color:var(--text2);">如果有用记得点个关注哦</div>
             </div>
           </a>
         </div>
@@ -468,7 +470,7 @@
           <h3 style="color:var(--cyan);font-size:14px;margin-bottom:12px">8. ComfyUI 启动命令 · 额外参数说明</h3>
           <p style="color:var(--text2);font-size:13px">在 <a href="javascript:switchPage(null,'settings')" style="color:var(--cyan);text-decoration:underline">全局设置</a> 的「ComfyUI 启动命令」中，可在<strong>额外命令行参数</strong>填入更多选项：</p>
           <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:12px;line-height:1.6">
-            <tr style="background:rgba(0,212,255,0.08)"><th style="padding:6px 10px;text-align:left;color:var(--cyan);border:1px solid var(--border)">参数</th><th style="padding:6px 10px;text-align:left;color:var(--cyan);border:1px solid var(--border)">说明</th></tr>
+            <tr style="background:rgba(74,111,165,0.06)"><th style="padding:6px 10px;text-align:left;color:var(--cyan);border:1px solid var(--border)">参数</th><th style="padding:6px 10px;text-align:left;color:var(--cyan);border:1px solid var(--border)">说明</th></tr>
             <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--force-fp16</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">强制 fp16 推理（适合低显存）</td></tr>
             <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--force-fp32</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">强制 fp32 推理（提高画质，需要更多显存）</td></tr>
             <tr><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)"><code>--bf16-vae</code></td><td style="padding:6px 10px;color:var(--text2);border:1px solid var(--border)">VAE 用 bf16 精度（减少显存，某些显卡可能黑图）</td></tr>
@@ -513,18 +515,18 @@
     <!-- 搜索 + 排序 + 分页控制 -->
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <input type="file" id="outFileInput" multiple style="display:none" onchange="outUploadFiles(this.files)">
-      <button class="btn btn6" onclick="document.getElementById('outFileInput').click()" title="上传文件到当前输出目录" style="font-size:15px;padding:4px 8px">&#128228;</button>
-      <button class="btn btn6" onclick="outOpenFolder()" title="在资源管理器中打开输出文件夹" style="font-size:18px;padding:4px 8px">&#128193;</button>
+      <button class="btn btn6" onclick="document.getElementById('outFileInput').click()" title="上传文件到当前输出目录" style="font-size:15px;padding:4px 8px"><i class="bi bi-upload"></i></button>
+      <button class="btn btn6" onclick="outOpenFolder()" title="在资源管理器中打开输出文件夹" style="font-size:18px;padding:4px 8px"><i class="bi bi-folder2-open"></i></button>
       <span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 2px"></span>
       <label class="btn btn6" style="font-size:12px;padding:4px 8px;cursor:pointer;margin:0;display:inline-flex;align-items:center;gap:4px">
         <input type="checkbox" id="outSelAll" onclick="outToggleSelectAll()" style="margin:0"> 全选本页
       </label>
       <span id="outSelCount" style="color:var(--cyan);font-size:12px;display:none"></span>
-      <button class="btn btn6" id="outClearSel" onclick="outClearSelection()" style="font-size:11px;padding:3px 6px;display:none">&#10005; 清除</button>
-      <button class="btn btn7" id="outDelSel" onclick="outDeleteSelected()" style="font-size:11px;padding:3px 6px;display:none">&#128465; 删除选中</button>
+      <button class="btn btn6" id="outClearSel" onclick="outClearSelection()" style="font-size:11px;padding:3px 6px;display:none"><i class="bi bi-x-lg"></i> 清除</button>
+      <button class="btn btn7" id="outDelSel" onclick="outDeleteSelected()" style="font-size:11px;padding:3px 6px;display:none"><i class="bi bi-trash"></i> 删除选中</button>
       <input type="text" id="outSearch" class="sinput" placeholder="搜索文件名/文件夹..." style="width:180px" onkeydown="if(event.key==='Enter')outSearch()">
-      <button class="btn btn6" onclick="outClearSearch()" title="清除搜索" style="font-size:14px;padding:4px 8px;min-width:28px">&#8634;</button>
-      <button class="btn btn6" onclick="outSearch()" style="font-size:12px">&#128269; 搜索</button>
+      <button class="btn btn6" onclick="outClearSearch()" title="清除搜索" style="font-size:14px;padding:4px 8px;min-width:28px"><i class="bi bi-backspace"></i></button>
+      <button class="btn btn6" onclick="outSearch()" style="font-size:12px"><i class="bi bi-search"></i> 搜索</button>
       <select id="outSort" class="sinput" style="width:120px" onchange="outDoBrowse()">
         <option value="name_asc">名称 ↑</option><option value="name_desc">名称 ↓</option>
         <option value="date_desc">最新优先</option><option value="date_asc">最旧优先</option>
@@ -560,18 +562,18 @@
     <!-- 搜索 + 排序 + 分页控制 -->
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <input type="file" id="inFileInput" multiple style="display:none" onchange="inUploadFiles(this.files)">
-      <button class="btn btn6" onclick="document.getElementById('inFileInput').click()" title="上传文件到当前输入目录" style="font-size:15px;padding:4px 8px">&#128228;</button>
-      <button class="btn btn6" onclick="inOpenFolder()" title="在资源管理器中打开输入文件夹" style="font-size:18px;padding:4px 8px">&#128193;</button>
+      <button class="btn btn6" onclick="document.getElementById('inFileInput').click()" title="上传文件到当前输入目录" style="font-size:15px;padding:4px 8px"><i class="bi bi-upload"></i></button>
+      <button class="btn btn6" onclick="inOpenFolder()" title="在资源管理器中打开输入文件夹" style="font-size:18px;padding:4px 8px"><i class="bi bi-folder2-open"></i></button>
       <span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 2px"></span>
       <label class="btn btn6" style="font-size:12px;padding:4px 8px;cursor:pointer;margin:0;display:inline-flex;align-items:center;gap:4px">
         <input type="checkbox" id="inSelAll" onclick="inToggleSelectAll()" style="margin:0"> 全选本页
       </label>
       <span id="inSelCount" style="color:var(--cyan);font-size:12px;display:none"></span>
-      <button class="btn btn6" id="inClearSel" onclick="inClearSelection()" style="font-size:11px;padding:3px 6px;display:none">&#10005; 清除</button>
-      <button class="btn btn7" id="inDelSel" onclick="inDeleteSelected()" style="font-size:11px;padding:3px 6px;display:none">&#128465; 删除选中</button>
+      <button class="btn btn6" id="inClearSel" onclick="inClearSelection()" style="font-size:11px;padding:3px 6px;display:none"><i class="bi bi-x-lg"></i> 清除</button>
+      <button class="btn btn7" id="inDelSel" onclick="inDeleteSelected()" style="font-size:11px;padding:3px 6px;display:none"><i class="bi bi-trash"></i> 删除选中</button>
       <input type="text" id="inSearch" class="sinput" placeholder="搜索文件名/文件夹..." style="width:180px" onkeydown="if(event.key==='Enter')inSearch()">
-      <button class="btn btn6" onclick="inClearSearch()" title="清除搜索" style="font-size:14px;padding:4px 8px;min-width:28px">&#8634;</button>
-      <button class="btn btn6" onclick="inSearch()" style="font-size:12px">&#128269; 搜索</button>
+      <button class="btn btn6" onclick="inClearSearch()" title="清除搜索" style="font-size:14px;padding:4px 8px;min-width:28px"><i class="bi bi-backspace"></i></button>
+      <button class="btn btn6" onclick="inSearch()" style="font-size:12px"><i class="bi bi-search"></i> 搜索</button>
       <select id="inSort" class="sinput" style="width:120px" onchange="inDoBrowse()">
         <option value="name_asc">名称 ↑</option><option value="name_desc">名称 ↓</option>
         <option value="date_desc">最新优先</option><option value="date_asc">最旧优先</option>
@@ -593,7 +595,7 @@
 <!-- ====== 全局设置 ====== -->
 <div id="page-settings" class="page center-page">
   <div class="center-wrap">
-    <h1 class="ptitle"><span class="mi-icon">&#9881;&#65039;</span>全局设置</h1>
+    <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-gear"></i></span>全局设置</h1>
     <div class="card scard">
       <div class="sg sg-wide"><div class="sg-title">路径配置</div>
         <div class="srow srow-full">
@@ -602,17 +604,17 @@
         </div>
         <div class="srow srow-full" style="margin-top:12px">
           <div class="slabel-block"><div class="slabel">Python 路径</div><div class="shint">项目驱动使用的 Python 解释器路径</div></div>
-          <div style="display:flex;gap:10px;align-items:center"><input type="text" id="spy" class="sinput-wide" placeholder="如 C:\python312\python.exe"><button class="btn btn6" style="min-width:80px" onclick="detectPy()">检测</button></div>
+          <div style="display:flex;gap:10px;align-items:center"><input type="text" id="spy" class="sinput-wide" placeholder="如 C:\python312\python.exe"><button class="btn btn6" style="min-width:80px" onclick="detectPy()"><i class="bi bi-search"></i> 检测</button></div>
           <div id="pyr"></div>
         </div>
         <div class="srow srow-full" style="margin-top:12px">
           <div class="slabel-block"><div class="slabel">Git 路径</div><div class="shint">用于克隆 ComfyUI 插件的 git 可执行文件路径</div></div>
-          <div style="display:flex;gap:10px;align-items:center"><input type="text" id="sgp" class="sinput-wide" placeholder="git"><button class="btn btn6" style="min-width:80px" onclick="detectGit()">检测</button></div>
+          <div style="display:flex;gap:10px;align-items:center"><input type="text" id="sgp" class="sinput-wide" placeholder="git"><button class="btn btn6" style="min-width:80px" onclick="detectGit()"><i class="bi bi-search"></i> 检测</button></div>
           <div id="gtr"></div>
         </div>
         <div class="srow srow-full" style="margin-top:12px">
           <div class="slabel-block"><div class="slabel">aria2c 路径</div><div class="shint">Windows: C:\aria2\aria2c.exe | Linux: /usr/bin/aria2c</div></div>
-          <div style="display:flex;gap:10px;align-items:center"><input type="text" id="sap" class="sinput-wide" placeholder="aria2c 路径"><button class="btn btn6" style="min-width:80px" onclick="detectA2()">检测</button></div>
+          <div style="display:flex;gap:10px;align-items:center"><input type="text" id="sap" class="sinput-wide" placeholder="aria2c 路径"><button class="btn btn6" style="min-width:80px" onclick="detectA2()"><i class="bi bi-search"></i> 检测</button></div>
           <div id="adr"></div>
         </div>
         <div class="srow srow-full" style="margin-top:12px">
@@ -628,7 +630,7 @@
         </div>
       </div>
 
-      <div class="sg sg-wide"><div class="sg-title">ComfyUI 启动命令 <button class="btn btn6 btn-xs" onclick="cuiCmdReset()" style="margin-left:12px">重置为默认</button><span id="cuiCmdPreview" style="margin-left:12px;font-size:10px;color:var(--cyan);word-break:break-all"></span></div>
+      <div class="sg sg-wide"><div class="sg-title">ComfyUI 启动命令 <button class="btn btn6 btn-xs" onclick="cuiCmdReset()" style="margin-left:12px"><i class="bi bi-arrow-counterclockwise"></i> 重置为默认</button><span id="cuiCmdPreview" style="margin-left:12px;font-size:10px;color:var(--cyan);word-break:break-all"></span></div>
         <div class="srow">
           <div class="slabel-block"><div class="slabel">监听 IP</div><div class="shint">--listen，默认 127.0.0.1 (仅本机)。设为 0.0.0.0 监听所有网络接口，可局域网访问</div></div>
           <input type="text" class="sinput" id="scli" placeholder="留空=127.0.0.1">
@@ -660,7 +662,7 @@
         <div class="srow srow-full" style="flex-direction:column;align-items:stretch;">
           <div class="slabel-block"><div class="slabel">环境变量预设</div><div class="shint">在 ComfyUI 启动前注入 set 命令，每行为一组变量名=值，如 TORCH_COMPILE_OFF=1</div></div>
           <div id="presetList" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;"></div>
-          <div style="display:flex;gap:6px;margin-top:6px;"><button class="btn btn-xs" onclick="addPreset()">+ 添加</button><span style="font-size:11px;color:#888;align-self:center;">示例: TORCH_COMPILE_OFF=1</span></div>
+          <div style="display:flex;gap:6px;margin-top:6px;"><button class="btn btn-xs" onclick="addPreset()"><i class="bi bi-plus-lg"></i> 添加</button><span style="font-size:11px;color:#888;align-self:center;">示例: TORCH_COMPILE_OFF=1</span></div>
         </div>
       </div>
 
@@ -696,6 +698,9 @@
         <div class="srow"><div class="slabel-block"><div class="slabel">输出预览文件夹</div><div class="shint">文件管理预览的根目录，默认为 ComfyUI 目录下的 output 文件夹</div></div>
           <input type="text" class="sinput sinput-wide" id="soutd" placeholder="C:\ComfyUI\ComfyUI\output">
         </div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">工作流备份目录</div><div class="shint">点击工作流管理的「备份」按钮时，工作流目录会复制到此处，留空则不启用备份</div></div>
+          <input type="text" class="sinput sinput-wide" id="swfbd" placeholder="C:\backup（留空则不启用备份）">
+        </div>
       </div>
 
 
@@ -711,11 +716,11 @@
       </select>
 
       <h2 class="sg-title">关机功能</h2>
-      <div class="srow"><div class="slabel-block"><div class="slabel">默认关机延迟(秒)</div><div class="shint">点击右下角悬浮按钮后，等待多少秒执行关机，可填 0-3600</div></div>
+      <div class="srow"><div class="slabel-block"><div class="slabel">默认关机延迟(秒)</div><div class="shint">点击右下角菜单的关机按钮后，等待多少秒执行关机，可填 0-3600</div></div>
         <input type="number" id="sdly" class="sinput" style="width:140px" min="0" max="3600" placeholder="60">
       </div>
 
-      <div class="sacts"><button class="btn btn6" onclick="resetS()">恢复默认</button><button class="btn btn1" onclick="saveS()">保存设置</button><button class="btn btn5" onclick="saveSRestart()">保存并重启 aria2c</button></div>
+      <div class="sacts"><button class="btn btn6" onclick="resetS()"><i class="bi bi-arrow-counterclockwise"></i> 恢复默认</button><button class="btn btn1" onclick="saveS()"><i class="bi bi-save"></i> 保存设置</button><button class="btn btn5" onclick="saveSRestart()"><i class="bi bi-arrow-repeat"></i> 保存并重启 aria2c</button></div>
       <div class="snote">设置保存后需重启 aria2c 生效</div>
     </div>
   </div>
@@ -723,43 +728,43 @@
 
 <!-- ====== 修复安装 ====== -->
 <div id="page-repair" class="page center-page"><div class="center-wrap">
-  <h1 class="ptitle"><span class="mi-icon">&#128736;</span>修复安装</h1>
+  <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-wrench-adjustable"></i></span>修复安装</h1>
   <div class="card" style="border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.03)">
     <div style="font-size:16px;font-weight:700;color:var(--amber);margin-bottom:8px">&#9888; 请先配置全局设置</div>
     <div style="color:var(--text2);line-height:1.6">在使用以下功能前，请务必在 <a href="javascript:switchPage(null,'settings')" style="color:var(--cyan);text-decoration:underline">全局设置</a> 中正确配置 <strong>Python 路径</strong>、<strong>Git 路径</strong> 和 <strong>ComfyUI 根目录</strong>。</div>
   </div>
 
   <!-- ====== 安装区域 ====== -->
-  <div class="section-title"><span class="mi-icon">&#128640;</span> 安装区域</div>
+  <div class="section-title"><span class="mi-icon"><i class="bi bi-download"></i></span> 安装区域</div>
 
   <div class="card">
-    <div class="card-title"><span class="mi-icon">&#128187;</span> 克隆 ComfyUI 仓库</div>
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-git"></i></span> 克隆 ComfyUI 仓库</div>
     <div class="srow"><span class="sl">安装目录</span><input id="rclone_dir" class="sinput sinput-wide" placeholder="如 C:\ComfyUI\ComfyUI2" style="width:100%"></div>
     <div class="srow" style="flex-direction:row;align-items:center;gap:12px"><span class="sl">使用镜像</span><label class="sw"><input type="checkbox" id="rclone_mirror" checked><span class="st">国内镜像 (api.gitproxy.dev)</span></label></div>
     <div id="rclone_warn" style="margin-bottom:10px;display:none"></div>
-    <button class="btn btn2" id="rclone_btn" onclick="repairClone()">&#128187; 克隆 ComfyUI</button>
+    <button class="btn btn2" id="rclone_btn" onclick="repairClone()"><i class="bi bi-pc-display"></i> 克隆 ComfyUI</button>
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="mi-icon">&#128295;</span> 安装 requirements.txt 依赖</div>
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-tools"></i></span> 安装 requirements.txt 依赖</div>
     <div style="color:var(--text2);margin-bottom:10px">基于 ComfyUI 根目录，执行 <code>pip install -r requirements.txt</code></div>
-    <button class="btn btn1" id="rreq_btn" onclick="repairRequirements()">&#128295; 安装 requirements.txt</button>
+    <button class="btn btn1" id="rreq_btn" onclick="repairRequirements()"><i class="bi bi-tools"></i> 安装 requirements.txt</button>
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="mi-icon">&#127754;</span> 安装 PyTorch</div>
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-cpu"></i></span> 安装 PyTorch</div>
     <div style="color:var(--text2);margin-bottom:6px">基于 static/info/pytorch.txt，选择版本与计算平台</div>
     <div class="srow"><span class="sl">PyTorch 版本</span><select id="rpt_ver" class="sinput sinput-wide" onchange="repairUpdateVariants()" style="width:100%"><option value="">加载中...</option></select></div>
     <div class="srow"><span class="sl">计算平台</span><select id="rpt_var" class="sinput sinput-wide" style="width:100%" onchange="repairUpdateCmd()"><option value="">请先选择版本</option></select></div>
-    <div class="srow"><span class="sl">安装命令</span><code id="rpt_cmd" style="background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-size:12px;word-break:break-all;min-height:38px;display:flex;align-items:center;width:100%;box-sizing:border-box">等待选择...</code></div>
-    <button class="btn btn5" id="rpt_btn" onclick="repairPytorch()">&#127754; 安装 PyTorch</button>
+    <div class="srow"><span class="sl">安装命令</span><code id="rpt_cmd" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:12px;word-break:break-all;min-height:38px;display:flex;align-items:center;width:100%;box-sizing:border-box">等待选择...</code></div>
+    <button class="btn btn5" id="rpt_btn" onclick="repairPytorch()"><i class="bi bi-cpu"></i> 安装 PyTorch</button>
   </div>
 
   <!-- ====== 修复区域 ====== -->
-  <div class="section-title"><span class="mi-icon">&#128736;</span> 修复区域</div>
+  <div class="section-title"><span class="mi-icon"><i class="bi bi-wrench-adjustable"></i></span> 修复区域</div>
 
   <div class="card">
-    <div class="card-title"><span class="mi-icon">&#128260;</span> 更新 ComfyUI</div>
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-arrow-up-circle"></i></span> 更新 ComfyUI</div>
     <div style="color:var(--text2);margin-bottom:10px">使用 git 更新 ComfyUI 到最新版或切换到特定分支/标签。需要 ComfyUI 根目录为 Git 仓库。普通用户只需要点更新到最新版按钮即可。</div>
     <div class="srow"><span class="sl">版本选择</span>
       <select id="rcui_branch" class="sinput sinput-wide" style="width:100%" onchange="repairCuiBranchChange()">
@@ -767,33 +772,33 @@
       </select>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn btn5" id="rcui_latest_btn" onclick="repairComfyUIUpdate('')">&#128260; 更新到最新版 (git pull)</button>
-      <button class="btn btn1" id="rcui_tag_btn" onclick="repairComfyUIUpdate(document.getElementById('rcui_branch').value)">&#128260; 更新到选中版本</button>
+      <button class="btn btn5" id="rcui_latest_btn" onclick="repairComfyUIUpdate('')"><i class="bi bi-arrow-up-circle"></i> 更新到最新版 (git pull)</button>
+      <button class="btn btn1" id="rcui_tag_btn" onclick="repairComfyUIUpdate(document.getElementById('rcui_branch').value)"><i class="bi bi-arrow-up-circle"></i> 更新到选中版本</button>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="mi-icon">&#128230;</span> 安装依赖</div>
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-box-seam"></i></span> 安装依赖</div>
     <div style="color:var(--text2);margin-bottom:10px">使用全局设置中的 Python 路径安装 pip 依赖包。多个包名用空格分隔。</div>
     <div class="srow"><span class="sl">包名</span><input id="rpip_pkgs" class="sinput sinput-wide" placeholder="例如: numpy pandas torch==2.1.0" style="width:100%"></div>
     <div class="srow"><span class="sl">镜像源</span><select id="rpip_mirror" class="sinput sinput-wide" style="width:100%"><option value="official">官方源 (pypi.org)</option><option value="tsinghua">清华源 (tuna.tsinghua.edu.cn)</option><option value="aliyun">阿里源 (mirrors.aliyun.com)</option></select></div>
-    <button class="btn btn1" id="rpip_btn" onclick="repairPipInstall()">&#128230; 安装依赖</button>
+    <button class="btn btn1" id="rpip_btn" onclick="repairPipInstall()"><i class="bi bi-box-seam"></i> 安装依赖</button>
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="mi-icon">&#128229;</span> 下载文件</div>
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-box-arrow-in-down"></i></span> 下载文件</div>
     <div style="color:var(--text2);margin-bottom:10px">使用 aria2c 下载远程文件。如不填保存路径，默认保存到 ComfyUI\models 目录。</div>
     <div class="srow"><span class="sl">下载链接</span><input id="rdl_url" class="sinput sinput-wide" placeholder="https://huggingface.co/.../model.safetensors" style="width:100%"></div>
     <div class="srow"><span class="sl">保存路径</span><input id="rdl_path" class="sinput sinput-wide" placeholder="留空则默认：ComfyUI 根目录\models" style="width:100%"></div>
-    <button class="btn btn2" id="rdl_btn" onclick="repairDownload()">&#128229; 下载文件</button>
+    <button class="btn btn2" id="rdl_btn" onclick="repairDownload()"><i class="bi bi-download"></i> 下载文件</button>
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="mi-icon">&#128193;</span> 修复单个插件</div>
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-puzzle"></i></span> 修复单个插件</div>
     <div style="color:var(--text2);margin-bottom:10px">输入 custom_nodes 中的插件文件夹名，执行 <strong>git pull</strong> 更新 + 安装 requirements.txt 依赖</div>
     <div class="srow"><span class="sl">插件名称</span><input id="rplugin_name" class="sinput sinput-wide" placeholder="例如: ComfyUI-Manager" style="width:100%"></div>
     <div style="margin-top:8px">
-      <button class="btn btn1" id="rplugin_btn" onclick="repairPlugin()">&#128193; 修复此插件</button>
+      <button class="btn btn1" id="rplugin_btn" onclick="repairPlugin()"><i class="bi bi-wrench"></i> 修复此插件</button>
       <select id="rplugin_mirror" style="margin-left:8px;padding:6px 10px;border-radius:6px;font-size:13px">
         <option value="">&#127760; 官方源 (直连)</option>
         <option value="https://api.gitproxy.dev/github.com/">&#128640; api.gitproxy.dev 镜像</option>
@@ -802,9 +807,9 @@
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="mi-icon">&#128194;</span> 修复所有插件</div>
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-puzzle-fill"></i></span> 修复所有插件</div>
     <div style="color:var(--text2);margin-bottom:10px">扫描 custom_nodes 下所有 Git 插件，逐个执行 <strong>git pull</strong> + requirements.txt 依赖安装</div>
-    <button class="btn btn1" id="rall_btn" onclick="repairAllPlugins()">&#128194; 批量修复全部插件</button>
+    <button class="btn btn1" id="rall_btn" onclick="repairAllPlugins()"><i class="bi bi-tools"></i> 批量修复全部插件</button>
     <select id="rall_mirror" style="margin-left:8px;padding:6px 10px;border-radius:6px;font-size:13px" onchange="repairAllMirrorChanged()">
       <option value="">&#127760; 官方源 (直连)</option>
       <option value="https://api.gitproxy.dev/github.com/">&#128640; api.gitproxy.dev 镜像</option>
@@ -812,34 +817,34 @@
   </div>
 
   <div class="card" style="border-color:rgba(239,68,68,0.5);background:rgba(239,68,68,0.04)">
-    <div class="card-title" style="color:var(--red)"><span class="mi-icon">&#9888;</span> 强制进程控制</div>
+    <div class="card-title" style="color:var(--red)"><span class="mi-icon"><i class="bi bi-exclamation-triangle"></i></span> 强制进程控制</div>
     <div style="color:rgba(239,68,68,0.85);margin-bottom:12px;padding:10px 14px;background:rgba(239,68,68,0.08);border-radius:6px;line-height:1.6">
       <strong>&#9888; 危险操作</strong>：以下按钮将强制结束所有相关进程，可能丢失未保存数据，请谨慎使用。
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn btn3" id="rkill_a2" onclick="repairKillAria2()">&#128163; 结束所有 aria2 进程</button>
+      <button class="btn btn3" id="rkill_a2" onclick="repairKillAria2()"><i class="bi bi-x-octagon-fill"></i> 结束所有 aria2 进程</button>
     </div>
   </div>
 
   <!-- ====== 日志 + 控制 ====== -->
   <div class="card">
-    <div class="card-title"><span class="mi-icon">&#128220;</span> 运行日志 <span id="rlog_status" style="font-size:12px;font-weight:400;color:var(--text2);margin-left:12px">空闲</span></div>
-    <pre id="rlog" style="background:rgba(0,0,0,0.5);border:1px solid var(--border);border-radius:8px;padding:14px;max-height:420px;overflow-y:auto;font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-all;font-family:'Cascadia Code','Consolas','Courier New',monospace">等待操作...</pre>
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-journal-text"></i></span> 运行日志 <span id="rlog_status" style="font-size:12px;font-weight:400;color:var(--text2);margin-left:12px">空闲</span></div>
+    <pre id="rlog" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;max-height:420px;overflow-y:auto;font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-all;font-family:'Cascadia Code','Consolas','Courier New',monospace">等待操作...</pre>
     <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
-      <button class="btn btn3" id="rstop_btn" onclick="repairStop()" disabled>&#9209; 停止操作</button>
-      <button class="btn btn4" id="rpurge_btn" onclick="repairPurgeCache()">&#128465; 清除 pip 缓存</button>
+      <button class="btn btn3" id="rstop_btn" onclick="repairStop()" disabled><i class="bi bi-stop-circle"></i> 停止操作</button>
+      <button class="btn btn4" id="rpurge_btn" onclick="repairPurgeCache()"><i class="bi bi-trash"></i> 清除 pip 缓存</button>
     </div>
   </div>
 </div></div>
 
 <!-- ====== 关于 ====== -->
 <div id="page-about" class="page center-page" style="padding-bottom:60px"><div class="center-wrap">
-  <h1 class="ptitle"><span class="mi-icon">&#8505;&#65039;</span>关于</h1>
+  <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-info-circle"></i></span>关于</h1>
 
   <!-- 软件简介 -->
   <div class="card" style="text-align:center;padding:48px 40px;margin-bottom:24px">
-    <div style="font-size:72px;margin-bottom:20px;filter:drop-shadow(0 0 32px rgba(250,180,200,0.4));animation:float 3s ease-in-out infinite">&#128049;</div>
-    <div style="font-size:28px;font-weight:800;margin-bottom:6px;background:linear-gradient(135deg,#f9a8d4,var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent">薇薇的猫</div>
+    <div style="font-size:72px;margin-bottom:20px;filter:drop-shadow(0 0 32px rgba(195,141,148,0.35));animation:float 3s ease-in-out infinite">&#128049;</div>
+    <div style="font-size:28px;font-weight:800;margin-bottom:6px;background:linear-gradient(135deg,#c38d94,#4a6fa5);-webkit-background-clip:text;-webkit-text-fill-color:transparent">薇薇的猫</div>
     <div style="font-size:13px;color:var(--cyan);margin-bottom:28px;font-weight:500;letter-spacing:2px">COMFYUI MANAGER</div>
     <div style="font-size:14px;color:var(--text2);line-height:2.2;max-width:460px;margin:0 auto 8px">
       便捷的 ComfyUI 模型管理工具<br>
@@ -851,7 +856,7 @@
   <!-- 作者信息 -->
   <div class="card" style="padding:40px;margin-bottom:24px">
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px">
-      <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#f9a8d4,var(--cyan));display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">&#128049;</div>
+      <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#c38d94,#4a6fa5);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">&#128049;</div>
       <div>
         <div style="font-size:20px;font-weight:700;color:var(--text)">薇薇的猫</div>
         <div style="font-size:12px;color:var(--text3)">作者</div>
@@ -859,7 +864,7 @@
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px">
       <a class="olink" href="https://space.bilibili.com/472768517" target="_blank" style="padding:12px 20px;flex:1;min-width:200px">
-        <span style="font-size:20px;color:#fb7299">&#9655;</span>
+        <span style="font-size:20px;color:#d4a373">&#9655;</span>
         <span>Bilibili <span style="color:var(--text3);font-size:12px">薇薇的猫66</span></span>
       </a>
       <a class="olink" href="https://www.runninghub.cn/user-center/1955362264149782530/webapp?inviteCode=twxvsxx8" target="_blank" style="padding:12px 20px;flex:1;min-width:200px">
@@ -875,7 +880,7 @@
         <span>抖音 <span style="color:var(--text3);font-size:12px">薇薇的猫</span></span>
       </a>
       <div class="olink" style="cursor:default;padding:12px 20px;flex:1;min-width:200px">
-        <span style="font-size:20px;color:#f9a8d4">&#128235;</span>
+        <span style="font-size:20px;color:#c38d94">&#128235;</span>
         <span>微信 <span style="color:var(--text3);font-size:12px">weiweismiao</span></span>
       </div>
     </div>
@@ -907,13 +912,26 @@
       <span style="font-size:16px;font-weight:700;color:var(--text)">版本更新</span>
     </div>
     <div style="position:relative;padding-left:32px">
-      <div style="position:absolute;left:11px;top:8px;bottom:8px;width:2px;background:linear-gradient(180deg,var(--cyan),rgba(0,212,255,0.15))"></div>
+      <div style="position:absolute;left:11px;top:8px;bottom:8px;width:2px;background:linear-gradient(180deg,var(--cyan),rgba(74,111,165,0.15))"></div>
       
       <div style="position:relative;margin-bottom:32px">
-        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px rgba(0,212,255,0.5)"></div>
+        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px rgba(74,111,165,0.40)"></div>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-          <span style="display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(0,212,255,0.05));color:var(--cyan);font-weight:700;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid rgba(0,212,255,0.25)">v3.5</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(74,111,165,0.15),rgba(74,111,165,0.04));color:var(--cyan);font-weight:700;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid rgba(74,111,165,0.25)">v3.7</span>
           <span style="font-size:12px;color:var(--text3)">最新</span>
+        </div>
+        <div style="color:var(--text2);font-size:13px;line-height:1.8;padding-left:4px">
+          • 增加更多模型和插件<br>
+          • 新增笔记本、工作流管理、定时关机功能<br>
+          • 优化右下角按钮<br>
+          • 修复了其他的细节问题
+        </div>
+      </div>
+
+      <div style="position:relative;margin-bottom:32px">
+        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--text3);box-shadow:0 0 8px rgba(74,111,165,0.12)"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;background:rgba(74,111,165,0.05);color:var(--text3);font-weight:600;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">v3.5</span>
         </div>
         <div style="color:var(--text2);font-size:13px;line-height:1.8;padding-left:4px">
           • 增加更多模型与插件<br>
@@ -924,9 +942,9 @@
       </div>
 
       <div style="position:relative;margin-bottom:32px">
-        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--text3);box-shadow:0 0 8px rgba(0,212,255,0.15)"></div>
+        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--text3);box-shadow:0 0 8px rgba(74,111,165,0.12)"></div>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-          <span style="display:inline-flex;align-items:center;justify-content:center;background:rgba(0,212,255,0.05);color:var(--text3);font-weight:600;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">v3.2</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;background:rgba(74,111,165,0.05);color:var(--text3);font-weight:600;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">v3.2</span>
         </div>
         <div style="color:var(--text2);font-size:13px;line-height:1.8;padding-left:4px">
           增加输入预览文件夹模块，优化输入输出预览；优化全局设置和修复安装设置功能；优化模型和插件管理；帮助增加视频教程链接。
@@ -934,9 +952,9 @@
       </div>
 
       <div style="position:relative;margin-bottom:32px">
-        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--text3);box-shadow:0 0 8px rgba(0,212,255,0.15)"></div>
+        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--text3);box-shadow:0 0 8px rgba(74,111,165,0.12)"></div>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-          <span style="display:inline-flex;align-items:center;justify-content:center;background:rgba(0,212,255,0.05);color:var(--text3);font-weight:600;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">v2.9</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;background:rgba(74,111,165,0.05);color:var(--text3);font-weight:600;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">v2.9</span>
         </div>
         <div style="color:var(--text2);font-size:13px;line-height:1.8;padding-left:4px">
           支持模型智能搜索与批量管理；新增队列管理与进度监控面板；优化 UI 交互与暗色主题；修复多项稳定性问题。
@@ -944,9 +962,9 @@
       </div>
 
       <div style="position:relative;margin-bottom:32px">
-        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--text3);box-shadow:0 0 8px rgba(0,212,255,0.2)"></div>
+        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--text3);box-shadow:0 0 8px rgba(74,111,165,0.16)"></div>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-          <span style="display:inline-flex;align-items:center;justify-content:center;background:rgba(0,212,255,0.08);color:var(--text2);font-weight:600;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">v2.5</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;background:rgba(74,111,165,0.06);color:var(--text2);font-weight:600;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">v2.5</span>
         </div>
         <div style="color:var(--text2);font-size:13px;line-height:1.8;padding-left:4px">
           引入 aria2c 下载引擎，支持多线程加速下载；插件一键克隆与 Git 集成；新增全局设置面板。
@@ -954,9 +972,9 @@
       </div>
 
       <div style="position:relative">
-        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--text3);box-shadow:0 0 8px rgba(0,212,255,0.15)"></div>
+        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--text3);box-shadow:0 0 8px rgba(74,111,165,0.12)"></div>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-          <span style="display:inline-flex;align-items:center;justify-content:center;background:rgba(0,212,255,0.05);color:var(--text3);font-weight:600;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">v1.0</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;background:rgba(74,111,165,0.05);color:var(--text3);font-weight:600;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">v1.0</span>
         </div>
         <div style="color:var(--text2);font-size:13px;line-height:1.8;padding-left:4px">
           首个正式版本发布，支持 ComfyUI 模型 CRUD、插件管理、基础文件浏览与设置。
@@ -975,7 +993,7 @@
   <div class="fg"><label>模型名称</label><input type="text" id="fname" placeholder="例如: model.safetensors"></div>
   <div class="fg"><label>存放路径</label><input type="text" id="fpath" placeholder="models/diffusion_models" list="plist"><datalist id="plist"></datalist></div>
   <div class="fg"><label>下载链接</label><input type="url" id="furl" placeholder="https://huggingface.co/..."></div>
-  <div class="fact"><button class="btn btn6" onclick="closeModal()">取消</button><button class="btn btn1" onclick="saveModel()">保存</button></div>
+  <div class="fact"><button class="btn btn6" onclick="closeModal()"><i class="bi bi-x-lg"></i> 取消</button><button class="btn btn1" onclick="saveModel()"><i class="bi bi-save"></i> 保存</button></div>
 </div></div>
 
 <!-- 批量新增模型弹窗 -->
@@ -995,9 +1013,9 @@
   </div>
   <div class="fact" style="margin-top:16px">
     <span id="batMsg" style="flex:1;font-size:12px;color:var(--text2)"></span>
-    <button class="btn btn6" onclick="closeBatModal()">取消</button>
-    <button class="btn btn2" id="batExtractBtn" onclick="extractNames()">提取名称</button>
-    <button class="btn btn1" id="batSubmitBtn" onclick="submitBatch()">批量新增</button>
+    <button class="btn btn6" onclick="closeBatModal()"><i class="bi bi-x-lg"></i> 取消</button>
+    <button class="btn btn2" id="batExtractBtn" onclick="extractNames()"><i class="bi bi-magic"></i> 提取名称</button>
+    <button class="btn btn1" id="batSubmitBtn" onclick="submitBatch()"><i class="bi bi-clipboard-plus"></i> 批量新增</button>
   </div>
 </div></div>
 
@@ -1007,10 +1025,27 @@
   <div class="fg"><label>插件名称</label><input type="text" id="pfname" placeholder="如: ComfyUI-Manager"></div>
   <div class="fg"><label>Git 仓库地址</label><input type="url" id="pfurl" placeholder="https://github.com/user/repo.git"></div>
   <div class="fg"><label>描述</label><input type="text" id="pfdesc" placeholder="简短描述"></div>
-  <div class="fact"><button class="btn btn6" onclick="closePluginModal()">取消</button><button class="btn btn1" onclick="savePlugin()">保存</button></div>
+  <div class="fact"><button class="btn btn6" onclick="closePluginModal()"><i class="bi bi-x-lg"></i> 取消</button><button class="btn btn1" onclick="savePlugin()"><i class="bi bi-save"></i> 保存</button></div>
 </div></div>
 
-<button id="btnTop" title="回到顶部">&#9650;</button>
+<!-- ====== 右下角扇形功能菜单（iconfont 线性画风图标） ====== -->
+<div id="fabWrap">
+  <div class="fab-fan" id="fabFan">
+    <button class="fab-sub fab-top" id="fabBtnTop" title="回到顶部">
+      <i class="bi bi-arrow-up"></i>
+    </button>
+    <button class="fab-sub fab-theme" id="fabBtnTheme" title="切换主题">
+      <i class="bi bi-sun-fill ico-sun"></i>
+      <i class="bi bi-moon-stars-fill ico-moon" style="display:none"></i>
+    </button>
+    <button class="fab-sub fab-power" id="fabBtnPower" title="定时关机">
+      <i class="bi bi-power"></i>
+    </button>
+  </div>
+  <button id="fabMain" title="更多功能">
+    <i class="bi bi-alexa"></i>
+  </button>
+</div>
 
 <!-- ====== SCRIPTS ====== -->
 <script>
@@ -1034,6 +1069,99 @@ updateBanner();setInterval(updateBanner,30000);
 // ============================================================
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed')}
 function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+
+// ============================================================
+// 信息弹窗 (替代原生 alert，统一风格)
+// ============================================================
+var _ntfWrap=null;
+function _ntfEnsure(){if(_ntfWrap)return _ntfWrap;_ntfWrap=document.createElement('div');_ntfWrap.id='notify-wrap';document.body.appendChild(_ntfWrap);return _ntfWrap}
+function notify(msg,type,dur){
+  msg=(msg===undefined||msg===null)?'':String(msg);
+  if(!type){
+    if(/失败|错误|无效|不存在|未找到|超时|拒绝|异常|不可|不能|请先|请输入|请填写|请至少|请选择|未检测|无效命令|\u274c|\u26a0/.test(msg)){type='error'}
+    else if(/成功|已保存|已卸载|已计划|已发送|已创建|已删除|已更新|队列|开始|完成|\u2705/.test(msg)){type='success'}
+    else{type='info'}
+  }
+  var ico='bi-info-circle-fill';
+  if(type==='error')ico='bi-x-circle-fill';
+  else if(type==='success')ico='bi-check-circle-fill';
+  else if(type==='warning')ico='bi-exclamation-triangle-fill';
+  var sec=(dur!==undefined&&dur!==null)?dur:(type==='error'?5200:(type==='warning'?4500:3200));
+  var wrap=_ntfEnsure();
+  var el=document.createElement('div');el.className='ntf ntf-'+type;
+  el.innerHTML='<span class="ntf-ico"><i class="bi '+ico+'"></i></span>'
+    +'<div class="ntf-body">'+msg.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')+'</div>'
+    +'<button class="ntf-x" title="关闭"><i class="bi bi-x-lg"></i></button><span class="ntf-bar"></span>';
+  wrap.appendChild(el);
+  var bar=el.querySelector('.ntf-bar');bar.style.animationDuration=sec+'ms';
+  var timer=null;
+  function close(){if(el._closed)return;el._closed=true;el.classList.add('ntf-out');setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el)},260)}
+  function start(){timer=setTimeout(close,sec)}
+  el.querySelector('.ntf-x').addEventListener('click',close);
+  el.addEventListener('mouseenter',function(){clearTimeout(timer);bar.style.animationPlayState='paused'});
+  el.addEventListener('mouseleave',function(){bar.style.animationPlayState='running';start()});
+  start();
+  return el;
+}
+
+// ============================================================
+// 确认弹窗 (替代原生 confirm，支持危险/警告样式)
+// ============================================================
+function confirmDialog(msg,opts){
+  opts=opts||{};
+  var title=opts.title||'确认操作';
+  var okText=opts.okText||'确定';
+  var cancelText=opts.cancelText||'取消';
+  var danger=!!opts.danger;
+  var ico=opts.icon||(danger?'bi-exclamation-triangle-fill':'bi-question-circle-fill');
+  return new Promise(function(resolve){
+    var mask=document.createElement('div');mask.className='cdlg-mask';
+    mask.innerHTML='<div class="cdlg">'
+      +'<div class="cdlg-hd"><span class="cdlg-ico '+(danger?'cdlg-ico-danger':'')+'"><i class="bi '+ico+'"></i></span><h3>'+esc(title)+'</h3></div>'
+      +'<div class="cdlg-body">'+(msg||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')+'</div>'
+      +'<div class="cdlg-ft"><button class="btn btn6 cdlg-cancel">'+esc(cancelText)+'</button>'
+      +'<button class="btn '+(danger?'btn3':'btn1')+' cdlg-ok">'+esc(okText)+'</button></div>'
+      +'</div>';
+    document.body.appendChild(mask);
+    function done(v){mask.remove();document.removeEventListener('keydown',onKey);resolve(v)}
+    function onKey(e){if(e.key==='Escape'){e.preventDefault();done(false)}else if(e.key==='Enter'){e.preventDefault();done(true)}}
+    mask.querySelector('.cdlg-ok').addEventListener('click',function(){done(true)});
+    mask.querySelector('.cdlg-cancel').addEventListener('click',function(){done(false)});
+    mask.addEventListener('click',function(e){if(e.target===mask)done(false)});
+    document.addEventListener('keydown',onKey);
+    var okBtn=mask.querySelector('.cdlg-ok');if(okBtn)okBtn.focus();
+  });
+}
+
+// ============================================================
+// 输入弹窗 (替代原生 prompt)
+// ============================================================
+function promptDialog(msg,def,opts){
+  opts=opts||{};
+  var title=opts.title||'请输入';
+  var okText=opts.okText||'确定';
+  var cancelText=opts.cancelText||'取消';
+  var placeholder=opts.placeholder||'';
+  return new Promise(function(resolve){
+    var mask=document.createElement('div');mask.className='cdlg-mask';
+    mask.innerHTML='<div class="cdlg">'
+      +'<div class="cdlg-hd"><span class="cdlg-ico"><i class="bi bi-pencil-square"></i></span><h3>'+esc(title)+'</h3></div>'
+      +'<div class="cdlg-body">'+(msg||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')+'</div>'
+      +'<div class="cdlg-input-wrap"><input class="cdlg-input" type="text" placeholder="'+esc(placeholder)+'" value="'+esc(def||'')+'"></div>'
+      +'<div class="cdlg-ft"><button class="btn btn6 cdlg-cancel">'+esc(cancelText)+'</button>'
+      +'<button class="btn btn1 cdlg-ok">'+esc(okText)+'</button></div>'
+      +'</div>';
+    document.body.appendChild(mask);
+    var input=mask.querySelector('.cdlg-input');
+    function done(v){mask.remove();document.removeEventListener('keydown',onKey);resolve(v)}
+    function onKey(e){if(e.key==='Escape'){e.preventDefault();done(null)}else if(e.key==='Enter'){e.preventDefault();done(input.value)}}
+    mask.querySelector('.cdlg-ok').addEventListener('click',function(){done(input.value)});
+    mask.querySelector('.cdlg-cancel').addEventListener('click',function(){done(null)});
+    mask.addEventListener('click',function(e){if(e.target===mask)done(null)});
+    document.addEventListener('keydown',onKey);
+    input.focus();input.select();
+  });
+}
 
 function switchPage(e,p){
   document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active')});
@@ -1112,7 +1240,7 @@ function outUpdateSelUI(){
 
 async function outDeleteSelected(){
   if(_selPaths.size===0)return;
-  if(!confirm('确认删除 '+_selPaths.size+' 个文件/文件夹？\n此操作不可撤销！'))return;
+  if(!(await confirmDialog('确认删除 '+_selPaths.size+' 个文件/文件夹？\n此操作不可撤销！',{danger:true})))return;
   var paths=[];_selPaths.forEach(function(p){paths.push(p)});
   try{
     var r=await fetch('/api/output/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paths:paths})});
@@ -1120,7 +1248,7 @@ async function outDeleteSelected(){
     _selPaths.clear();outUpdateSelUI();
     var cb=document.getElementById('outSelAll');if(cb)cb.checked=false;
     browseOutput(outPath,outData?outData.page:1);
-  }catch(e){alert('删除失败: '+e.message)}
+  }catch(e){notify('删除失败: '+e.message)}
 }
 
 function escHtml(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
@@ -1139,7 +1267,7 @@ async function browseOutput(path,page){
     var r=await fetch('/api/output/browse?'+q);
     var d=await r.json();
     outData=d;
-    if(!d.ok){alert(d.msg);return}
+    if(!d.ok){notify(d.msg);return}
     outInitView();
     outItemMap={};d.items.forEach(function(it){outItemMap[it.path]=it});
     outRender(d,page);
@@ -1153,7 +1281,7 @@ function outClearSearch(){
   browseOutput('',1);
 }
 function outOpenFolder(){
-  fetch('/api/output/open_dir').then(function(r){return r.json()}).then(function(d){if(!d.ok)alert(d.msg)});
+  fetch('/api/output/open_dir').then(function(r){return r.json()}).then(function(d){if(!d.ok)notify(d.msg)});
 }
 
 function outUploadFiles(files){
@@ -1168,11 +1296,11 @@ function outUploadFiles(files){
     .then(function(d){
       input.disabled=false; input.value='';
       if(d.ok){ browseOutput(outPath,1); }
-      else { alert(d.msg); }
+      else { notify(d.msg); }
     })
     .catch(function(e){
       input.disabled=false; input.value='';
-      alert('上传失败: '+e.message);
+      notify('上传失败: '+e.message);
     });
 }
 
@@ -1292,10 +1420,10 @@ function outFmtTime(ts){var d=new Date(ts*1000);var pad=function(n){return n<10?
 function outRenderPager(d){
   var pgEl=document.getElementById('outPager');
   if(d.total_pages<=1){pgEl.innerHTML='';return}
-  var h='<button class="btn btn6" style="font-size:12px;padding:4px 8px"'+(d.page<=1?' disabled':' onclick="browseOutput(outPath,'+(d.page-1)+')"')+'>◀ 上一页</button>';
+  var h='<button class="btn btn6" style="font-size:12px;padding:4px 8px"'+(d.page<=1?' disabled':' onclick="browseOutput(outPath,'+(d.page-1)+')"')+'>'+'<i class="bi bi-chevron-left"></i> 上一页</button>';
   for(var i=Math.max(1,d.page-2),e=Math.min(d.total_pages,d.page+2);i<=e;i++)
     h+='<button class="btn '+(i===d.page?'btn1':'btn6')+'" style="font-size:12px;padding:4px 8px;min-width:32px" onclick="browseOutput(outPath,'+i+')">'+i+'</button>';
-  h+='<button class="btn btn6" style="font-size:12px;padding:4px 8px"'+(d.page>=d.total_pages?' disabled':' onclick="browseOutput(outPath,'+(d.page+1)+')"')+'>▶ 下一页</button>';
+  h+='<button class="btn btn6" style="font-size:12px;padding:4px 8px"'+(d.page>=d.total_pages?' disabled':' onclick="browseOutput(outPath,'+(d.page+1)+')"')+'>'+'<i class="bi bi-chevron-right"></i> 下一页</button>';
   pgEl.innerHTML=h;
 }
 
@@ -1348,6 +1476,7 @@ function showCtxMenu(el,x,y,path,isDir){
 
 function _ctxInfo(){
   if(window._curPage==='input')return{api:'/api/input',path:inPath,data:inData,browse:browseInput,delSel:inDeleteSelected,upUI:inUpdateSelUI};
+  if(window._curPage==='workflows')return{api:'/api/workflows',path:wfState.curPath,data:null,browse:function(){wfDoBrowse()},delSel:wfDeleteSelected,upUI:function(){}};
   return{api:'/api/output',path:outPath,data:outData,browse:browseOutput,delSel:outDeleteSelected,upUI:outUpdateSelUI};
 }
 
@@ -1383,10 +1512,10 @@ async function ctxPaste(){
   var d=await r.json();
   if(d.ok||(d.results&&d.results.length)){
     var errs=d.results?d.results.filter(function(x){return!x.ok}):[];
-    if(errs.length)alert('失败: '+errs.map(function(x){return x.path+': '+x.msg}).join('\n'));
+    if(errs.length)notify('失败: '+errs.map(function(x){return x.path+': '+x.msg}).join('\n'));
     if(_clipboard.action==='move')_clipboard={action:'',paths:[]};
     ci.browse(ci.path,ci.data?ci.data.page:1);
-  }else{alert(d.msg)}
+  }else{notify(d.msg)}
   hideCtxMenu();
 }
 async function ctxDelete(){
@@ -1397,27 +1526,28 @@ async function ctxDelete(){
     return;
   }
   if(!_ctxTarget||_ctxTarget.is_blank)return;
-  var name=_ctxTarget.path.split('/').pop();
-  if(!confirm('确认删除 "'+name+'"?\n此操作不可撤销！')){hideCtxMenu();return}
+  var p=_ctxTarget.path;
+  var name=p.split('/').pop();
+  if(!(await confirmDialog('确认删除 "'+name+'"?\n此操作不可撤销！',{danger:true}))){hideCtxMenu();return}
   var r=await fetch(ci.api+'/delete',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({paths:[_ctxTarget.path]})});
+    body:JSON.stringify({paths:[p]})});
   var d=await r.json();
   if(d.ok||d.results)ci.browse(ci.path,ci.data?ci.data.page:1);
-  else alert(d.msg||'删除失败');
+  else notify(d.msg||'删除失败');
   hideCtxMenu();
 }
-function ctxRename(){
+async function ctxRename(){
   var ci=_ctxInfo();
   if(!_ctxTarget||_ctxTarget.is_blank)return;
-  var old=_ctxTarget.path.split('/').pop();
-  var nm=prompt('重命名:',old);
-  if(!nm||nm===old){hideCtxMenu();return;}
   var p=_ctxTarget.path;
+  var old=p.split('/').pop();
+  var nm=await promptDialog('重命名:',old,{title:'重命名'});
+  if(!nm||nm===old){hideCtxMenu();return;}
   hideCtxMenu();
   fetch(ci.api+'/rename',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({path:p,new_name:nm})}).then(function(r){return r.json()}).then(function(d){
       if(d.ok)ci.browse(ci.path,ci.data?ci.data.page:1);
-      else alert(d.msg||'重命名失败');
+      else notify(d.msg||'重命名失败');
     });
 }
 async function ctxSendToInput(){
@@ -1435,23 +1565,23 @@ async function ctxSendToInput(){
     var d=await r.json();
     if(d.ok){
       var cntOk=d.results.filter(function(x){return x.ok}).length;
-      alert('\u2705 已发送 '+cntOk+'/'+paths.length+' 项到输入文件夹');
+      notify('\u2705 已发送 '+cntOk+'/'+paths.length+' 项到输入文件夹');
     }else{
-      alert('\u274c 发送失败: '+(d.msg||''));
+      notify('\u274c 发送失败: '+(d.msg||''));
     }
-  }catch(e){alert('\u274c 发送失败: '+e.message)}
+  }catch(e){notify('\u274c 发送失败: '+e.message)}
 }
 
-function ctxNewFolder(){
+async function ctxNewFolder(){
   var ci=_ctxInfo();
-  var nm=prompt('新建文件夹名称:');
+  var nm=await promptDialog('新建文件夹名称:','',{title:'新建文件夹'});
   hideCtxMenu();
   if(!nm)return;
   var p=ci.path?ci.path+'/'+nm:nm;
   fetch(ci.api+'/mkdir',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({path:p})}).then(function(r){return r.json()}).then(function(d){
       if(d.ok)ci.browse(ci.path,ci.data?ci.data.page:1);
-      else alert(d.msg||'创建失败');
+      else notify(d.msg||'创建失败');
     });
 }
 
@@ -1541,38 +1671,38 @@ function _outClose(){
 
 function _outBuildOverlay(overlay,st){
   var arrows=st.browseList.length>1?
-    '<button class="out-arrow out-arrow-l" onclick="_outNavigate(-1)" title="上一张">◀</button>'+
-    '<button class="out-arrow out-arrow-r" onclick="_outNavigate(1)" title="下一张">▶</button>':'';
+    '<button class="out-arrow out-arrow-l" onclick="_outNavigate(-1)" title="上一张"><i class="bi bi-chevron-left"></i></button>'+
+    '<button class="out-arrow out-arrow-r" onclick="_outNavigate(1)" title="下一张"><i class="bi bi-chevron-right"></i></button>':'';
 
   var topBar='<div style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0;margin-bottom:6px">'+
     '<span style="color:var(--text);font-size:14px;word-break:break-all;max-width:55%;margin:0 auto" id="outTitle">'+escHtml(st.fn)+'</span>'+
     '<div style="display:flex;gap:6px;flex-shrink:0">'+
-    '<button class="btn btn6" onclick="outToggleFullscreen()" title="全屏" style="font-size:12px;padding:4px 10px">⛴ 全屏</button>'+
-    '<button class="btn btn5" onclick="_outClose()" style="font-size:12px">✕ 关闭</button></div></div>';
+    '<button class="btn btn6" onclick="outToggleFullscreen()" title="全屏" style="font-size:12px;padding:4px 10px"><i class="bi bi-arrows-fullscreen"></i> 全屏</button>'+
+    '<button class="btn btn5" onclick="_outClose()" style="font-size:12px"><i class="bi bi-x-lg"></i> 关闭</button></div></div>';
 
   var content;
   if(st.type==='image'){
     content='<div class="out-fs-wrap" id="outFsWrap">'+
       '<img id="outFsImg" class="out-fs-nav-img" src="'+st.src+'" style="max-width:100%;max-height:100%;object-fit:contain;opacity:0;transition:opacity 0.2s" onload="outImgReady()">'+
       '</div>'+
-      '<div id="outInfoBar" style="display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 10px;background:rgba(0,0,0,0.5);border-radius:7px;font-size:12px;color:var(--text2);flex-shrink:0;flex-wrap:wrap">'+
+      '<div id="outInfoBar" style="display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 10px;background:rgba(74,111,165,0.06);border-radius:10px;font-size:12px;color:var(--text2);flex-shrink:0;flex-wrap:wrap">'+
       '<span id="outInfoRes"></span>'+
       '<span>|</span><span>'+outFmtSize(st.info.size||0)+'</span>'+
       '<span>|</span><span>'+outFmtTime(st.info.modified||0)+'</span>'+
       '<span style="margin-left:auto;display:flex;align-items:center;gap:6px">'+
-      '<button class="btn btn6" onclick="outZoomReset()" style="font-size:11px;padding:2px 8px" title="重置">↴ 重置</button>'+
+      '<button class="btn btn6" onclick="outZoomReset()" style="font-size:11px;padding:2px 8px" title="重置"><i class="bi bi-arrow-counterclockwise"></i> 重置</button>'+
       '<span style="margin-left:4px;opacity:0.5;font-size:10px" id="outTotalInfo">'+(st.curIdx+1)+'/'+st.browseList.length+'</span></span></div>';
   }else if(st.type==='video'){
     content='<div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:0">'+
       '<video id="outVid" src="'+st.src+'" controls autoplay style="max-width:100%;max-height:100%" onplay="window._outVid=this" onpause="window._outVid=null"></video></div>'+
-      '<div id="outInfoBar" style="display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:rgba(0,0,0,0.5);border-radius:7px;font-size:12px;color:var(--text2);flex-shrink:0">'+
+      '<div id="outInfoBar" style="display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:rgba(74,111,165,0.06);border-radius:10px;font-size:12px;color:var(--text2);flex-shrink:0">'+
       '<span>'+outFmtSize(st.info.size||0)+' '+outFmtTime(st.info.modified||0)+'</span>'+
       '<span style="margin-left:auto;opacity:0.5;font-size:10px" id="outTotalInfo">'+(st.curIdx+1)+'/'+st.browseList.length+'</span></div>';
   }else{
     content='<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0">'+
       '<audio id="outVid" src="'+st.src+'" controls autoplay style="max-width:100%" onplay="window._outVid=this" onpause="window._outVid=null"></audio>'+
       '<div style="font-size:64px;margin:16px">🎵</div></div>'+
-      '<div id="outInfoBar" style="display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:rgba(0,0,0,0.5);border-radius:7px;font-size:12px;color:var(--text2);flex-shrink:0">'+
+      '<div id="outInfoBar" style="display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:rgba(74,111,165,0.06);border-radius:10px;font-size:12px;color:var(--text2);flex-shrink:0">'+
       '<span>'+outFmtSize(st.info.size||0)+' '+outFmtTime(st.info.modified||0)+'</span></div>';
   }
 
@@ -1601,7 +1731,7 @@ function _outUpdateContent(overlay,st){
         '<span>|</span><span>'+outFmtSize(st.info.size||0)+'</span>'+
         '<span>|</span><span>'+outFmtTime(st.info.modified||0)+'</span>'+
         '<span style="margin-left:auto;display:flex;align-items:center;gap:6px">'+
-        '<button class="btn btn6" onclick="outZoomReset()" style="font-size:11px;padding:2px 8px" title="重置">↴ 重置</button>'+
+        '<button class="btn btn6" onclick="outZoomReset()" style="font-size:11px;padding:2px 8px" title="重置"><i class="bi bi-arrow-counterclockwise"></i> 重置</button>'+
         '<span style="margin-left:4px;opacity:0.5;font-size:10px">'+(st.curIdx+1)+'/'+st.browseList.length+'</span></span>';
     }
   }else if(st.type==='video'){
@@ -1610,7 +1740,7 @@ function _outUpdateContent(overlay,st){
       while(modal.children.length>1)modal.removeChild(modal.lastChild);
       var nc='<div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:0">'+
         '<video id="outVid" src="'+st.src+'" controls autoplay style="max-width:100%;max-height:100%" onplay="window._outVid=this" onpause="window._outVid=null"></video></div>'+
-        '<div id="outInfoBar" style="display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:rgba(0,0,0,0.5);border-radius:7px;font-size:12px;color:var(--text2);flex-shrink:0">'+
+        '<div id="outInfoBar" style="display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:rgba(74,111,165,0.06);border-radius:10px;font-size:12px;color:var(--text2);flex-shrink:0">'+
         '<span>'+outFmtSize(st.info.size||0)+' '+outFmtTime(st.info.modified||0)+'</span>'+
         '<span style="margin-left:auto;opacity:0.5;font-size:10px">'+(st.curIdx+1)+'/'+st.browseList.length+'</span></div>';
       var tmpDiv=document.createElement('div');tmpDiv.innerHTML=nc;
@@ -1769,7 +1899,7 @@ function renderModels(){
     var sz=st.completed?(st.completed/1048576).toFixed(1)+'/'+(st.total?(st.total/1048576).toFixed(1):'?'):'-';
     var us=m.download_url.length>60?m.download_url.substring(0,57)+'...':m.download_url;
     var actions='<div style="display:flex;gap:3px;flex-wrap:wrap">'+
-      '<button class="btn btn4 btn-xs" onclick="editModel('+m.id+')">编辑</button>'+
+      '<button class="btn btn4 btn-xs" onclick="editModel('+m.id+')"><i class="bi bi-pencil"></i> 编辑</button>'+
             dlBtns(m.id,stat)+'</div>';
     tb.innerHTML+='<tr id="dlr-'+m.id+'"><td class="cb-cell"><input type="checkbox" class="dlcb" value="'+m.id+'" '+ch+' onchange="dlOnSel('+m.id+',this.checked)"></td><td>'+m.id+'</td><td>'+esc(m.name)+'</td><td><code>'+esc(m.save_path)+'</code></td><td><a href="'+m.download_url+'" target="_blank" title="'+esc(m.download_url)+'">'+esc(us)+'</a></td><td id="dsz-'+m.id+'">'+sz+' MB</td><td id="dpg-'+m.id+'">'+renderMiniBar(st.progress||0)+'</td><td id="dst-'+m.id+'">'+dlBadge(stat)+'</td><td class="acts">'+actions+'</td></tr>'
   });
@@ -1783,7 +1913,7 @@ function updateMPagination(){
 }
 async function loadPaths(){try{var r=await fetch('/api/paths');var p=await r.json();document.getElementById('plist').innerHTML=p.map(function(x){return '<option value="'+x+'">'}).join('')}catch(e){}}
 function openModal(){document.getElementById('mtitle').textContent='新增模型';document.getElementById('eid').value='';document.getElementById('fname').value='';document.getElementById('fpath').value='';document.getElementById('furl').value='';document.getElementById('mbg').classList.add('show')}
-async function editModel(id){try{var r=await fetch('/api/models/'+id);var m=await r.json();if(!m||!m.id)return;document.getElementById('mtitle').textContent='编辑 #'+id;document.getElementById('eid').value=id;document.getElementById('fname').value=m.name;document.getElementById('fpath').value=m.save_path;document.getElementById('furl').value=m.download_url;document.getElementById('mbg').classList.add('show')}catch(e){alert('加载失败')}}
+async function editModel(id){try{var r=await fetch('/api/models/'+id);var m=await r.json();if(!m||!m.id)return;document.getElementById('mtitle').textContent='编辑 #'+id;document.getElementById('eid').value=id;document.getElementById('fname').value=m.name;document.getElementById('fpath').value=m.save_path;document.getElementById('furl').value=m.download_url;document.getElementById('mbg').classList.add('show')}catch(e){notify('加载失败')}}
 function closeModal(){document.getElementById('mbg').classList.remove('show');loadModels()}
 function resetModels(){
   document.getElementById('sinput').value='';
@@ -1822,7 +1952,7 @@ function _renderBatPreview(results){
 }
 async function extractNames(){
   var raw=document.getElementById('batUrls').value.trim();
-  if(!raw){alert('请输入下载链接');return}
+  if(!raw){notify('请输入下载链接');return}
   var regex=document.getElementById('batRegex').value.trim();
   var btn=document.getElementById('batExtractBtn');
   btn.disabled=true;btn.textContent='提取中...';
@@ -1833,11 +1963,11 @@ async function extractNames(){
       body:JSON.stringify({urls:raw,regex:regex})
     });
     var j=await r.json();
-    if(!j.ok){alert('提取失败: '+j.msg);return}
+    if(!j.ok){notify('提取失败: '+j.msg);return}
     _batItems=j.results;
     _renderBatPreview(j.results);
   }catch(e){
-    alert('提取失败: '+e.message);
+    notify('提取失败: '+e.message);
   }finally{
     btn.disabled=false;btn.textContent='提取';
   }
@@ -1849,11 +1979,11 @@ document.addEventListener('DOMContentLoaded',function(){
   if(br){br.addEventListener('input',parseBatchUrls)}
 });
 async function submitBatch(){
-  if(!_batItems||_batItems.length===0){alert('请先点击「提取名称」');return}
+  if(!_batItems||_batItems.length===0){notify('请先点击「提取名称」');return}
   var items=_batItems;
   var savePath=document.getElementById('batPath').value.trim();
-  if(!savePath){alert('请填写存放路径');return}
-  if(items.length===0){alert('请至少输入一个下载链接');return}
+  if(!savePath){notify('请填写存放路径');return}
+  if(items.length===0){notify('请至少输入一个下载链接');return}
   var btn=document.getElementById('batSubmitBtn');
   btn.disabled=true;btn.textContent='提交中...';
   document.getElementById('batMsg').textContent='正在批量导入...';
@@ -1881,29 +2011,29 @@ async function submitBatch(){
 
 async function saveModel(){
   var id=document.getElementById('eid').value,b={name:document.getElementById('fname').value.trim(),save_path:document.getElementById('fpath').value.trim(),download_url:document.getElementById('furl').value.trim()};
-  if(!b.name||!b.save_path||!b.download_url){alert('请填写完整');return}
-  try{if(id){await fetch('/api/models/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}else{var r=await fetch('/api/models',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});var j=await r.json();if(!j.ok){alert(j.msg);return}}closeModal()}catch(e){alert('保存失败: '+e.message)}
+  if(!b.name||!b.save_path||!b.download_url){notify('请填写完整');return}
+  try{if(id){await fetch('/api/models/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}else{var r=await fetch('/api/models',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});var j=await r.json();if(!j.ok){notify(j.msg);return}}closeModal()}catch(e){notify('保存失败: '+e.message)}
 }
-async function delModel(id){if(!confirm('确认删除 #'+id+'？'))return;try{await fetch('/api/models/'+id,{method:'DELETE'});loadModels()}catch(e){alert('删除失败')}}
+async function delModel(id){if(!(await confirmDialog('确认删除 #'+id+'？',{danger:true})))return;try{await fetch('/api/models/'+id,{method:'DELETE'});loadModels()}catch(e){notify('删除失败')}}
 
 // ---- 下载控制 ----
 function renderMiniBar(pct){if(!pct||pct<=0)return '<span style="color:var(--text3);font-size:11px">-</span>';return '<div class="minibar"><div class="minibar-bg"><div class="minibar-fill" style="width:'+pct+'%"></div></div></div><span style="font-size:10px;color:var(--text2);margin-left:4px">'+pct.toFixed(1)+'%</span>'}
 function dlBadge(s){var m={active:'bg-on|下载中',paused:'bg-pause|已暂停',waiting:'bg-wait|等待中',complete:'bg-done|已完成',error:'bg-err|错误',removed:'bg-err|已移除',retrying:'bg-stale|重连中',stale:'bg-stale|同步中',queue:'bg-q|排队中'},p=(m[s]||'bg-off|未开始').split('|');return '<span class="badge '+p[0]+'">'+p[1]+'</span>'}
-function dlBtns(id,s){var complete=s==='complete';return'<button class="btn btn2 btn-xs" id="bstart-'+id+'" onclick="dlStart('+id+',false)"'+(complete?' disabled':'')+'>'+(complete?'已完成':'下载')+'</button><button class="btn btn5 btn-xs" id="bmirr-'+id+'" onclick="dlStart('+id+',true)"'+(complete?' disabled':'')+'>国内</button><button class="btn btn4 btn-xs bpause" id="bpause-'+id+'" onclick="dlPause('+id+')" style="'+(s==='active'?'':'display:none')+'">暂停</button><button class="btn btn4 btn-xs bresume" id="bresume-'+id+'" onclick="dlResume('+id+')" style="'+(s==='paused'?'':'display:none')+'">恢复</button><button class="btn btn3 btn-xs" id="bcancel-'+id+'" onclick="dlCancel('+id+')"'+(s==='active'||s==='paused'||s==='queue'?'':' disabled')+'>取消</button>'}
+function dlBtns(id,s){var complete=s==='complete';return'<button class="btn btn2 btn-xs" id="bstart-'+id+'" onclick="dlStart('+id+',false)"'+(complete?' disabled':'')+'>'+(complete?'<i class="bi bi-check-lg"></i> 已完成':'<i class="bi bi-download"></i> 下载')+'</button><button class="btn btn5 btn-xs" id="bmirr-'+id+'" onclick="dlStart('+id+',true)"'+(complete?' disabled':'')+'>'+'<i class="bi bi-globe2"></i> 国内</button><button class="btn btn4 btn-xs bpause" id="bpause-'+id+'" onclick="dlPause('+id+')" style="'+(s==='active'?'':'display:none')+'">'+'<i class="bi bi-pause-fill"></i> 暂停</button><button class="btn btn4 btn-xs bresume" id="bresume-'+id+'" onclick="dlResume('+id+')" style="'+(s==='paused'?'':'display:none')+'">'+'<i class="bi bi-play-fill"></i> 恢复</button><button class="btn btn3 btn-xs" id="bcancel-'+id+'" onclick="dlCancel('+id+')"'+(s==='active'||s==='paused'||s==='queue'?'':' disabled')+'><i class="bi bi-x-lg"></i> 取消</button>'}
 function dlOnSel(id,c){if(c)dlSelIds.add(id);else dlSelIds.delete(id);dlUpCnt()}
 function dlSelAll(c){if(c){mData.forEach(function(m){dlSelIds.add(m.id)})}else{dlSelIds.clear()}renderModels()}
 function dlUpCnt(){var e=document.getElementById('bcnt');if(e)e.textContent='已选 '+dlSelIds.size}
 
 async function checkA2(){try{var r=await fetch('/api/aria2/status');var d=await r.json();var dot=document.getElementById('a2dot'),t=document.getElementById('a2text');if(d.running){dot.className='a2dot on';t.textContent='aria2c v'+d.version}else{dot.className='a2dot off';t.textContent='aria2c 未运行'}return d.running}catch(e){return false}}
-async function a2Start(){try{var r=await fetch('/api/aria2/start',{method:'POST'});var d=await r.json();alert(d.msg);checkA2()}catch(e){alert('启动失败')}}
+async function a2Start(){try{var r=await fetch('/api/aria2/start',{method:'POST'});var d=await r.json();notify(d.msg);checkA2()}catch(e){notify('启动失败')}}
 async function a2Stop(){try{await fetch('/api/aria2/stop',{method:'POST'});checkA2();clearInterval(dlProgTimer);dlProgTimer=null}catch(e){}}
 async function a2Restart(){await a2Stop();await new Promise(function(r){setTimeout(r,1500)});await a2Start()}
 async function detectA2(){var d=document.getElementById('adr');d.innerHTML='<span style="color:var(--text3);font-size:12px">检测中...</span>';try{var r=await fetch('/api/aria2/detect');var j=await r.json();if(j.found){document.getElementById('sap').value=j.path;d.innerHTML='<span class="db db-ok">'+esc(j.version||j.path)+' ['+j.platform+']</span>'}else{d.innerHTML='<span class="db db-fail">未找到 aria2c</span>'}}catch(e){d.innerHTML='<span class="db db-fail">检测失败</span>'}}
-async function batchDl(mir){if(dlSelIds.size===0){alert('请先勾选模型');return}if(!await checkA2()){alert('请先启动 aria2c');return}var ids=Array.from(dlSelIds);try{var r=await fetch('/api/download/batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids,mirror:mir})});var j=await r.json();if(!j.ok)return;var s=0,q=0;j.results.forEach(function(x){x.ok&&(x.msg.indexOf('队列')>=0?q++:s++)});alert('批量下载: 开始 '+s+' 队列 '+q);dlSelIds.clear();renderModels();dlStartTimer();await restoreDlState()}catch(e){alert('批量下载失败: '+e.message)}}
-async function dlStart(id,mir){if(!await checkA2()){alert('请先启动 aria2c');return}try{var r=await fetch('/api/download/start/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mirror:!!mir})});var j=await r.json();if(!j.ok){alert(j.msg);return}if(j.msg.indexOf('队列')>=0){dlQueuedIds.add(id)}else{dlActiveIds.add(id)}dlLastStates[id]={status:j.msg.indexOf('队列')>=0?'queue':'waiting',progress:0};renderModels();dlStartTimer()}catch(e){alert('下载失败: '+e.message)}}
+async function batchDl(mir){if(dlSelIds.size===0){notify('请先勾选模型');return}if(!await checkA2()){notify('请先启动 aria2c');return}var ids=Array.from(dlSelIds);try{var r=await fetch('/api/download/batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids,mirror:mir})});var j=await r.json();if(!j.ok)return;var s=0,q=0;j.results.forEach(function(x){x.ok&&(x.msg.indexOf('队列')>=0?q++:s++)});notify('批量下载: 开始 '+s+' 队列 '+q);dlSelIds.clear();renderModels();dlStartTimer();await restoreDlState()}catch(e){notify('批量下载失败: '+e.message)}}
+async function dlStart(id,mir){if(!await checkA2()){notify('请先启动 aria2c');return}try{var r=await fetch('/api/download/start/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mirror:!!mir})});var j=await r.json();if(!j.ok){notify(j.msg);return}if(j.msg.indexOf('队列')>=0){dlQueuedIds.add(id)}else{dlActiveIds.add(id)}dlLastStates[id]={status:j.msg.indexOf('队列')>=0?'queue':'waiting',progress:0};renderModels();dlStartTimer()}catch(e){notify('下载失败: '+e.message)}}
 async function dlPause(id){try{await fetch('/api/download/pause/'+id,{method:'POST'});dlLastStates[id]={status:'paused',progress:dlLastStates[id]?dlLastStates[id].progress||0:0};renderModels()}catch(e){}}
 async function dlResume(id){try{await fetch('/api/download/resume/'+id,{method:'POST'});dlLastStates[id]={status:'active',progress:dlLastStates[id]?dlLastStates[id].progress||0:0};renderModels()}catch(e){}}
-async function dlCancel(id){if(!confirm('确认取消？'))return;if(dlQueuedIds.has(id)){try{await fetch('/api/download/cancel_queue/'+id,{method:'POST'});dlQueuedIds.delete(id);delete dlLastStates[id];renderModels()}catch(e){}return}try{var r=await fetch('/api/download/cancel/'+id,{method:'POST'});var j=await r.json();j.ok&&(dlActiveIds.delete(id),delete dlLastStates[id],renderModels())}catch(e){}}
+async function dlCancel(id){if(!(await confirmDialog('确认取消？')))return;if(dlQueuedIds.has(id)){try{await fetch('/api/download/cancel_queue/'+id,{method:'POST'});dlQueuedIds.delete(id);delete dlLastStates[id];renderModels()}catch(e){}return}try{var r=await fetch('/api/download/cancel/'+id,{method:'POST'});var j=await r.json();j.ok&&(dlActiveIds.delete(id),delete dlLastStates[id],renderModels())}catch(e){}}
 
 function dlStartTimer(){if(!dlProgTimer)dlProgTimer=setInterval(fetchDlAllStatus,2000)}
 async function fetchDlAllStatus(){
@@ -1930,7 +2060,7 @@ async function fetchDlAllStatus(){
 function dlUpdateCell(id,s){var zc=document.getElementById('dsz-'+id),pc=document.getElementById('dpg-'+id),sc=document.getElementById('dst-'+id);if(!zc||!pc||!sc)return;var pct=s.progress||0,cm=s.completed?(s.completed/1048576).toFixed(1):'0',tm=s.total?(s.total/1048576).toFixed(1):'?';zc.textContent=cm+'/'+tm+' MB';pc.innerHTML=renderMiniBar(pct)+(s.stale?' <span style="font-size:10px;color:var(--text3);animation:pulse 1s infinite">⟳</span>':'');sc.innerHTML=dlBadge(s.stale?'stale':s.status);var bs=document.getElementById('bstart-'+id),bm=document.getElementById('bmirr-'+id),bp=document.getElementById('bpause-'+id),br=document.getElementById('bresume-'+id),bc=document.getElementById('bcancel-'+id);if(!bs)return;var isStale=s.stale||s.status==='retrying';
 if(s.status==='active'||isStale){bs.disabled=true;bs.textContent=isStale?'重连中':'下载中';bm.disabled=true;bm.textContent='国内';bp.style.display='';bp.disabled=isStale;br.style.display='none';bc.disabled=false}else if(s.status==='paused'){bs.disabled=true;bm.disabled=true;bp.style.display='none';br.style.display='';br.disabled=false;bc.disabled=false}else if(s.status==='complete'){bs.disabled=true;bs.textContent='已完成';bm.disabled=true;bm.textContent='已完成';bp.style.display='';bp.disabled=true;br.style.display='none';bc.disabled=true}else if(s.status==='error'||s.status==='removed'){bs.disabled=false;bs.textContent='重试';bm.disabled=false;bm.textContent='国内';bp.style.display='';bp.disabled=true;br.style.display='none';bc.disabled=true}}
 function dlUpdateCards(active){var con=document.getElementById('plist_dl'),cel=document.getElementById('pcard');con.innerHTML='';if(!active||active.length===0){cel.style.display='none'}else{cel.style.display='block';active.forEach(function(s){var pct=s.progress||0,cm=s.completed?(s.completed/1048576).toFixed(1):'0',tm=s.total?(s.total/1048576).toFixed(1):'?',sm=s.speed?(s.speed/1048576).toFixed(2):'0',staleMark=s.stale?'<span style="font-size:10px;color:var(--amber);animation:pulse 1s infinite;margin-left:4px">⟳ 信号弱</span>':'',card=document.createElement('div');card.className='pitem';card.innerHTML='<div class="phd"><span class="pname">'+esc(s.name||'#'+s.id)+(s.mirror?' <span style="color:var(--purple);font-size:11px">[镜像]</span>':'')+'</span><span style="font-size:11px;color:var(--text2)">'+(s.stale?'重连中':s.status)+staleMark+'</span></div><div class="pbar-bg"><div class="pbar-fill" style="width:'+Math.max(pct,3)+'%">'+pct.toFixed(1)+'%</div></div><div class="pinfo"><span><span>'+cm+'</span> / '+tm+' MB</span><span>'+sm+' MB/s</span></div>';con.appendChild(card)})}}
-function dlUpdateQueue(queue){var con=document.getElementById('qlist'),cel=document.getElementById('qcard');if(!queue||queue.length===0){cel.style.display='none';return}cel.style.display='block';con.innerHTML='';queue.forEach(function(q){var div=document.createElement('div');div.className='qitem';div.innerHTML='<div class="qpos">'+q.queue_position+'</div><span style="flex:1;font-size:12.5px">'+esc(q.name||'#'+q.id)+'</span><span style="font-size:11px;color:var(--text2)"><code>'+esc(q.save_path)+'</code></span>'+'<button class="btn btn3 btn-xs" onclick="dlCancel('+q.id+')">取消</button>';con.appendChild(div)})}
+function dlUpdateQueue(queue){var con=document.getElementById('qlist'),cel=document.getElementById('qcard');if(!queue||queue.length===0){cel.style.display='none';return}cel.style.display='block';con.innerHTML='';queue.forEach(function(q){var div=document.createElement('div');div.className='qitem';div.innerHTML='<div class="qpos">'+q.queue_position+'</div><span style="flex:1;font-size:12.5px">'+esc(q.name||'#'+q.id)+'</span><span style="font-size:11px;color:var(--text2)"><code>'+esc(q.save_path)+'</code></span>'+'<button class="btn btn3 btn-xs" onclick="dlCancel('+q.id+')"><i class="bi bi-x-lg"></i> 取消</button>';con.appendChild(div)})}
 async function restoreDlState(){
   try{var r=await fetch('/api/download/all_status');var d=await r.json();dlActiveIds.clear();dlQueuedIds.clear();dlLastStates={};dlPrevActive=new Set();
     d.active.forEach(function(x){dlActiveIds.add(x.id);dlPrevActive.add(x.id);dlLastStates[x.id]={status:x.status,progress:x.progress||0,total:x.total,completed:x.completed,speed:x.speed,mirror:x.mirror,name:x.name}});
@@ -1953,8 +2083,8 @@ function renderPlugins(){
     var inst=p.installed?'<span class="badge bg-inst" style="margin-left:4px">已安装</span>':'';
     var urlDisp=p.repo_url.substring(0,40)+(p.repo_url.length>40?'...':'');
     var actions='<div style="display:flex;gap:3px;flex-wrap:wrap">'+
-      '<button class="btn btn4 btn-xs" onclick="editPlugin('+p.id+')">编辑</button>'+
-      (p.installed?'<button class="btn btn3 btn-xs" onclick="delPlugin('+p.id+')">卸载</button>':'<button class="btn btn3 btn-xs" disabled style="opacity:0.35">卸载</button>')+
+      '<button class="btn btn4 btn-xs" onclick="editPlugin('+p.id+')"><i class="bi bi-pencil"></i> 编辑</button>'+
+      (p.installed?'<button class="btn btn3 btn-xs" onclick="delPlugin('+p.id+')"><i class="bi bi-trash"></i> 卸载</button>':'<button class="btn btn3 btn-xs" disabled style="opacity:0.35"><i class="bi bi-trash"></i> 卸载</button>')+
       clBtns(p.id,stat,p.installed)+'</div>';
     tb.innerHTML+='<tr id="plr-'+p.id+'"><td class="cb-cell"><input type="checkbox" class="plcb" value="'+p.id+'" '+ch+' onchange="plOnSel('+p.id+',this.checked)"></td><td>'+p.id+'</td><td>'+esc(p.name)+inst+'</td><td><a href="'+p.repo_url+'" target="_blank" style="font-size:11px">'+esc(urlDisp)+'</a></td><td style="color:var(--text2);font-size:11.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(p.desc||'')+'">'+esc(p.desc||'')+'</td><td id="plst-'+p.id+'">'+clBadge(stat)+'</td><td class="acts">'+actions+'</td></tr>'
   });
@@ -1962,7 +2092,7 @@ function renderPlugins(){
 }
 function updatePlPagination(){document.getElementById('plinfo').textContent='第 '+plPage+' / '+plTotalPages+' 页';document.getElementById('plprev').disabled=plPage<=1;document.getElementById('plnext').disabled=plPage>=plTotalPages}
 function openPluginModal(){document.getElementById('pmtitle').textContent='新增插件';document.getElementById('peid').value='';document.getElementById('pfname').value='';document.getElementById('pfurl').value='';document.getElementById('pfdesc').value='';document.getElementById('pmbg').classList.add('show')}
-async function editPlugin(id){try{var r=await fetch('/api/plugins/'+id);var p=await r.json();if(!p||!p.id)return;document.getElementById('pmtitle').textContent='编辑 #'+id;document.getElementById('peid').value=id;document.getElementById('pfname').value=p.name;document.getElementById('pfurl').value=p.repo_url||p.url;document.getElementById('pfdesc').value=p.desc||p.description||'';document.getElementById('pmbg').classList.add('show')}catch(e){alert('加载失败')}}
+async function editPlugin(id){try{var r=await fetch('/api/plugins/'+id);var p=await r.json();if(!p||!p.id)return;document.getElementById('pmtitle').textContent='编辑 #'+id;document.getElementById('peid').value=id;document.getElementById('pfname').value=p.name;document.getElementById('pfurl').value=p.repo_url||p.url;document.getElementById('pfdesc').value=p.desc||p.description||'';document.getElementById('pmbg').classList.add('show')}catch(e){notify('加载失败')}}
 function closePluginModal(){document.getElementById('pmbg').classList.remove('show');loadPlugins()}
 function resetPlugins(){
   document.getElementById('ps').value='';
@@ -1974,14 +2104,14 @@ async function openPluginDir(){
 }
 async function savePlugin(){
   var id=document.getElementById('peid').value,b={name:document.getElementById('pfname').value.trim(),url:document.getElementById('pfurl').value.trim(),description:document.getElementById('pfdesc').value.trim()};
-  if(!b.name||!b.url){alert('请填写完整');return}
-  try{if(id){await fetch('/api/plugins/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}else{var r=await fetch('/api/plugins',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});var j=await r.json();if(!j.ok){alert(j.msg);return}}closePluginModal()}catch(e){alert('保存失败: '+e.message)}
+  if(!b.name||!b.url){notify('请填写完整');return}
+  try{if(id){await fetch('/api/plugins/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}else{var r=await fetch('/api/plugins',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});var j=await r.json();if(!j.ok){notify(j.msg);return}}closePluginModal()}catch(e){notify('保存失败: '+e.message)}
 }
-async function delPlugin(id){if(!confirm('确认卸载该插件？插件文件夹将被删除！'))return;try{var r=await fetch('/api/plugins/'+id,{method:'DELETE'});var d=await r.json();if(!d.ok){alert(d.error||'卸载失败')}else{alert(d.msg||'已卸载')};loadPlugins()}catch(e){alert('卸载失败: '+e)}}
+async function delPlugin(id){if(!(await confirmDialog('确认卸载该插件？插件文件夹将被删除！',{danger:true})))return;try{var r=await fetch('/api/plugins/'+id,{method:'DELETE'});var d=await r.json();if(!d.ok){notify(d.error||'卸载失败')}else{notify(d.msg||'已卸载')};loadPlugins()}catch(e){notify('卸载失败: '+e)}}
 
 // ---- 克隆控制 ----
 function clBadge(s){var m={cloning:'bg-cloning|克隆中',complete:'bg-done|已完成',error:'bg-err|错误',queue:'bg-q|排队中'},p=(m[s]||'bg-off|未开始').split('|');return'<span class="badge '+p[0]+'">'+p[1]+'</span>'}
-function clBtns(id,s,installed){var done=s==='complete'||installed;return'<button class="btn btn-teal btn-xs" id="cbclone-'+id+'" onclick="clStart('+id+',false)"'+(done?' disabled':'')+'>'+(installed?'已安装':s==='complete'?'已完成':'克隆')+'</button><button class="btn btn5 btn-xs" id="cbmirr-'+id+'" onclick="clStart('+id+',true)"'+(done?' disabled':'')+'>国内</button><button class="btn btn3 btn-xs" id="cbcancel-'+id+'" onclick="clCancel('+id+')"'+(s==='cloning'||s==='queue'?'':' disabled')+'>取消</button>'}
+function clBtns(id,s,installed){var done=s==='complete'||installed;return'<button class="btn btn-teal btn-xs" id="cbclone-'+id+'" onclick="clStart('+id+',false)"'+(done?' disabled':'')+'>'+(installed?'<i class="bi bi-check-lg"></i> 已安装':s==='complete'?'<i class="bi bi-check-lg"></i> 已完成':'<i class="bi bi-download"></i> 克隆')+'</button><button class="btn btn5 btn-xs" id="cbmirr-'+id+'" onclick="clStart('+id+',true)"'+(done?' disabled':'')+'>'+'<i class="bi bi-globe2"></i> 国内</button><button class="btn btn3 btn-xs" id="cbcancel-'+id+'" onclick="clCancel('+id+')"'+(s==='cloning'||s==='queue'?'':' disabled')+'><i class="bi bi-x-lg"></i> 取消</button>'}
 function plOnSel(id,c){if(c)plSelIds.add(id);else plSelIds.delete(id);plUpCnt()}
 function plSelAll(c){if(c){plData.forEach(function(p){plSelIds.add(p.id)})}else{plSelIds.clear()}renderPlugins()}
 function plUpCnt(){var e=document.getElementById('pbcnt');if(e)e.textContent='已选 '+plSelIds.size}
@@ -1989,9 +2119,9 @@ function plUpCnt(){var e=document.getElementById('pbcnt');if(e)e.textContent='�
 async function checkGit(){try{var r=await fetch('/api/git/detect');var d=await r.json();var dot=document.getElementById('gitdot'),t=document.getElementById('gittext');if(d.found){dot.className='a2dot on';t.textContent='Git '+esc(d.version||'')}else{dot.className='a2dot off';t.textContent='Git 未找到'}return d.found}catch(e){return false}}
 async function detectGit(){var d=document.getElementById('gtr');d.innerHTML='<span style="color:var(--text3);font-size:12px">检测中...</span>';try{var r=await fetch('/api/git/detect');var j=await r.json();if(j.found){document.getElementById('sgp').value=j.path;d.innerHTML='<span class="db db-ok">'+esc(j.version||j.path)+'</span>'}else{d.innerHTML='<span class="db db-fail">未找到 Git</span>'}}catch(e){d.innerHTML='<span class="db db-fail">检测失败</span>'}}
 async function detectPy(){var d=document.getElementById('pyr');d.innerHTML='<span style="color:var(--text3);font-size:12px">检测中...</span>';try{var r=await fetch('/api/python/detect');var j=await r.json();if(j.found){document.getElementById('spy').value=j.path;d.innerHTML='<span class="db db-ok">'+esc(j.version||j.path)+'</span>'}else{d.innerHTML='<span class="db db-fail">未找到 Python</span>'}}catch(e){d.innerHTML='<span class="db db-fail">检测失败</span>'}}
-async function batchClone(mir){if(plSelIds.size===0){alert('请先勾选插件');return}if(!await checkGit()){alert('Git 未找到，请在设置中配置');return}var ids=Array.from(plSelIds);try{var r=await fetch('/api/plugins/clone_batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids,mirror:!!mir})});var j=await r.json();if(!j.ok)return;var s=0,q=0;j.results.forEach(function(x){x.ok&&(x.msg.indexOf('队列')>=0?q++:s++)});alert('批量克隆: 开始 '+s+' 队列 '+q);plSelIds.clear();renderPlugins();plStartTimer();await restoreCloneState()}catch(e){alert('批量克隆失败: '+e.message)}}
-async function clStart(id,mir){if(!await checkGit()){alert('Git 未找到');return}try{var r=await fetch('/api/plugins/clone/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mirror:!!mir})});var j=await r.json();if(!j.ok){alert(j.msg);return}if(j.msg.indexOf('队列')>=0){plQueuedIds.add(id)}else{plActiveIds.add(id)}plLastStates[id]={status:j.msg.indexOf('队列')>=0?'queue':'cloning',progress:0,mirror:!!mir};renderPlugins();plStartTimer()}catch(e){alert('克隆失败')}}
-async function clCancel(id){if(!confirm('确认取消？'))return;if(plQueuedIds.has(id)){try{await fetch('/api/plugins/clone_cancel_queue/'+id,{method:'POST'});plQueuedIds.delete(id);delete plLastStates[id];renderPlugins()}catch(e){}return}try{var r=await fetch('/api/plugins/clone_cancel/'+id,{method:'POST'});var j=await r.json();j.ok&&(plActiveIds.delete(id),delete plLastStates[id],renderPlugins())}catch(e){}}
+async function batchClone(mir){if(plSelIds.size===0){notify('请先勾选插件');return}if(!await checkGit()){notify('Git 未找到，请在设置中配置');return}var ids=Array.from(plSelIds);try{var r=await fetch('/api/plugins/clone_batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids,mirror:!!mir})});var j=await r.json();if(!j.ok)return;var s=0,q=0;j.results.forEach(function(x){x.ok&&(x.msg.indexOf('队列')>=0?q++:s++)});notify('批量克隆: 开始 '+s+' 队列 '+q);plSelIds.clear();renderPlugins();plStartTimer();await restoreCloneState()}catch(e){notify('批量克隆失败: '+e.message)}}
+async function clStart(id,mir){if(!await checkGit()){notify('Git 未找到');return}try{var r=await fetch('/api/plugins/clone/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mirror:!!mir})});var j=await r.json();if(!j.ok){notify(j.msg);return}if(j.msg.indexOf('队列')>=0){plQueuedIds.add(id)}else{plActiveIds.add(id)}plLastStates[id]={status:j.msg.indexOf('队列')>=0?'queue':'cloning',progress:0,mirror:!!mir};renderPlugins();plStartTimer()}catch(e){notify('克隆失败')}}
+async function clCancel(id){if(!(await confirmDialog('确认取消？')))return;if(plQueuedIds.has(id)){try{await fetch('/api/plugins/clone_cancel_queue/'+id,{method:'POST'});plQueuedIds.delete(id);delete plLastStates[id];renderPlugins()}catch(e){}return}try{var r=await fetch('/api/plugins/clone_cancel/'+id,{method:'POST'});var j=await r.json();j.ok&&(plActiveIds.delete(id),delete plLastStates[id],renderPlugins())}catch(e){}}
 function plStartTimer(){if(!plProgTimer)plProgTimer=setInterval(fetchClAllStatus,2000)}
 async function fetchClAllStatus(){
   try{var r=await fetch('/api/plugins/clone_all_status');var d=await r.json(),any=false,nowActive=new Set();
@@ -2005,7 +2135,7 @@ async function fetchClAllStatus(){
 }
 function clUpdateCell(id,s){var sc=document.getElementById('plst-'+id);if(!sc)return;sc.innerHTML=clBadge(s.status)+(s.status==='cloning'?'<span style="font-size:10px;color:var(--text2);margin-left:4px">'+esc(s.phase)+' '+s.progress+'%</span>':'');var bc=document.getElementById('cbclone-'+id),bm=document.getElementById('cbmirr-'+id),bn=document.getElementById('cbcancel-'+id);if(!bc)return;if(s.status==='cloning'){bc.disabled=true;bc.textContent='克隆中';bm.disabled=true;bm.textContent='国内';bn.disabled=false}else if(s.status==='complete'){bc.disabled=true;bc.textContent='已完成';bm.disabled=true;bm.textContent='已完成';bn.disabled=true}else if(s.status==='error'){bc.disabled=false;bc.textContent='克隆';bm.disabled=false;bm.textContent='国内';bn.disabled=true}}
 function clUpdateCards(active){var con=document.getElementById('plplist'),cel=document.getElementById('plpcard');con.innerHTML='';if(!active||active.length===0){cel.style.display='none'}else{cel.style.display='block';active.forEach(function(s){var pct=s.progress||0,card=document.createElement('div');card.className='pitem';card.innerHTML='<div class="phd"><span class="pname">'+esc(s.name||'#'+s.id)+(s.mirror?' <span style="color:var(--purple);font-size:11px">[镜像]</span>':'')+'</span><span style="font-size:11px;color:var(--text2)">'+s.status+'</span></div><div class="pbar-bg"><div class="pbar-fill pbar-fill-clone" style="width:'+Math.max(pct,3)+'%">'+pct+'%</div></div><div class="pinfo"><span>'+esc(s.phase||'')+'</span><span>'+esc(s.msg||'')+'</span></div>';con.appendChild(card)})}}
-function clUpdateQueue(queue){var con=document.getElementById('plqlist'),cel=document.getElementById('plqcard');if(!queue||queue.length===0){cel.style.display='none';return}cel.style.display='block';con.innerHTML='';queue.forEach(function(q){var div=document.createElement('div');div.className='qitem';div.innerHTML='<div class="qpos">'+q.queue_position+'</div><span style="flex:1;font-size:12.5px">'+esc(q.name||'#'+q.id)+'</span><span style="font-size:11px;color:var(--text2)"><code>'+esc(q.repo_url.substring(0,40))+'</code></span><button class="btn btn3 btn-xs" onclick="clCancel('+q.id+')">取消</button>';con.appendChild(div)})}
+function clUpdateQueue(queue){var con=document.getElementById('plqlist'),cel=document.getElementById('plqcard');if(!queue||queue.length===0){cel.style.display='none';return}cel.style.display='block';con.innerHTML='';queue.forEach(function(q){var div=document.createElement('div');div.className='qitem';div.innerHTML='<div class="qpos">'+q.queue_position+'</div><span style="flex:1;font-size:12.5px">'+esc(q.name||'#'+q.id)+'</span><span style="font-size:11px;color:var(--text2)"><code>'+esc(q.repo_url.substring(0,40))+'</code></span><button class="btn btn3 btn-xs" onclick="clCancel('+q.id+')"><i class="bi bi-x-lg"></i> 取消</button>';con.appendChild(div)})}
 async function restoreCloneState(){
   try{var r=await fetch('/api/plugins/clone_all_status');var d=await r.json();plActiveIds.clear();plQueuedIds.clear();plLastStates={};plPrevActive=new Set();
     d.active.forEach(function(x){plActiveIds.add(x.id);plPrevActive.add(x.id);plLastStates[x.id]={status:x.status,progress:x.progress||0,phase:x.phase,msg:x.msg,mirror:x.mirror}});
@@ -2044,11 +2174,11 @@ async function cuiStart(){
   var b=document.getElementById('cuiAutoBtn');if(b){b.textContent='\u{1F53D} 自动';b.className='btn btn6 btn-sm'}
   try{var r=await fetch('/api/comfyui/start',{method:'POST'});
     var d=await r.json();
-    if(d.ok){cuiCmdPreview2();cuiPollLogs();cuiCheckStatus()}else{alert(d.msg)}
-  }catch(e){alert('启动失败: '+e.message)}
+    if(d.ok){cuiCmdPreview2();cuiPollLogs();cuiCheckStatus()}else{notify(d.msg)}
+  }catch(e){notify('启动失败: '+e.message)}
 }
 async function cuiStop(){
-  try{await fetch('/api/comfyui/stop',{method:'POST'});cuiCheckStatus()}catch(e){alert('停止失败: '+e.message)}
+  try{await fetch('/api/comfyui/stop',{method:'POST'});cuiCheckStatus()}catch(e){notify('停止失败: '+e.message)}
 }
 async function cuiPollLogs(){
   try{var r=await fetch('/api/comfyui/logs?since='+cuiLogIdx);var d=await r.json();
@@ -2117,7 +2247,7 @@ function inUpdateSelUI(){
 
 async function inDeleteSelected(){
   if(_selPaths.size===0)return;
-  if(!confirm('确认删除 '+_selPaths.size+' 个文件/文件夹？\n此操作不可撤销！'))return;
+  if(!(await confirmDialog('确认删除 '+_selPaths.size+' 个文件/文件夹？\n此操作不可撤销！',{danger:true})))return;
   var paths=[];_selPaths.forEach(function(p){paths.push(p)});
   try{
     var r=await fetch('/api/input/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paths:paths})});
@@ -2125,7 +2255,7 @@ async function inDeleteSelected(){
     _selPaths.clear();inUpdateSelUI();
     var cb=document.getElementById('inSelAll');if(cb)cb.checked=false;
     browseInput(inPath,inData?inData.page:1);
-  }catch(e){alert('删除失败: '+e.message)}
+  }catch(e){notify('删除失败: '+e.message)}
 }
 
 async function browseInput(path,page){
@@ -2142,7 +2272,7 @@ async function browseInput(path,page){
     var r=await fetch('/api/input/browse?'+q);
     var d=await r.json();
     inData=d;
-    if(!d.ok){alert(d.msg);return}
+    if(!d.ok){notify(d.msg);return}
     inInitView();
     inItemMap={};d.items.forEach(function(it){inItemMap[it.path]=it});
     inRender(d,page);
@@ -2156,7 +2286,7 @@ function inClearSearch(){
   browseInput('',1);
 }
 function inOpenFolder(){
-  fetch('/api/input/open_dir').then(function(r){return r.json()}).then(function(d){if(!d.ok)alert(d.msg)});
+  fetch('/api/input/open_dir').then(function(r){return r.json()}).then(function(d){if(!d.ok)notify(d.msg)});
 }
 async function inUploadFiles(files){
   if(!files||!files.length)return;
@@ -2170,11 +2300,11 @@ async function inUploadFiles(files){
     .then(function(d){
       input.disabled=false; input.value='';
       if(d.ok){ browseInput(inPath,1); }
-      else { alert(d.msg); }
+      else { notify(d.msg); }
     })
     .catch(function(e){
       input.disabled=false; input.value='';
-      alert('上传失败: '+e.message);
+      notify('上传失败: '+e.message);
     });
 }
 
@@ -2292,10 +2422,10 @@ function inRenderPager(d){
   var pgEl=document.getElementById('inPager');
   if(!pgEl)return;
   if(d.total_pages<=1){pgEl.innerHTML='';return}
-  var h='<button class="btn btn6" style="font-size:12px;padding:4px 8px"'+(d.page<=1?' disabled':' onclick="browseInput(inPath,'+(d.page-1)+')"')+'>◀ 上一页</button>';
+  var h='<button class="btn btn6" style="font-size:12px;padding:4px 8px"'+(d.page<=1?' disabled':' onclick="browseInput(inPath,'+(d.page-1)+')"')+'>'+'<i class="bi bi-chevron-left"></i> 上一页</button>';
   for(var i=Math.max(1,d.page-2),e=Math.min(d.total_pages,d.page+2);i<=e;i++)
     h+='<button class="btn '+(i===d.page?'btn1':'btn6')+'" style="font-size:12px;padding:4px 8px;min-width:32px" onclick="browseInput(inPath,'+i+')">'+i+'</button>';
-  h+='<button class="btn btn6" style="font-size:12px;padding:4px 8px"'+(d.page>=d.total_pages?' disabled':' onclick="browseInput(inPath,'+(d.page+1)+')"')+'>▶ 下一页</button>';
+  h+='<button class="btn btn6" style="font-size:12px;padding:4px 8px"'+(d.page>=d.total_pages?' disabled':' onclick="browseInput(inPath,'+(d.page+1)+')"')+'>'+'<i class="bi bi-chevron-right"></i> 下一页</button>';
   pgEl.innerHTML=h;
 }
 
@@ -2496,7 +2626,7 @@ function dyRenderGrid(){
     var cbBorder=checked?'var(--accent1)':'rgba(255,255,255,0.35)';
     card.innerHTML='<img src="'+img.url+'" loading="lazy" style="width:100%;height:140px;object-fit:cover;display:block" crossorigin="anonymous" onerror="this.style.background=&apos;var(--bg3)&apos;;this.style.minHeight=&apos;80px&apos;">'
       +'<div class="dy-chk" style="position:absolute;top:5px;left:5px;width:22px;height:22px;border-radius:4px;background:'+cbBg+';border:2px solid '+cbBorder+';display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;transition:all .15s">'+(checked?'\u2714':'')+'</div>'
-      +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.6));color:#fff;font-size:10px;padding:14px 4px 3px">#'+(i+1)+'</div>';
+      +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(58,62,70,0.55));color:#fff;font-size:10px;padding:14px 4px 3px">#'+(i+1)+'</div>';
     card.addEventListener('click',function(){
       dyToggleSelect(i);dyRenderGrid();
     });
@@ -2641,6 +2771,7 @@ async function loadSF(){
     loadPresets(s.comfyui_presets||[]);
     setVal('soutd',s.output_dir||s.comfyui_dir+'\\output');
     setVal('sind',s.input_dir||s.comfyui_dir+'\\input');
+    setVal('swfbd',s.workflow_backup_dir);
     setVal('dyCookieFile',s.douyin_cookie_file);setVal('dySaveDirSet',s.douyin_save_dir);
     setVal('sdly',s.shutdown_delay||60);
     cuiCmdPreview()
@@ -2659,21 +2790,21 @@ async function saveS(){
     comfyui_vram:gv('sclv')||'default',comfyui_preview_method:gv('sclpm')||'default',
     comfyui_cors_origin:gv('sclc'),comfyui_extra_args:gv('sclx'),
     comfyui_presets:collectPresets(),
-    input_dir:gv('sind'),output_dir:gv('soutd'),pip_mirror:gv('spm')||'default',douyin_cookie_file:gv('dyCookieFile'),douyin_save_dir:gv('dySaveDirSet'),shutdown_delay:gvi('sdly',60)};
+    input_dir:gv('sind'),output_dir:gv('soutd'),workflow_backup_dir:gv('swfbd'),pip_mirror:gv('spm')||'default',douyin_cookie_file:gv('dyCookieFile'),douyin_save_dir:gv('dySaveDirSet'),shutdown_delay:gvi('sdly',60)};
   try{var r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});var j=await r.json();
-    if(j.ok){document.getElementById('mcd').textContent=d.max_concurrent_downloads;document.getElementById('cld').textContent=d.max_concurrent_clones;cuiCmdPreview();alert(j.msg)}else{alert('保存失败: '+j.msg)}}catch(e){alert('保存失败: '+e.message)}
+    if(j.ok){document.getElementById('mcd').textContent=d.max_concurrent_downloads;document.getElementById('cld').textContent=d.max_concurrent_clones;cuiCmdPreview();notify(j.msg)}else{notify('保存失败: '+j.msg)}}catch(e){notify('保存失败: '+e.message)}
 }
 function gv(id){return document.getElementById(id).value.trim()}
 function gvi(id,d){return parseInt(document.getElementById(id).value)||d}
 // 环境变量预设
 function collectPresets(){var r=[];document.querySelectorAll('#presetList .pr-row').forEach(function(row){var k=row.querySelector('.pr-key'),v=row.querySelector('.pr-val');if(k&&v){var key=k.value.trim(),val=v.value.trim();if(key)r.push({key:key,value:val})}});return r}
-function addPreset(k,v){k=k||'';v=v||'';var d=document.createElement('div');d.className='pr-row';d.innerHTML='<input class="pr-key sinput" value="'+esc(k)+'" placeholder="变量名" style="width:200px;font-size:13px;padding:4px 8px;"><span style="margin:0 4px;color:#888;align-self:center;font-size:13px;">=</span><input class="pr-val sinput" value="'+esc(v)+'" placeholder="值" style="width:140px;font-size:13px;padding:4px 8px;"><button class="btn btn-xs btn-danger" onclick="this.closest(\'.pr-row\').remove();cuiCmdPreview()" style="margin-left:6px;">删除</button>';d.querySelectorAll('input').forEach(function(e){e.addEventListener('input',cuiCmdPreview)});document.getElementById('presetList').appendChild(d);cuiCmdPreview()}
+function addPreset(k,v){k=k||'';v=v||'';var d=document.createElement('div');d.className='pr-row';d.innerHTML='<input class="pr-key sinput" value="'+esc(k)+'" placeholder="变量名" style="width:200px;font-size:13px;padding:4px 8px;"><span style="margin:0 4px;color:#888;align-self:center;font-size:13px;">=</span><input class="pr-val sinput" value="'+esc(v)+'" placeholder="值" style="width:140px;font-size:13px;padding:4px 8px;"><button class="btn btn-xs btn-danger" onclick="this.closest(\'.pr-row\').remove();cuiCmdPreview()" style="margin-left:6px;"><i class="bi bi-x"></i> 删除</button>';d.querySelectorAll('input').forEach(function(e){e.addEventListener('input',cuiCmdPreview)});document.getElementById('presetList').appendChild(d);cuiCmdPreview()}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function loadPresets(arr){document.getElementById('presetList').innerHTML='';if(arr&&arr.length)arr.forEach(function(p){addPreset(p.key,p.value)})}
 async function saveSRestart(){await saveS();await new Promise(function(r){setTimeout(r,600)});await a2Restart()}
-async function resetS(){if(!confirm('确认恢复默认？'))return;try{var r=await fetch('/api/settings/reset',{method:'POST'});var j=await r.json();j.ok&&(alert(j.msg),loadSF())}catch(e){}}
-async function cuiCmdReset(){if(!confirm('确认重置 ComfyUI 启动命令为最简单的默认模式？(python main.py --auto-launch)'))return;
-  try{var r=await fetch('/api/comfyui/cmd_reset',{method:'POST'});var j=await r.json();j.ok&&(alert(j.msg),loadSF())}catch(e){}}
+async function resetS(){if(!(await confirmDialog('确认恢复默认？')))return;try{var r=await fetch('/api/settings/reset',{method:'POST'});var j=await r.json();j.ok&&(notify(j.msg),loadSF())}catch(e){}}
+async function cuiCmdReset(){if(!(await confirmDialog('确认重置 ComfyUI 启动命令为最简单的默认模式？(python main.py --auto-launch)')))return;
+  try{var r=await fetch('/api/comfyui/cmd_reset',{method:'POST'});var j=await r.json();j.ok&&(notify(j.msg),loadSF())}catch(e){}}
 async function cuiCmdPreview(){
   try{var r=await fetch('/api/comfyui/cmd_preview');var j=await r.json();
     var e=document.getElementById('cuiCmdPreview');if(e)e.textContent='命令: '+j.cmd_str
@@ -2725,16 +2856,16 @@ function repairEnableBtns(en){
 
 async function repairClone(){
   var dir=document.getElementById('rclone_dir').value.trim();
-  if(!dir){alert('请填写安装目录');return}
+  if(!dir){notify('请填写安装目录');return}
   var mir=document.getElementById('rclone_mirror').checked;
   var log=document.getElementById('rlog');log.textContent='正在克隆 ComfyUI ...\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
   document.getElementById('rlog_status').textContent='运行中: 克隆';
   repairEnableBtns(false);
   try{var r=await fetch('/api/repair/clone',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target_dir:dir,mirror:mir})});
-    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
-  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+  }catch(e){notify('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
 }
 
 async function repairRequirements(){
@@ -2743,23 +2874,23 @@ async function repairRequirements(){
   document.getElementById('rlog_status').textContent='运行中: requirements';
   repairEnableBtns(false);
   try{var r=await fetch('/api/repair/requirements',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
-  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+  }catch(e){notify('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
 }
 
 async function repairPytorch(){
   var cmd=document.getElementById('rpt_cmd').textContent.trim();
-  if(!cmd||cmd==='等待选择...'){alert('请先选择 PyTorch 版本和计算平台');return}
-  if(!cmd.startsWith('pip install')){alert('无效命令');return}
+  if(!cmd||cmd==='等待选择...'){notify('请先选择 PyTorch 版本和计算平台');return}
+  if(!cmd.startsWith('pip install')){notify('无效命令');return}
   var log=document.getElementById('rlog');log.textContent='正在安装 PyTorch ...\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
   document.getElementById('rlog_status').textContent='运行中: PyTorch';
   repairEnableBtns(false);
   try{var r=await fetch('/api/repair/pytorch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cmd:cmd})});
-    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
-  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+  }catch(e){notify('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
 }
 
 async function repairStop(){
@@ -2771,15 +2902,15 @@ async function repairStop(){
 }
 
 async function repairPurgeCache(){
-  if(!confirm('确认清除 pip 缓存？这将删除所有已下载的 wheel 文件。'))return;
+  if(!(await confirmDialog('确认清除 pip 缓存？这将删除所有已下载的 wheel 文件。',{danger:true})))return;
   var log=document.getElementById('rlog');log.textContent='正在清除 pip 缓存 ...\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
   document.getElementById('rlog_status').textContent='运行中: 清除缓存';
   repairEnableBtns(false);
   try{var r=await fetch('/api/repair/purge_cache',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
-  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+  }catch(e){notify('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
 }
 
 async function repairLoadPytorch(){
@@ -2815,35 +2946,35 @@ function repairUpdateCmd(){
 // ---- 插件修复 ----
 async function repairPipInstall(){
   var pkgs=document.getElementById('rpip_pkgs').value.trim();
-  if(!pkgs){alert('请填写要安装的包名');return}
+  if(!pkgs){notify('请填写要安装的包名');return}
   var mir=document.getElementById('rpip_mirror').value;
   var log=document.getElementById('rlog');log.textContent='正在安装: '+pkgs+' (镜像: '+mir+')...\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
   document.getElementById('rlog_status').textContent='运行中: pip install';
   repairEnableBtns(false);
   try{var r=await fetch('/api/repair/pip_install',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packages:pkgs,mirror:mir})});
-    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
-  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+  }catch(e){notify('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
 }
 
 async function repairDownload(){
   var url=document.getElementById('rdl_url').value.trim();
-  if(!url){alert('请填写下载链接');return}
+  if(!url){notify('请填写下载链接');return}
   var sp=document.getElementById('rdl_path').value.trim();
   var log=document.getElementById('rlog');log.textContent='正在下载: '+url+'\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
   document.getElementById('rlog_status').textContent='运行中: 下载文件';
   repairEnableBtns(false);
   try{var r=await fetch('/api/repair/download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url,save_path:sp})});
-    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
-  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+  }catch(e){notify('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
 }
 
 async function repairPlugin(){
   var nm=document.getElementById('rplugin_name').value.trim();
-  if(!nm){alert('请填写插件名称');return}
+  if(!nm){notify('请填写插件名称');return}
   var mir=document.getElementById('rplugin_mirror').value;
   var lab=mir?'[镜像] ':'';
   var log=document.getElementById('rlog');log.textContent='正在修复插件'+lab+': '+nm+'\n';
@@ -2851,39 +2982,39 @@ async function repairPlugin(){
   document.getElementById('rlog_status').textContent='运行中: 修复插件 '+nm+lab;
   repairEnableBtns(false);
   try{var r=await fetch('/api/repair/plugin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plugin_name:nm,mirror:mir||null})});
-    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
-  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+  }catch(e){notify('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
 }
 
 async function repairAllPlugins(){
   var mir=document.getElementById('rall_mirror').value;
   var lab=mir?'[镜像] ':'';
-  if(!confirm('确认'+(mir?'[镜像] ':'')+'批量修复所有插件？这将依次 git pull 并安装依赖，可能耗时较长。'))return;
+  if(!(await confirmDialog('确认'+(mir?'[镜像] ':'')+'批量修复所有插件？这将依次 git pull 并安装依赖，可能耗时较长。')))return;
   var log=document.getElementById('rlog');log.textContent='正在扫描 custom_nodes 并批量修复所有插件...'+(mir?' (镜像加速)':'')+'\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
   document.getElementById('rlog_status').textContent='运行中: 批量修复插件'+lab;
   repairEnableBtns(false);
   try{var r=await fetch('/api/repair/all_plugins',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mirror:mir||null})});
-    var j=await r.json();if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
-  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+  }catch(e){notify('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
 }
 
 async function repairAllMirrorChanged(){}
 
 async function repairKillComfyUI(){
-  if(!confirm('&#9888; 确认强制结束所有 ComfyUI Python 进程？\n\n这将关闭所有正在运行的 ComfyUI 实例，可能导致未保存的工作丢失。'))return;
+  if(!(await confirmDialog('确认强制结束所有 ComfyUI Python 进程？\n\n这将关闭所有正在运行的 ComfyUI 实例，可能导致未保存的工作丢失。',{danger:true,title:'强制结束'})))return;
   try{var r=await fetch('/api/repair/kill_comfyui',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-    var j=await r.json();alert(j.msg)
-  }catch(e){alert('失败: '+e.message)}
+    var j=await r.json();notify(j.msg)
+  }catch(e){notify('失败: '+e.message)}
 }
 
 async function repairKillAria2(){
-  if(!confirm('&#9888; 确认强制结束所有 aria2c 进程？\n\n正在下载的任务将被中断。'))return;
+  if(!(await confirmDialog('确认强制结束所有 aria2c 进程？\n\n正在下载的任务将被中断。',{danger:true,title:'强制结束'})))return;
   try{var r=await fetch('/api/repair/kill_aria2',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-    var j=await r.json();alert(j.msg)
-  }catch(e){alert('失败: '+e.message)}
+    var j=await r.json();notify(j.msg)
+  }catch(e){notify('失败: '+e.message)}
 }
 
 
@@ -2929,9 +3060,9 @@ async function repairComfyUIUpdate(target){
   try{
     var r=await fetch('/api/repair/comfyui_update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:target})});
     var j=await r.json();
-    if(!j.ok){alert(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
+    if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
-  }catch(e){alert('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
+  }catch(e){notify('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
 }
 
 // ---- 恢复状态 ----
@@ -2949,16 +3080,165 @@ async function repairCheckStatus(){
 }
 
 // ============================================================
+// 工作流管理（状态变量需在 INIT 之前声明，否则刷新恢复页面时报错）
+// ============================================================
+var wfState = { page: 1, pageSize: 20, totalPages: 1, curPath: '', sort: 'name_asc', search: '', editing: null };
+var wfAnaModels = [];
+
+// ============================================================
 // INIT
 // ============================================================
 loadPaths();loadSF();
 var lastPage=sessionStorage.getItem('lastPage');
 if(lastPage&&lastPage!=='launcher'){switchPage(null,lastPage)}
 else{cuiCheckStatus()}
-// back-to-top
-var btnTop=document.getElementById('btnTop'),mainEl=document.getElementById('main');
-mainEl.addEventListener('scroll',function(){btnTop.style.display=mainEl.scrollTop>400?'flex':'none'});
-btnTop.addEventListener('click',function(){mainEl.scrollTo({top:0,behavior:'smooth'})});
+// ====== 右下角扇形功能菜单 ======
+(function(){
+  var fabWrap=document.getElementById('fabWrap'),fabMain=document.getElementById('fabMain');
+  var fabFan=document.getElementById('fabFan'),mainEl=document.getElementById('main');
+  if(!fabWrap||!fabMain||!fabFan)return;
+  var open=false;
+
+  // 展开/收起
+  function toggleFab(force){
+    open=(typeof force==='boolean')?force:!open;
+    fabFan.classList.toggle('open',open);
+    fabMain.classList.toggle('active',open);
+  }
+
+  // ---- 拖动放置（默认右下角，可拖到任意位置，位置持久化）----
+  var dragging=false,moved=false,sx=0,sy=0,startML=0,startMT=0,offX=0,offY=0;
+  function fabClamp(v,min,max){return Math.max(min,Math.min(max,v))}
+  // 根据位置决定扇形展开方向（靠近顶部则向下展开）
+  function fabUpdateDir(){
+    var mr=fabMain.getBoundingClientRect();
+    var cy=mr.top+mr.height/2;
+    if(cy<window.innerHeight/2){fabWrap.classList.add('fab-down')}
+    else{fabWrap.classList.remove('fab-down')}
+  }
+  function fabSavePos(){
+    try{localStorage.setItem('wwdm_fab_pos',JSON.stringify({left:fabWrap.style.left,top:fabWrap.style.top,down:fabWrap.classList.contains('fab-down')}))}catch(e){}
+  }
+  function fabPlaceDefault(){
+    var mr=fabMain.getBoundingClientRect(),wr=fabWrap.getBoundingClientRect();
+    var ox=mr.left-wr.left,oy=mr.top-wr.top;
+    var mL=window.innerWidth-28-48,mT=window.innerHeight-28-48;
+    fabWrap.style.left=(mL-ox)+'px';
+    fabWrap.style.top=(mT-oy)+'px';
+    fabWrap.style.right='auto';fabWrap.style.bottom='auto';
+    fabWrap.classList.remove('fab-down');
+  }
+  function fabApplyPos(pos){
+    if(!pos)return false;
+    var l=parseFloat(pos.left),t=parseFloat(pos.top);
+    if(isNaN(l)||isNaN(t))return false;
+    var mr=fabMain.getBoundingClientRect(),wr=fabWrap.getBoundingClientRect();
+    var ox=mr.left-wr.left,oy=mr.top-wr.top;
+    var mL=fabClamp(l+ox,0,window.innerWidth-48);
+    var mT=fabClamp(t+oy,0,window.innerHeight-48);
+    fabWrap.style.left=(mL-ox)+'px';
+    fabWrap.style.top=(mT-oy)+'px';
+    fabWrap.style.right='auto';fabWrap.style.bottom='auto';
+    if(pos.down)fabWrap.classList.add('fab-down');
+    else fabWrap.classList.remove('fab-down');
+    return true;
+  }
+  // 恢复上次位置，否则默认右下角
+  (function(){
+    var saved=null;
+    try{saved=JSON.parse(localStorage.getItem('wwdm_fab_pos')||'null')}catch(e){}
+    if(!saved||!fabApplyPos(saved))fabPlaceDefault();
+    fabUpdateDir();
+  })();
+
+  fabMain.addEventListener('pointerdown',function(e){
+    if(e.button!==undefined&&e.button!==0)return;
+    dragging=true;moved=false;
+    sx=e.clientX;sy=e.clientY;
+    var mr=fabMain.getBoundingClientRect(),wr=fabWrap.getBoundingClientRect();
+    offX=mr.left-wr.left;offY=mr.top-wr.top;
+    startML=mr.left;startMT=mr.top;
+    fabMain.classList.add('dragging');
+    try{fabMain.setPointerCapture(e.pointerId)}catch(_){}
+    e.stopPropagation();
+  });
+  fabMain.addEventListener('pointermove',function(e){
+    if(!dragging)return;
+    var dx=e.clientX-sx,dy=e.clientY-sy;
+    if(!moved&&(Math.abs(dx)>4||Math.abs(dy)>4)){moved=true;}
+    if(!moved)return;
+    var mL=fabClamp(startML+dx,0,window.innerWidth-48);
+    var mT=fabClamp(startMT+dy,0,window.innerHeight-48);
+    fabWrap.style.left=(mL-offX)+'px';
+    fabWrap.style.top=(mT-offY)+'px';
+    fabUpdateDir();
+  });
+  function fabEndDrag(e){
+    if(!dragging)return;
+    dragging=false;
+    fabMain.classList.remove('dragging');
+    try{fabMain.releasePointerCapture(e.pointerId)}catch(_){}
+    if(moved){fabSavePos();}
+    else{toggleFab();}
+  }
+  fabMain.addEventListener('pointerup',fabEndDrag);
+  fabMain.addEventListener('pointercancel',fabEndDrag);
+
+  // 窗口尺寸变化时，重新约束位置不越界
+  window.addEventListener('resize',function(){
+    var mr=fabMain.getBoundingClientRect(),wr=fabWrap.getBoundingClientRect();
+    var ox=mr.left-wr.left,oy=mr.top-wr.top;
+    var mL=fabClamp(mr.left,0,window.innerWidth-48);
+    var mT=fabClamp(mr.top,0,window.innerHeight-48);
+    fabWrap.style.left=(mL-ox)+'px';
+    fabWrap.style.top=(mT-oy)+'px';
+    fabUpdateDir();
+  });
+
+  // 点击空白处收起
+  document.addEventListener('click',function(e){
+    if(!fabWrap.contains(e.target)&&open)toggleFab(false);
+  });
+
+  // 1. 回到顶部
+  document.getElementById('fabBtnTop').addEventListener('click',function(){
+    mainEl.scrollTo({top:0,behavior:'smooth'});toggleFab(false);
+  });
+
+  // 2. 主题切换（日间/夜间）
+  var themeBtn=document.getElementById('fabBtnTheme');
+  function applyTheme(t){
+    document.documentElement.setAttribute('data-theme',t);
+    try{localStorage.setItem('wwdm_theme',t)}catch(e){}
+    themeBtn.title = t==='dark'?'切换到日间':'切换到夜间';
+    var sun=themeBtn.querySelector('.ico-sun'),moon=themeBtn.querySelector('.ico-moon');
+    if(sun)sun.style.display=t==='dark'?'none':'';
+    if(moon)moon.style.display=t==='dark'?'':'none';
+  }
+  function currentTheme(){
+    try{return localStorage.getItem('wwdm_theme')||'light'}catch(e){return 'light'}
+  }
+  themeBtn.addEventListener('click',function(){
+    applyTheme(currentTheme()==='dark'?'light':'dark');
+    toggleFab(false);
+  });
+  applyTheme(currentTheme());
+
+  // 3. 定时关机（读取全局设置 sdly）
+  document.getElementById('fabBtnPower').addEventListener('click',function(){
+    toggleFab(false);
+    var delay=60;
+    try{delay=parseInt(document.getElementById('sdly')?document.getElementById('sdly').value:'60',10)||60}catch(err){}
+    confirmDialog('确定 '+delay+' 秒后关机吗？\n点击“确定”后将无法撤销，请保存好所有工作！',{danger:true,title:'定时关机'}).then(function(ok){
+      if(!ok)return;
+      fetch('/api/shutdown',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({delay:delay})})
+      .then(function(r){return r.json()}).then(function(j){
+        if(j.ok){notify('已计划 '+delay+' 秒后关机。如需取消请点击主按钮再次打开菜单，点关机按钮选择取消。')}
+        else{notify('关机指令失败: '+j.msg)}
+      }).catch(function(err){notify('关机指令失败: '+err.message)});
+    });
+  });
+})();
 
 // ============================================================
 // 笔记本
@@ -3047,7 +3327,7 @@ function noteOpen(id){
 }
 
 function noteNew(){
-    fetch('/api/notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:'未命名笔记',content:'',color:'#00d4ff',tag:''})}).then(function(r){return r.json()}).then(function(d){
+    fetch('/api/notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:'未命名笔记',content:'',color:'#4a6fa5',tag:''})}).then(function(r){return r.json()}).then(function(d){
         if(d.ok){
             noteCurId=d.id;
             noteLoadAll();
@@ -3061,7 +3341,7 @@ function noteSave(){
     var title=document.getElementById('noteTitle').value.trim()||'未命名笔记';
     var content=document.getElementById('noteContent').value||'';
     var tag=document.getElementById('noteTag').value.trim()||'';
-    var color='#00d4ff';
+    var color='#4a6fa5';
     var active=document.querySelector('.notes-color.active');
     if(active)color=active.dataset.c;
     document.getElementById('noteStatus').textContent='保存中...';
@@ -3076,25 +3356,29 @@ function noteSave(){
 
 function noteDelete(){
     if(!noteCurId)return;
-    if(!confirm('确定删除这篇笔记？'))return;
-    fetch('/api/notes/'+noteCurId,{method:'DELETE'}).then(function(r){return r.json()}).then(function(d){
-        if(d.ok){
-            noteCurId=null;
-            document.getElementById('noteEditor').style.display='none';
-            document.getElementById('noteEditorEmpty').style.display='flex';
-            noteLoadAll();
-        }
-    }).catch(function(e){console.error(e)});
+    confirmDialog('确定删除这篇笔记？',{danger:true}).then(function(ok){
+        if(!ok)return;
+        fetch('/api/notes/'+noteCurId,{method:'DELETE'}).then(function(r){return r.json()}).then(function(d){
+            if(d.ok){
+                noteCurId=null;
+                document.getElementById('noteEditor').style.display='none';
+                document.getElementById('noteEditorEmpty').style.display='flex';
+                noteLoadAll();
+            }
+        }).catch(function(e){console.error(e)});
+    });
 }
 
 function noteConfirmDelete(id){
-    if(!confirm('确定删除这篇笔记？'))return;
-    fetch('/api/notes/'+id,{method:'DELETE'}).then(function(r){return r.json()}).then(function(d){
-        if(d.ok){
-            if(noteCurId===id){noteCurId=null;document.getElementById('noteEditor').style.display='none';document.getElementById('noteEditorEmpty').style.display='flex';}
-            noteLoadAll();
-        }
-    }).catch(function(e){console.error(e)});
+    confirmDialog('确定删除这篇笔记？',{danger:true}).then(function(ok){
+        if(!ok)return;
+        fetch('/api/notes/'+id,{method:'DELETE'}).then(function(r){return r.json()}).then(function(d){
+            if(d.ok){
+                if(noteCurId===id){noteCurId=null;document.getElementById('noteEditor').style.display='none';document.getElementById('noteEditorEmpty').style.display='flex';}
+                noteLoadAll();
+            }
+        }).catch(function(e){console.error(e)});
+    });
 }
 
 function noteTogglePin(){
@@ -3220,15 +3504,16 @@ function fmtTime(t){
 // ============================================================
 // 工作流管理
 // ============================================================
-var wfState = { page: 1, pageSize: 20, totalPages: 1, curPath: '', sort: 'name_asc', search: '', editing: null };
 
 function wfInit() { wfDoBrowse(); }
 
 function wfDoBrowse() {
   var q = document.getElementById('wfSearch');
   var s = document.getElementById('wfSort');
+  var ps = document.getElementById('wfPS');
   if (q) wfState.search = q.value.trim();
   if (s) wfState.sort = s.value;
+  if (ps) wfState.pageSize = parseInt(ps.value, 10) || 20;
   var params = new URLSearchParams();
   params.set('path', wfState.curPath || '');
   params.set('page', wfState.page || 1);
@@ -3238,16 +3523,21 @@ function wfDoBrowse() {
   fetch('/api/workflows/browse?' + params.toString())
     .then(function (r) { return r.json(); })
     .then(function (d) {
-      if (!d.ok) { wfShowList(null, d.msg); return; }
+      if (!d.ok) { wfRender(null, d.msg); return; }
       wfRender(d);
     })
-    .catch(function (e) { wfShowList(null, '请求失败: ' + e); });
+    .catch(function (e) { wfRender(null, '请求失败: ' + e); });
 }
 
-function wfRender(d) {
+function wfRender(d, msg) {
   var list = document.getElementById('wfList');
-  var empty = document.getElementById('wfEmpty');
   if (!list) return;
+  if (!d) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text2);padding:40px">&#128194; ' + escHtml(msg || '加载失败') + '</div>';
+    document.getElementById('wfPageInfo').textContent = '无内容';
+    wfRenderPager(null);
+    return;
+  }
   wfState.totalPages = d.total_pages || 1;
   wfState.page = d.page || 1;
   // 面包屑
@@ -3261,55 +3551,59 @@ function wfRender(d) {
   }
   // 分页信息
   var pi = document.getElementById('wfPageInfo');
-  if (pi) pi.textContent = '第 ' + d.page + ' / ' + d.total_pages + ' 页，共 ' + d.total + ' 项';
+  if (pi) pi.textContent = d.total > 0 ? '共 ' + d.total + ' 项 | 第 ' + d.page + '/' + d.total_pages + ' 页' : '无内容';
   // 列表
   var items = d.items || [];
   if (!items.length) {
-    list.innerHTML = '';
-    if (empty) empty.style.display = 'block';
+    list.innerHTML = '<div style="text-align:center;color:var(--text2);padding:40px">&#128295; 此目录下暂无工作流文件</div>';
+    wfRenderPager(d);
     return;
   }
-  if (empty) empty.style.display = 'none';
   var html = '<div class="wf-row wf-hd"><span class="wf-col-name">名称</span><span class="wf-col-size">大小</span><span class="wf-col-date">修改时间</span><span class="wf-col-op">操作</span></div>';
   items.forEach(function (it) {
     var icon = it.is_dir ? '&#128193;' : (it.type === 'json' ? '&#128196;' : (it.type === 'image' ? '&#128444;' : '&#128196;'));
     var size = it.is_dir ? '&lt;目录&gt;' : fmtSize(it.size);
     var date = fmtTime(it.modified);
-    var openBtn = it.is_dir
-      ? '<button class="btn btn6" onclick="wfGoto(\'' + escAttr(it.path) + '\')" title="打开文件夹" style="font-size:12px;padding:2px 8px">打开</button>'
-      : '<button class="btn btn6" onclick="wfOpen(\'' + escAttr(it.path) + '\')" title="编辑" style="font-size:12px;padding:2px 8px">&#128221; 编辑</button>';
-    html += '<div class="wf-row">'
+    var dpA = escAttr(it.path);
+    var isd = it.is_dir ? '1' : '0';
+    var opBtns = '';
+    if (it.is_dir) {
+      opBtns += '<button class="btn btn7" onclick="wfDelete(\'' + escAttr(it.path) + '\')" title="删除" style="font-size:12px;padding:2px 8px"><i class="bi bi-trash"></i></button>';
+    } else {
+      opBtns += '<button class="btn btn6" onclick="wfDownload(\'' + escAttr(it.path) + '\')" title="下载" style="font-size:12px;padding:2px 8px"><i class="bi bi-download"></i></button>'
+        + ' <button class="btn btn7" onclick="wfDelete(\'' + escAttr(it.path) + '\')" title="删除" style="font-size:12px;padding:2px 8px"><i class="bi bi-trash"></i></button>'
+        + (it.type === 'json' ? ' <button class="btn btn6" onclick="wfAnalyze(\'' + escAttr(it.path) + '\')" title="解析模型名" style="font-size:12px;padding:2px 8px"><i class="bi bi-search"></i></button>' : '');
+    }
+    html += '<div class="wf-row" data-path="' + dpA + '" data-is-dir="' + isd + '">'
       + '<span class="wf-col-name" style="cursor:pointer" onclick="' + (it.is_dir ? 'wfGoto(\'' + escAttr(it.path) + '\')' : 'wfOpen(\'' + escAttr(it.path) + '\')') + '" title="' + escAttr(it.name) + '">' + icon + ' ' + escHtml(it.name) + '</span>'
       + '<span class="wf-col-size">' + size + '</span>'
       + '<span class="wf-col-date">' + date + '</span>'
-      + '<span class="wf-col-op">'
-      + openBtn
-      + (it.is_dir ? '' : ' <button class="btn btn7" onclick="wfDelete(\'' + escAttr(it.path) + '\')" title="删除" style="font-size:12px;padding:2px 8px">&#128465;</button>')
-      + (it.type === 'json' ? ' <button class="btn btn6" onclick="wfAnalyze(\'' + escAttr(it.path) + '\')" title="解析模型名" style="font-size:12px;padding:2px 8px">&#128269; 解析</button>' : '')
-      + ' <button class="btn btn6" onclick="wfRename(\'' + escAttr(it.path) + '\')" title="重命名" style="font-size:12px;padding:2px 8px">&#9999;</button>'
-      + '</span></div>';
+      + '<span class="wf-col-op">' + opBtns + '</span></div>';
   });
   list.innerHTML = html;
+  wfRenderPager(d);
 }
 
-function wfGoto(p) { wfState.curPath = p; wfState.page = 1; wfDoBrowse(); }
-function wfPrevPage() { if (wfState.page > 1) { wfState.page--; wfDoBrowse(); } }
-function wfNextPage() { if (wfState.page < wfState.totalPages) { wfState.page++; wfDoBrowse(); } }
+function wfRenderPager(d) {
+  var pgEl = document.getElementById('wfPager');
+  if (!pgEl) return;
+  if (!d || d.total_pages <= 1) { pgEl.innerHTML = ''; return; }
+  var h = '<button class="btn btn6" style="font-size:12px;padding:4px 8px"' + (d.page <= 1 ? ' disabled' : ' onclick="wfGotoPage(' + (d.page - 1) + ')"') + '><i class="bi bi-chevron-left"></i> 上一页</button>';
+  for (var i = Math.max(1, d.page - 2), e = Math.min(d.total_pages, d.page + 2); i <= e; i++)
+    h += '<button class="btn ' + (i === d.page ? 'btn1' : 'btn6') + '" style="font-size:12px;padding:4px 8px;min-width:32px" onclick="wfGotoPage(' + i + ')">' + i + '</button>';
+  h += '<button class="btn btn6" style="font-size:12px;padding:4px 8px"' + (d.page >= d.total_pages ? ' disabled' : ' onclick="wfGotoPage(' + (d.page + 1) + ')"') + '><i class="bi bi-chevron-right"></i> 下一页</button>';
+  pgEl.innerHTML = h;
+}
+
+function wfGoto(p) { wfState.curPath = p; wfState.page = 1; _selPaths.clear(); wfDoBrowse(); }
+function wfGotoPage(p) { wfState.page = p; wfDoBrowse(); }
 function wfClearSearch() { var q = document.getElementById('wfSearch'); if (q) q.value = ''; wfState.search = ''; wfDoBrowse(); }
-
-function wfShowList(html, msg) {
-  var list = document.getElementById('wfList');
-  var empty = document.getElementById('wfEmpty');
-  if (list) list.innerHTML = html || '';
-  if (empty) empty.style.display = (html === null || html === '') ? 'block' : 'none';
-  if (msg && typeof alert === 'function') alert(msg);
-}
 
 function wfOpen(path) {
   fetch('/api/workflows/get?path=' + encodeURIComponent(path))
     .then(function (r) { return r.json(); })
     .then(function (d) {
-      if (!d.ok) { alert(d.msg || '读取失败'); return; }
+      if (!d.ok) { notify(d.msg || '读取失败'); return; }
       wfState.editing = d.path;
       document.getElementById('wfEditorTitle').textContent = d.name;
       document.getElementById('wfContent').value = d.content;
@@ -3319,16 +3613,23 @@ function wfOpen(path) {
       ta.focus();
       ta.scrollTop = 0;
     })
-    .catch(function (e) { alert('请求失败: ' + e); });
+    .catch(function (e) { notify('请求失败: ' + e); });
 }
 
 function wfSave() {
-  if (!wfState.editing) { alert('没有打开的文件'); return; }
+  if (!wfState.editing) { notify('没有打开的文件'); return; }
   var content = document.getElementById('wfContent').value;
   // 尝试 JSON 校验
   try { JSON.parse(content); } catch (e) {
-    if (!confirm('JSON 格式有误: ' + e.message + '\n仍然保存吗？')) return;
+    confirmDialog('JSON 格式有误: ' + e.message + '\n仍然保存吗？',{danger:true,title:'JSON 格式错误'}).then(function(ok){
+      if(!ok)return;
+      doWfSave(content);
+    });
+    return;
   }
+  doWfSave(content);
+}
+function doWfSave(content){
   fetch('/api/workflows/save', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -3339,72 +3640,133 @@ function wfSave() {
       if (d.ok) {
         document.getElementById('wfEditorStatus').textContent = '已保存 ' + new Date().toLocaleTimeString();
       } else {
-        alert(d.msg || '保存失败');
+        notify(d.msg || '保存失败');
       }
       wfDoBrowse();
     })
-    .catch(function (e) { alert('请求失败: ' + e); });
+    .catch(function (e) { notify('请求失败: ' + e); });
 }
 
 function wfNew() {
-  var name = prompt('新建工作流文件名（.json 自动补全）:', '我的工作流.json');
-  if (!name) return;
-  fetch('/api/workflows/new', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: name })
-  })
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-      if (d.ok) {
-        wfState.page = 1;
-        wfDoBrowse();
-        wfOpen(d.path);
-      } else {
-        alert(d.msg || '创建失败');
-      }
+  promptDialog('新建工作流文件名（.json 自动补全）:','我的工作流.json',{title:'新建工作流'}).then(function(name){
+    if (!name) return;
+    fetch('/api/workflows/new', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name })
     })
-    .catch(function (e) { alert('请求失败: ' + e); });
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ok) {
+          wfState.page = 1;
+          wfDoBrowse();
+          wfOpen(d.path);
+        } else {
+          notify(d.msg || '创建失败');
+        }
+      })
+      .catch(function (e) { notify('请求失败: ' + e); });
+  });
 }
 
 function wfDelete(path) {
-  if (!confirm('确定删除该工作流？\n' + path)) return;
-  fetch('/api/workflows/delete', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ paths: [path] })
-  })
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-      if (d.ok && d.results && d.results[0] && d.results[0].ok) {
-        wfDoBrowse();
-      } else {
-        alert((d.results && d.results[0] && d.results[0].msg) || '删除失败');
-      }
+  confirmDialog('确定删除该工作流？\n' + path,{danger:true}).then(function(ok){
+    if (!ok) return;
+    fetch('/api/workflows/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paths: [path] })
     })
-    .catch(function (e) { alert('请求失败: ' + e); });
-}
-
-function wfRename(path) {
-  var oldName = path.split('/').pop();
-  var newName = prompt('重命名:', oldName);
-  if (!newName || newName === oldName) return;
-  fetch('/api/workflows/rename', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path: path, new_name: newName })
-  })
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-      if (d.ok) { wfDoBrowse(); } else { alert(d.msg || '重命名失败'); }
-    })
-    .catch(function (e) { alert('请求失败: ' + e); });
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ok && d.results && d.results[0] && d.results[0].ok) {
+          wfDoBrowse();
+        } else {
+          notify((d.results && d.results[0] && d.results[0].msg) || '删除失败');
+        }
+      })
+      .catch(function (e) { notify('请求失败: ' + e); });
+  });
 }
 
 function wfOpenFolder() {
   fetch('/api/workflows/open_dir').then(function (r) { return r.json(); })
-    .then(function (d) { if (!d.ok) alert(d.msg || '打开失败'); })
+    .then(function (d) { if (!d.ok) notify(d.msg || '打开失败'); })
     .catch(function () {});
+}
+
+function wfDownload(path) {
+  window.location.href = '/api/workflows/file?path=' + encodeURIComponent(path);
+}
+
+function wfBackup() {
+  var btn = document.querySelector('button[onclick="wfBackup()"]');
+  confirmDialog('将把整个工作流目录备份到已配置的「工作流备份目录」下的「年月日时分秒-备份」文件夹。\n\n请确认已在【全局设置 → 其他】中配置了备份目录。',{title:'备份工作流'}).then(function(ok){
+    if (!ok) return;
+    var old = '';
+    if (btn) { old = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> 备份中...'; }
+    fetch('/api/workflows/backup', { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (btn) { btn.disabled = false; btn.innerHTML = old; }
+        if (d.ok) { notify('\u2705 ' + d.msg + '\n' + d.dest); }
+        else { notify('\u274c ' + (d.msg || '备份失败')); }
+      })
+      .catch(function (e) { if (btn) { btn.disabled = false; btn.innerHTML = old; } notify('请求失败: ' + e); });
+  });
+}
+
+// ---- 工作流多选（Ctrl+Click，复用 _selPaths）----
+(function(){
+  var list = document.getElementById('wfList');
+  if(!list)return;
+  list.addEventListener('click', function(e){
+    var el = e.target.closest('[data-path]');
+    if(!el)return;
+    var path = el.getAttribute('data-path');
+    if(e.ctrlKey){
+      e.preventDefault(); e.stopPropagation();
+      if(_selPaths.has(path)){
+        _selPaths.delete(path);
+        el.classList.remove('selected');
+      }else{
+        _selPaths.add(path);
+        el.classList.add('selected');
+      }
+    }
+  }, true);
+})();
+
+// ---- 工作流右键菜单（复用全局 ctxMenu 与共享 ctx 函数）----
+(function(){
+  var list = document.getElementById('wfList');
+  if(!list)return;
+  list.addEventListener('contextmenu', function(e){
+    var el = e.target.closest('[data-path]');
+    if(el){
+      e.preventDefault();
+      window._curPage = 'workflows';
+      showCtxMenu(el, e.clientX, e.clientY, el.getAttribute('data-path'), el.getAttribute('data-is-dir'));
+    }else if(e.target.closest('#wfList') || e.target.closest('#page-workflows')){
+      e.preventDefault();
+      window._curPage = 'workflows';
+      showCtxMenu(null, e.clientX, e.clientY, '', false);
+    }
+    var sendEl = document.getElementById('ctxSendToInput');
+    if(sendEl) sendEl.style.display = 'none';
+  });
+})();
+
+async function wfDeleteSelected(){
+  if(_selPaths.size === 0) return;
+  if(!(await confirmDialog('确认删除 '+_selPaths.size+' 个文件/文件夹？\n此操作不可撤销！',{danger:true}))) return;
+  var paths=[];_selPaths.forEach(function(p){paths.push(p)});
+  try{
+    var r=await fetch('/api/workflows/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paths:paths})});
+    var d=await r.json();
+    _selPaths.clear();
+    wfDoBrowse();
+  }catch(e){notify('删除失败: '+e.message)}
 }
 
 
@@ -3412,25 +3774,28 @@ function wfAnalyze(path) {
   fetch('/api/workflows/analyze?path=' + encodeURIComponent(path))
     .then(function (r) { return r.json(); })
     .then(function (d) {
-      if (!d.ok) { alert(d.msg || '解析失败'); return; }
+      if (!d.ok) { notify(d.msg || '解析失败'); return; }
       var nameEl = document.getElementById('wfAnaName');
       var bodyEl = document.getElementById('wfAnaBody');
       var cntEl = document.getElementById('wfAnaCount');
       if (nameEl) nameEl.textContent = d.name || '';
       if (cntEl) cntEl.textContent = '共提取 ' + (d.count || 0) + ' 个模型';
       var models = d.models || [];
+      wfAnaModels = models;
       var html;
       if (!models.length) {
         html = '<div style="text-align:center;color:var(--text3);padding:40px 0">未找到模型文件（safetensors/pth/ckpt 等）</div>';
       } else {
         html = '<table style="width:100%;border-collapse:collapse;font-size:13px">'
           + '<thead><tr style="color:var(--text3);text-align:left">'
+          + '<th style="padding:8px 10px;border-bottom:1px solid var(--border)">#</th>'
           + '<th style="padding:8px 10px;border-bottom:1px solid var(--border)">模型文件</th>'
           + '<th style="padding:8px 10px;border-bottom:1px solid var(--border)">类型</th>'
           + '<th style="padding:8px 10px;border-bottom:1px solid var(--border)">来源节点</th>'
           + '</tr></thead><tbody>';
-        models.forEach(function (m) {
+        models.forEach(function (m, idx) {
           html += '<tr>'
+            + '<td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text3)">' + (idx + 1) + '</td>'
             + '<td style="padding:8px 10px;border-bottom:1px solid var(--border);word-break:break-all;font-family:JetBrains Mono,Consolas,monospace">' + escHtml(m.file) + '</td>'
             + '<td style="padding:8px 10px;border-bottom:1px solid var(--border)">' + escHtml(m.ext || '') + '</td>'
             + '<td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text3)">' + escHtml(m.node_type || '') + (m.node ? ' · ' + escHtml(m.node) : '') + '</td>'
@@ -3442,7 +3807,37 @@ function wfAnalyze(path) {
       var m = document.getElementById('wfAnaModal');
       if (m) m.style.display = 'flex';
     })
-    .catch(function (e) { alert('请求失败: ' + e); });
+    .catch(function (e) { notify('请求失败: ' + e); });
+}
+
+function wfAnaCopy() {
+  var names = (wfAnaModels || []).map(function (m) { return m.file; });
+  if (!names.length) { notify('没有可复制的模型名称'); return; }
+  var text = names.join('\n');
+  function done() { notify('已复制 ' + names.length + ' 个模型名称到剪贴板'); }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text, done); });
+  } else {
+    fallbackCopy(text, done);
+  }
+}
+
+function fallbackCopy(text, done) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  ta.style.top = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    document.execCommand('copy');
+    done();
+  } catch (e) {
+    notify('复制失败，请手动复制');
+  }
+  document.body.removeChild(ta);
 }
 
 function wfAnaClose() {
@@ -3469,7 +3864,7 @@ function wfFormatJson() {
     ta.value = JSON.stringify(obj, null, 2);
     document.getElementById('wfEditorStatus').textContent = '已格式化';
   } catch (e) {
-    alert('JSON 格式错误: ' + e.message);
+    notify('JSON 格式错误: ' + e.message);
   }
 }
 
@@ -3494,57 +3889,19 @@ document.addEventListener('keydown', function (e) {
 
 <!-- 右键菜单 -->
 <div id="ctxMenu" class="ctx-menu" style="display:none">
-  <div class="ctx-item" id="ctxCopy" onclick="ctxCopy()">&#128203; 复制</div>
-  <div class="ctx-item" id="ctxMove" onclick="ctxMove()">&#9986; 移动</div>
+  <div class="ctx-item" id="ctxCopy" onclick="ctxCopy()"><i class="bi bi-files"></i> 复制</div>
+  <div class="ctx-item" id="ctxMove" onclick="ctxMove()"><i class="bi bi-scissors"></i> 移动</div>
   <div class="ctx-sep" id="ctxSep1"></div>
-  <div class="ctx-item" id="ctxPaste" onclick="ctxPaste()" style="display:none">&#128206; 粘贴</div>
+  <div class="ctx-item" id="ctxPaste" onclick="ctxPaste()" style="display:none"><i class="bi bi-clipboard"></i> 粘贴</div>
   <div class="ctx-sep" id="ctxSep2" style="display:none"></div>
-  <div class="ctx-item" id="ctxDelete" onclick="ctxDelete()">&#128465; 删除</div>
-  <div class="ctx-item" id="ctxRename" onclick="ctxRename()">&#9999; 重命名</div>
+  <div class="ctx-item" id="ctxDelete" onclick="ctxDelete()"><i class="bi bi-trash"></i> 删除</div>
+  <div class="ctx-item" id="ctxRename" onclick="ctxRename()"><i class="bi bi-pencil-square"></i> 重命名</div>
   <div class="ctx-sep" id="ctxSep3"></div>
-  <div class="ctx-item" id="ctxSendToInput" onclick="ctxSendToInput()" style="display:none">&#128230; 发送到输入文件夹</div>
-  <div class="ctx-item" id="ctxNewFolder" onclick="ctxNewFolder()">&#128193; 新建文件夹</div>
+  <div class="ctx-item" id="ctxSendToInput" onclick="ctxSendToInput()" style="display:none"><i class="bi bi-box-arrow-right"></i> 发送到输入文件夹</div>
+  <div class="ctx-item" id="ctxNewFolder" onclick="ctxNewFolder()"><i class="bi bi-folder-plus"></i> 新建文件夹</div>
 </div>
 
-<!-- ====== 关机悬浮按钮 ====== -->
-<div id="shutdownFab" title="定时关机">&#128267;</div>
 
-<script>
-// 关机悬浮按钮：可拖拽 + 点击确认关机
-(function(){
-  var fab=document.getElementById('shutdownFab');
-  if(!fab)return;
-  var dragging=false,moved=false,offX=0,offY=0,sx=0,sy=0;
-  fab.addEventListener('mousedown',function(e){
-    if(e.button!==0)return;
-    dragging=true;moved=false;offX=e.clientX-fab.offsetLeft;offY=e.clientY-fab.offsetTop;
-    sx=e.clientX;sy=e.clientY;
-    e.preventDefault();
-  });
-  document.addEventListener('mousemove',function(e){
-    if(!dragging)return;
-    if(Math.abs(e.clientX-sx)>4||Math.abs(e.clientY-sy)>4)moved=true;
-    var x=e.clientX-offX,y=e.clientY-offY;
-    x=Math.max(0,Math.min(window.innerWidth-fab.offsetWidth,x));
-    y=Math.max(0,Math.min(window.innerHeight-fab.offsetHeight,y));
-    fab.style.left=x+'px';fab.style.top=y+'px';
-  });
-  document.addEventListener('mouseup',function(){dragging=false});
-  fab.addEventListener('click',function(e){
-    if(moved){moved=false;return;}
-    e.stopPropagation();
-    var delay=60;
-    try{delay=parseInt(document.getElementById('sdly')?document.getElementById('sdly').value:'60',10)||60}catch(err){}
-    if(confirm('确定 '+delay+' 秒后关机吗？\n点击“确定”后将无法撤销，请保存好所有工作！')){
-      fetch('/api/shutdown',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({delay:delay})})
-      .then(function(r){return r.json()}).then(function(j){
-        if(j.ok){alert('⏳ 已计划 '+delay+' 秒后关机。如需取消请刷新页面并再次点击按钮选择取消。')}
-        else{alert('关机指令失败: '+j.msg)}
-      }).catch(function(err){alert('关机指令失败: '+err.message)});
-    }
-  });
-})();
-</script>
 
 </body>
 </html>

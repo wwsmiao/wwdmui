@@ -911,6 +911,52 @@ def register(app):
             return jsonify({"ok": False, "msg": "缺少参数"})
         return jsonify(svc.rename_output_file(root, rel, new_name))
 
+    @app.route("/api/workflows/move", methods=["POST"])
+    def api_workflows_move():
+        root = _get_workflow_dir()
+        data = request.get_json(silent=True) or {}
+        paths = data.get("paths", [])
+        dest = data.get("dest", "")
+        if not paths or dest is None:
+            return jsonify({"ok": False, "msg": "缺少参数"})
+        return jsonify(svc.workflows_move_files(root, paths, dest))
+
+    @app.route("/api/workflows/copy", methods=["POST"])
+    def api_workflows_copy():
+        root = _get_workflow_dir()
+        data = request.get_json(silent=True) or {}
+        paths = data.get("paths", [])
+        dest = data.get("dest", "")
+        if not paths or dest is None:
+            return jsonify({"ok": False, "msg": "缺少参数"})
+        return jsonify(svc.workflows_copy_files(root, paths, dest))
+
+    @app.route("/api/workflows/mkdir", methods=["POST"])
+    def api_workflows_mkdir():
+        root = _get_workflow_dir()
+        data = request.get_json(silent=True) or {}
+        path = data.get("path", "")
+        if not path:
+            return jsonify({"ok": False, "msg": "缺少路径"})
+        return jsonify(svc.create_output_dir(root, path))
+
+    @app.route("/api/workflows/file")
+    def api_workflows_file():
+        root = _get_workflow_dir()
+        rel = request.args.get("path", "")
+        file_path = svc.serve_workflow_file(root, rel)
+        if not file_path:
+            return jsonify({"ok": False, "msg": "文件不存在或路径无效"}), 404
+        return send_file(file_path, as_attachment=True)
+
+    @app.route("/api/workflows/backup", methods=["POST"])
+    def api_workflows_backup():
+        root = _get_workflow_dir()
+        backup_dir = config.settings.get("workflow_backup_dir", "").strip()
+        if not backup_dir:
+            return jsonify({"ok": False, "msg": "未配置备份目录，请在全局设置中填写"})
+        return jsonify(svc.workflows_backup(root, backup_dir))
+
     @app.route("/api/workflows/open_dir")
     def api_workflows_open_dir():
         d = _get_workflow_dir()

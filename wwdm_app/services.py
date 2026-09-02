@@ -1653,6 +1653,89 @@ def workflows_new(root_dir, name):
         return {"ok": False, "msg": "创建失败: " + str(e)}
 
 
+def workflows_move_files(root_dir, rel_paths, dest_rel):
+    """批量移动工作流文件/文件夹到目标目录"""
+    dest = _safe_path(root_dir, dest_rel)
+    if not dest or not os.path.isdir(dest):
+        return {"ok": False, "msg": "目标目录无效: " + (dest_rel or "(root)")}
+    results = []
+    for rp in rel_paths:
+        t = _safe_path(root_dir, rp)
+        if not t or not os.path.exists(t):
+            results.append({"path": rp, "ok": False, "msg": "源路径无效"})
+            continue
+        try:
+            shutil.move(t, dest)
+            results.append({"path": rp, "ok": True, "msg": "已移动"})
+        except Exception as e:
+            results.append({"path": rp, "ok": False, "msg": str(e)})
+    return {"ok": True, "results": results}
+
+
+def workflows_copy_files(root_dir, rel_paths, dest_rel):
+    """批量复制工作流文件/文件夹到目标目录"""
+    dest = _safe_path(root_dir, dest_rel)
+    if not dest:
+        return {"ok": False, "msg": "目标目录无效: " + (dest_rel or "(root)")}
+    os.makedirs(dest, exist_ok=True)
+    results = []
+    for rp in rel_paths:
+        t = _safe_path(root_dir, rp)
+        if not t or not os.path.exists(t):
+            results.append({"path": rp, "ok": False, "msg": "源路径无效"})
+            continue
+        try:
+            if os.path.isdir(t):
+                d = os.path.join(dest, os.path.basename(t))
+                if os.path.exists(d):
+                    shutil.rmtree(d)
+                shutil.copytree(t, d)
+            else:
+                shutil.copy2(t, dest)
+            results.append({"path": rp, "ok": True, "msg": "已复制"})
+        except Exception as e:
+            results.append({"path": rp, "ok": False, "msg": str(e)})
+    return {"ok": True, "results": results}
+
+
+def workflows_backup(root_dir, backup_dir):
+    """将整个工作流目录复制到指定备份目录下的「年月日时分秒-备份」文件夹"""
+    if not os.path.isdir(root_dir):
+        return {"ok": False, "msg": "工作流目录不存在: " + root_dir}
+    if not backup_dir or not backup_dir.strip():
+        return {"ok": False, "msg": "未配置备份目录"}
+    backup_dir = backup_dir.strip()
+    # 防御：备份目录不能位于工作流目录内部（否则 copytree 会无限递归）
+    try:
+        if os.path.commonpath([os.path.abspath(root_dir), os.path.abspath(backup_dir)]) == os.path.abspath(root_dir):
+            return {"ok": False, "msg": "备份目录不能位于工作流目录内部，请改用工作流目录之外的路径"}
+    except ValueError:
+        pass  # 不同盘符等无法比较的情况，交由后续处理
+    try:
+        os.makedirs(backup_dir, exist_ok=True)
+    except Exception as e:
+        return {"ok": False, "msg": "无法创建备份目录: " + str(e)}
+    # 时间戳：年月日时分秒
+    stamp = time.strftime("%Y%m%d%H%M%S")
+    dest = os.path.join(backup_dir, stamp + "-备份")
+    if os.path.exists(dest):
+        # 罕见冲突，追加毫秒
+        dest = os.path.join(backup_dir, stamp + "-" + str(int(time.time() * 1000) % 1000) + "-备份")
+    try:
+        shutil.copytree(root_dir, dest)
+        return {"ok": True, "dest": dest, "msg": "备份完成"}
+    except Exception as e:
+        return {"ok": False, "msg": "备份失败: " + str(e)}
+
+
+def serve_workflow_file(root_dir, rel_path):
+    """安全返回工作流文件绝对路径（供 send_file 下载使用）"""
+    target = _safe_path(root_dir, rel_path)
+    if not target or not os.path.isfile(target):
+        return None
+    return target
+
+
 
 
 def workflows_analyze(root_dir, rel_path):

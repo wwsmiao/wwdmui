@@ -55,6 +55,7 @@ DEFAULT_SETTINGS = {
     "input_dir": "",  # 空值表示用 comfyui_dir + input
     # 工作流管理
     "workflow_dir": "",  # 空值表示用 comfyui_dir + user/default/workflows
+    "workflow_backup_dir": "",  # 空值表示不启用备份功能
     # 抖音提取
     "douyin_cookie_file": "",    # dy_cookie.json 文件路径
     "douyin_save_dir": "",       # 图片/视频保存目录
