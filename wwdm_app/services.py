@@ -1274,9 +1274,83 @@ def _safe_path(root_dir, rel_path):
     return target
 
 
+def _fuzzy_match(query, name):
+    """模糊匹配：query 整体是 name 子串，或 query 各字符按顺序出现在 name 中（不区分大小写）"""
+    q = query.lower()
+    n = name.lower()
+    if q in n:
+        return True
+    idx = 0
+    for ch in q:
+        idx = n.find(ch, idx)
+        if idx == -1:
+            return False
+        idx += 1
+    return True
+
+
+def _sort_items(items, sort):
+    """排序：name 按名称、date 按修改时间；_desc 表示倒序（date_desc = 最新在前）"""
+    rev = sort.endswith("_desc")
+    if sort.startswith("name"):
+        items.sort(key=lambda x: x.get("name", "").lower(), reverse=rev)
+    elif sort.startswith("date"):
+        items.sort(key=lambda x: x.get("modified", 0), reverse=rev)
+    else:
+        items.sort(key=lambda x: x.get("name", "").lower())
+    # 稳定二次排序：目录在前，文件在后（不改变组内已排好的顺序）
+    items.sort(key=lambda x: 0 if x.get("is_dir") else 1)
+    return items
+
+
+def recursive_search(root_dir, query, sort, page, page_size, type_fn):
+    """跨文件夹模糊搜索文件名，返回与 browse 相同的分页结构（带 recursive 标记）"""
+    items = []
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        for name in dirnames:
+            if not _fuzzy_match(query, name):
+                continue
+            full = os.path.join(dirpath, name)
+            try:
+                st = os.stat(full)
+            except OSError:
+                continue
+            rel = os.path.relpath(full, root_dir).replace("\\", "/")
+            items.append({"name": name, "path": rel, "modified": st.st_mtime, "is_dir": True})
+        for name in filenames:
+            if not _fuzzy_match(query, name):
+                continue
+            ft = type_fn(name)
+            if ft == "other":
+                continue
+            full = os.path.join(dirpath, name)
+            try:
+                st = os.stat(full)
+            except OSError:
+                continue
+            rel = os.path.relpath(full, root_dir).replace("\\", "/")
+            items.append({"name": name, "path": rel, "type": ft, "size": st.st_size,
+                          "modified": st.st_mtime, "is_dir": False})
+    _sort_items(items, sort)
+    total = len(items)
+    ps = max(1, min(100, int(page_size)))
+    tp = max(1, (total + ps - 1) // ps) if total else 1
+    pg = max(1, min(tp, int(page)))
+    start = (pg - 1) * ps
+    return {
+        "ok": True, "current_path": "", "breadcrumbs": [], "parent_path": None,
+        "items": items[start:start + ps], "page": pg, "page_size": ps,
+        "total": total, "total_pages": tp, "search": query, "sort": sort,
+        "recursive": True,
+    }
+
+
 def browse_output_dir(root_dir, rel_path="", page=1, page_size=20,
-                      search="", sort="name_asc"):
-    """浏览输出目录：文件夹在前、文件在后，支持分页/搜索/排序"""
+                      search="", sort="date_desc"):
+    """浏览输出目录：文件夹在前、文件在后，支持分页/搜索/排序。
+    带 search 时执行跨文件夹模糊搜索。"""
+    if search and search.strip():
+        return recursive_search(root_dir, search.strip(), sort, page, page_size, _file_type)
     target = _safe_path(root_dir, rel_path)
     if not target:
         return {"ok": False, "msg": "无效路径"}
@@ -1346,8 +1420,8 @@ def browse_output_dir(root_dir, rel_path="", page=1, page_size=20,
         folders_raw.sort(key=lambda x: x["name"].lower(), reverse=rev)
         files_raw.sort(key=lambda x: x["name"].lower(), reverse=rev)
     elif sort.startswith("date"):
-        folders_raw.sort(key=lambda x: x["modified"], reverse=not rev)
-        files_raw.sort(key=lambda x: x["modified"], reverse=not rev)
+        folders_raw.sort(key=lambda x: x["modified"], reverse=rev)
+        files_raw.sort(key=lambda x: x["modified"], reverse=rev)
     else:
         folders_raw.sort(key=lambda x: x["name"].lower())
         files_raw.sort(key=lambda x: x["name"].lower())
@@ -1379,6 +1453,27 @@ def serve_output_file(root_dir, rel_path):
     if not target or not os.path.isfile(target):
         return None
     return target
+
+
+def zip_files(root_dir, rel_paths, zip_name="files.zip"):
+    """将多个文件/文件夹打包为 zip，返回 BytesIO（供 send_file 下载）"""
+    import zipfile as _zipfile
+    import io as _io
+    buf = _io.BytesIO()
+    with _zipfile.ZipFile(buf, 'w', _zipfile.ZIP_DEFLATED) as zf:
+        for rp in rel_paths:
+            t = _safe_path(root_dir, rp)
+            if not t or not os.path.exists(t):
+                continue
+            if os.path.isdir(t):
+                for dirpath, _dirnames, filenames in os.walk(t):
+                    for fn in filenames:
+                        full = os.path.join(dirpath, fn)
+                        zf.write(full, os.path.relpath(full, root_dir).replace("\\", "/"))
+            else:
+                zf.write(t, os.path.relpath(t, root_dir).replace("\\", "/"))
+    buf.seek(0)
+    return buf
 
 
 def delete_output_files(root_dir, rel_paths):
@@ -1510,9 +1605,12 @@ def _workflow_type(name):
 
 
 def workflows_browse(root_dir, rel_path="", page=1, page_size=20,
-                     search="", sort="name_asc"):
+                     search="", sort="date_desc"):
     """浏览工作流目录：文件夹在前、文件在后，支持分页/搜索/排序。
-    与 browse_output_dir 类似，但不过滤非媒体文件（保留全部类型）。"""
+    与 browse_output_dir 类似，但不过滤非媒体文件（保留全部类型）。
+    带 search 时执行跨文件夹模糊搜索。"""
+    if search and search.strip():
+        return recursive_search(root_dir, search.strip(), sort, page, page_size, _workflow_type)
     target = _safe_path(root_dir, rel_path)
     if not target:
         return {"ok": False, "msg": "无效路径"}
@@ -1581,8 +1679,8 @@ def workflows_browse(root_dir, rel_path="", page=1, page_size=20,
         folders_raw.sort(key=lambda x: x["name"].lower(), reverse=rev)
         files_raw.sort(key=lambda x: x["name"].lower(), reverse=rev)
     elif sort.startswith("date"):
-        folders_raw.sort(key=lambda x: x["modified"], reverse=not rev)
-        files_raw.sort(key=lambda x: x["modified"], reverse=not rev)
+        folders_raw.sort(key=lambda x: x["modified"], reverse=rev)
+        files_raw.sort(key=lambda x: x["modified"], reverse=rev)
     else:
         folders_raw.sort(key=lambda x: x["name"].lower())
         files_raw.sort(key=lambda x: x["name"].lower())
@@ -1863,6 +1961,14 @@ def _workflows_analyze_text(content, rel_path):
     }
 
 
+
+# 抖音页面请求通用 headers（_DOUYIN_HEADERS）
+_DOUYIN_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Referer": "https://www.douyin.com/",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+}
 
 def _douyin_extract_links(text):
     return re.findall(r"(https?://[^\s]+)", text)

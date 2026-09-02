@@ -413,6 +413,13 @@ def register(app):
             ]
         else:
             d["comfyui_presets"] = config.settings.get("comfyui_presets", [])
+        # 壁纸毛玻璃效果 clamp 到 0-10 整数（0=无玻璃，1-10=像素）
+        try:
+            wb = int(round(float(d.get("wallpaper_blur", config.settings.get("wallpaper_blur", 0)))))
+            d["wallpaper_blur"] = max(0, min(10, wb))
+        except (ValueError, TypeError):
+            d["wallpaper_blur"] = 0
+        d["wallpaper_path"] = (d.get("wallpaper_path", "") or "").strip()
         config.settings.update(d)
         config.save_settings(config.settings)
         return jsonify({"ok": True, "msg": "设置已保存，重启 aria2c 生效"})
@@ -422,6 +429,14 @@ def register(app):
         config.settings = dict(config.DEFAULT_SETTINGS)
         config.save_settings(config.settings)
         return jsonify({"ok": True, "msg": "已恢复默认设置"})
+
+    @app.route("/api/wallpaper")
+    def api_wallpaper():
+        """提供背景壁纸文件（图片或 mp4）。路径由用户在全局设置中配置。"""
+        wp = config.settings.get("wallpaper_path", "").strip()
+        if not wp or not os.path.isfile(wp):
+            return jsonify({"ok": False, "msg": "壁纸不存在"}), 404
+        return send_file(wp)
 
     # ========== ComfyUI 启动器 API ==========
     @app.route("/api/comfyui/start", methods=["POST"])
@@ -594,7 +609,7 @@ def register(app):
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 20))
         search = request.args.get("search", "")
-        sort = request.args.get("sort", "name_asc")
+        sort = request.args.get("sort", "date_desc")
         return jsonify(svc.browse_output_dir(root, rel, page, page_size, search, sort))
 
     @app.route("/api/output/file")
@@ -605,6 +620,28 @@ def register(app):
         if not file_path:
             return jsonify({"ok": False, "msg": "文件不存在或路径无效"}), 404
         return send_file(file_path)
+
+    @app.route("/api/output/download")
+    def api_output_download():
+        """下载单个文件（附件）或多个文件/文件夹（打包 zip）"""
+        root = _get_output_dir()
+        paths = request.args.get("paths", "")
+        if not paths:
+            return jsonify({"ok": False, "msg": "未指定路径"}), 400
+        rel_paths = [p for p in paths.split(",") if p]
+        if not rel_paths:
+            return jsonify({"ok": False, "msg": "未指定路径"}), 400
+        # 单个文件：直接附件下载
+        if len(rel_paths) == 1:
+            fp = svc.serve_output_file(root, rel_paths[0])
+            if not fp or not os.path.isfile(fp):
+                return jsonify({"ok": False, "msg": "文件不存在或路径无效"}), 404
+            return send_file(fp, as_attachment=True, download_name=os.path.basename(fp))
+        # 多选/文件夹：打包 zip
+        buf = svc.zip_files(root, rel_paths, "output.zip")
+        if not buf:
+            return jsonify({"ok": False, "msg": "无有效文件可下载"}), 404
+        return send_file(buf, as_attachment=True, download_name="output.zip", mimetype="application/zip")
 
     @app.route("/api/output/open_dir")
     def api_output_open_dir():
@@ -769,7 +806,7 @@ def register(app):
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 20))
         search = request.args.get("search", "")
-        sort = request.args.get("sort", "name_asc")
+        sort = request.args.get("sort", "date_desc")
         return jsonify(svc.browse_output_dir(root, rel, page, page_size, search, sort))
 
     @app.route("/api/input/file")
@@ -780,6 +817,26 @@ def register(app):
         if not file_path:
             return jsonify({"ok": False, "msg": "文件不存在或路径无效"}), 404
         return send_file(file_path)
+
+    @app.route("/api/input/download")
+    def api_input_download():
+        """下载单个文件（附件）或多个文件/文件夹（打包 zip）"""
+        root = _get_input_dir()
+        paths = request.args.get("paths", "")
+        if not paths:
+            return jsonify({"ok": False, "msg": "未指定路径"}), 400
+        rel_paths = [p for p in paths.split(",") if p]
+        if not rel_paths:
+            return jsonify({"ok": False, "msg": "未指定路径"}), 400
+        if len(rel_paths) == 1:
+            fp = svc.serve_output_file(root, rel_paths[0])
+            if not fp or not os.path.isfile(fp):
+                return jsonify({"ok": False, "msg": "文件不存在或路径无效"}), 404
+            return send_file(fp, as_attachment=True, download_name=os.path.basename(fp))
+        buf = svc.zip_files(root, rel_paths, "input.zip")
+        if not buf:
+            return jsonify({"ok": False, "msg": "无有效文件可下载"}), 404
+        return send_file(buf, as_attachment=True, download_name="input.zip", mimetype="application/zip")
 
     @app.route("/api/input/open_dir")
     def api_input_open_dir():
@@ -864,7 +921,7 @@ def register(app):
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 20))
         search = request.args.get("search", "")
-        sort = request.args.get("sort", "name_asc")
+        sort = request.args.get("sort", "date_desc")
         return jsonify(svc.workflows_browse(root, rel, page, page_size, search, sort))
 
     @app.route("/api/workflows/get")
@@ -948,6 +1005,26 @@ def register(app):
         if not file_path:
             return jsonify({"ok": False, "msg": "文件不存在或路径无效"}), 404
         return send_file(file_path, as_attachment=True)
+
+    @app.route("/api/workflows/download")
+    def api_workflows_download():
+        """下载单个文件（附件）或多个文件/文件夹（打包 zip）"""
+        root = _get_workflow_dir()
+        paths = request.args.get("paths", "")
+        if not paths:
+            return jsonify({"ok": False, "msg": "未指定路径"}), 400
+        rel_paths = [p for p in paths.split(",") if p]
+        if not rel_paths:
+            return jsonify({"ok": False, "msg": "未指定路径"}), 400
+        if len(rel_paths) == 1:
+            fp = svc.serve_workflow_file(root, rel_paths[0])
+            if not fp or not os.path.isfile(fp):
+                return jsonify({"ok": False, "msg": "文件不存在或路径无效"}), 404
+            return send_file(fp, as_attachment=True, download_name=os.path.basename(fp))
+        buf = svc.zip_files(root, rel_paths, "workflows.zip")
+        if not buf:
+            return jsonify({"ok": False, "msg": "无有效文件可下载"}), 404
+        return send_file(buf, as_attachment=True, download_name="workflows.zip", mimetype="application/zip")
 
     @app.route("/api/workflows/backup", methods=["POST"])
     def api_workflows_backup():

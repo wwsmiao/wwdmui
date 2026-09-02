@@ -44,6 +44,94 @@ body::before{
     radial-gradient(520px circle at 8% 90%,rgba(195,141,148,0.08),transparent 60%);
   background-repeat:repeat;pointer-events:none;z-index:-1;
 }
+/* ====== 背景壁纸（图片或 mp4，叠加在默认背景之上） ====== */
+#wallpaper{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1;pointer-events:none;transition:opacity .4s ease}
+
+/* ====== 壁纸启用后：全部表面透明 + 边框/阴影失效 + 可选毛玻璃（--wp-blur 像素） ====== */
+body.has-wallpaper{
+  --bg:transparent;
+  --bg2:transparent;
+  --panel:transparent;
+  --panel2:transparent;
+  --card:transparent;
+  --card2:transparent;
+  --border:transparent;
+  --border2:transparent;
+}
+:root[data-theme="dark"] body.has-wallpaper{
+  --bg:transparent;
+  --bg2:transparent;
+  --panel:transparent;
+  --panel2:transparent;
+  --card:transparent;
+  --card2:transparent;
+  --border:transparent;
+  --border2:transparent;
+}
+/* 壁纸启用后隐藏默认水彩噪点/渐变，透出干净壁纸 */
+body.has-wallpaper::before{opacity:0}
+/* 所有主要表面：透明背景 + 边框/阴影失效 + 毛玻璃（--wp-blur 控制，0px=无玻璃） */
+body.has-wallpaper #sidebar,
+body.has-wallpaper .banner,
+body.has-wallpaper .card,
+body.has-wallpaper .modal,
+body.has-wallpaper .cdlg,
+body.has-wallpaper .ntf,
+body.has-wallpaper .ctx-menu,
+body.has-wallpaper .wf-list,
+body.has-wallpaper .wf-modal,
+body.has-wallpaper .out-item,
+body.has-wallpaper .out-modal,
+body.has-wallpaper .notes-list-pane,
+body.has-wallpaper .notes-editor-pane,
+body.has-wallpaper .pitem,
+body.has-wallpaper .qitem,
+body.has-wallpaper .bbar,
+body.has-wallpaper .fab-sub,
+body.has-wallpaper .note-item,
+body.has-wallpaper .olink,
+body.has-wallpaper .notes-toolbar,
+body.has-wallpaper .wf-modal-hd,
+body.has-wallpaper .notes-editor-ft,
+body.has-wallpaper .pbar-bg,
+body.has-wallpaper .minibar-bg{
+  background:transparent;
+  border:none;
+  box-shadow:none;
+  backdrop-filter:blur(var(--wp-blur,0px)) saturate(1.05);
+  -webkit-backdrop-filter:blur(var(--wp-blur,0px)) saturate(1.05);
+}
+/* 表格表头/悬停行/激活菜单项等固定 rgba 底色也透明化 */
+body.has-wallpaper th,
+body.has-wallpaper tr:hover td,
+body.has-wallpaper .mi.active,
+body.has-wallpaper .mi:hover,
+body.has-wallpaper .qpos{
+  background:transparent;
+  border:none;
+  box-shadow:none;
+}
+/* 侧栏顶部装饰线、卡片顶部高光线失效 */
+body.has-wallpaper #sidebar::after,
+body.has-wallpaper .card::before,
+body.has-wallpaper .pitem::before,
+body.has-wallpaper .sg-title::before{
+  display:none;
+}
+/* 输入框/下拉/文本域：透明背景 + 边框失效 */
+body.has-wallpaper input,
+body.has-wallpaper select,
+body.has-wallpaper textarea{
+  background:transparent;
+  border:none;
+  box-shadow:none;
+}
+body.has-wallpaper input:focus,
+body.has-wallpaper select:focus,
+body.has-wallpaper textarea:focus{
+  border:none;
+  box-shadow:none;
+}
 .banner{position:relative;z-index:200;background:linear-gradient(90deg,var(--panel),rgba(74,111,165,0.07),var(--panel));border-bottom:1px solid var(--border);overflow:hidden;height:36px;display:flex;align-items:center;flex-shrink:0}
 .banner-wrap{display:flex;white-space:nowrap;animation:scrollBanner 28s linear infinite}
 .banner-text{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--cyan);padding:0 48px;flex-shrink:0;font-weight:500}
@@ -78,8 +166,9 @@ body::before{
 
 .ptitle{font-size:24px;font-weight:700;margin-bottom:28px;display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#4a6fa5,#c38d94);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-0.5px;font-family:var(--font-serif)}
 .ptitle .mi-icon{-webkit-text-fill-color:initial;filter:none}
+/* .card{background:linear-gradient(135deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:20px;padding:24px;margin-bottom:18px;box-shadow:0 4px 24px rgba(74,111,165,0.08);position:relative;overflow:hidden} */
 
-.card{background:linear-gradient(135deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:20px;padding:24px;margin-bottom:18px;box-shadow:0 4px 24px rgba(74,111,165,0.08);position:relative;overflow:hidden}
+.card{padding:24px;margin-bottom:18px;position:relative;overflow:hidden}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(74,111,165,0.25),transparent)}
 
 .twrap{overflow-x:auto}
@@ -124,6 +213,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--cyan);cursor:poin
 ::placeholder{color:var(--text3)}
 .sbar{display:flex;gap:10px;margin-bottom:20px;align-items:center;flex-wrap:wrap}
 .sbar input{flex:1;min-width:200px;max-width:420px}
+
 
 .modal-bg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:200;background:rgba(74,111,165,0.30);backdrop-filter:blur(10px)}
 .modal-bg.show{display:flex;animation:fadeIn 0.2s ease}
@@ -435,3 +525,58 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--cyan);cursor:poin
 .cdlg-input{width:100% !important;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-family:var(--font);font-size:13px;outline:none}
 .cdlg-input:focus{border-color:var(--border2);box-shadow:0 0 0 3px rgba(74,111,165,0.12)}
 .cdlg-ft{display:flex;gap:10px;justify-content:flex-end}
+
+/* ============================================================
+   扁平化一体化设计 — 弱化边框/阴影/圆角，突出背景壁纸
+   ============================================================ */
+/* 全局：进一步弱化边框色 */
+:root{--border:rgba(74,111,165,0.09);--border2:rgba(74,111,165,0.16)}
+:root[data-theme="dark"]{--border:rgba(255,255,255,0.045);--border2:rgba(255,255,255,0.08)}
+
+/* 去除卡片/面板顶部装饰高光线 + 侧栏装饰线 */
+.card::before,.pitem::before,#sidebar::after{display:none}
+
+/* 卡片类：统一小圆角、去边框、阴影极弱化 */
+.card{border-color:transparent;border-radius:14px;box-shadow:0 1px 8px rgba(74,111,165,0.05)}
+
+.pitem{border-color:transparent;border-radius:12px;box-shadow:0 1px 6px rgba(74,111,165,0.04)}
+.out-item{border-color:transparent;border-radius:12px;box-shadow:0 1px 6px rgba(74,111,165,0.04)}
+.note-item{border-color:transparent;border-left-width:2px;border-radius:12px;box-shadow:0 1px 5px rgba(74,111,165,0.04)}
+.wf-list{border-color:transparent;border-radius:12px}
+.olink{border-color:transparent;border-radius:12px}
+.qitem{border-color:transparent;border-radius:12px}
+.bbar{border-color:transparent;border-radius:12px}
+
+/* 弹层：去边框、弱阴影 */
+.modal{border-color:transparent;border-radius:16px;box-shadow:0 8px 32px rgba(74,111,165,0.12)}
+.cdlg{border-color:transparent;border-radius:16px;box-shadow:0 8px 32px rgba(74,111,165,0.14)}
+.ntf{border-color:transparent;box-shadow:0 4px 20px rgba(74,111,165,0.12)}
+.ctx-menu{border-color:transparent;border-radius:12px;box-shadow:0 6px 20px rgba(74,111,165,0.12)}
+.wf-modal{border-color:transparent;border-radius:14px}
+.out-modal{border-color:transparent;border-radius:14px}
+
+/* 输入控件：弱化边框、去内阴影 */
+input,select,textarea{border-color:var(--border);box-shadow:none}
+.cdlg-input{border-color:var(--border)}
+
+/* 表格：去表头底色、弱化分隔线 */
+th{border-bottom:1px solid rgba(74,111,165,0.06);background:transparent}
+td{border-bottom:1px solid rgba(74,111,165,0.05)}
+table code{border-color:transparent}
+
+/* 列表行/面板分隔线弱化 */
+.wf-row{border-bottom:1px solid rgba(74,111,165,0.05)}
+.srow{border-bottom:1px solid rgba(74,111,165,0.05)}
+.notes-pane-hd,.notes-editor-hd,.notes-toolbar,.wf-modal-hd{border-bottom-color:rgba(74,111,165,0.06)}
+.notes-editor-ft,.sacts,.over{border-top-color:rgba(74,111,165,0.06)}
+#sidebar-hd{border-bottom-color:transparent}
+#sidebar-ft{border-top-color:rgba(74,111,165,0.06)}
+
+/* 标签/徽章/进度条：弱化边框 */
+.badge,.db-ok,.db-fail{border-color:transparent}
+.pbar-bg,.minibar-bg{border-color:rgba(74,111,165,0.10)}
+.notes-tag{border-color:transparent}
+.notes-preview code,.notes-preview pre{border-color:rgba(74,111,165,0.08)}
+
+/* 悬浮按钮：弱化边框 */
+#fabMain,.fab-sub{border-color:transparent}

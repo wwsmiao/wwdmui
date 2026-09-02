@@ -56,6 +56,9 @@ DEFAULT_SETTINGS = {
     # 工作流管理
     "workflow_dir": "",  # 空值表示用 comfyui_dir + user/default/workflows
     "workflow_backup_dir": "",  # 空值表示不启用备份功能
+    # 网页背景壁纸
+    "wallpaper_path": "",  # 背景壁纸路径（图片或 mp4），空值表示使用默认水彩背景
+    "wallpaper_blur": 0,  # 壁纸毛玻璃效果：0=无玻璃，1-10=毛玻璃像素
     # 抖音提取
     "douyin_cookie_file": "",    # dy_cookie.json 文件路径
     "douyin_save_dir": "",       # 图片/视频保存目录
