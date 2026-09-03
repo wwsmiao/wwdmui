@@ -2335,11 +2335,23 @@ def cleanup_all():
 # ========== 关机功能 ==========
 _shutdown_timer = None
 _shutdown_lock = threading.Lock()
+_shutdown_deadline = 0  # 计划关机时间戳（time.time()），0 表示无计划
+
+
+def shutdown_status():
+    """返回当前关机计划状态。"""
+    global _shutdown_deadline
+    with _shutdown_lock:
+        if _shutdown_timer is None:
+            return {"ok": True, "scheduled": False, "deadline": 0, "remaining": 0}
+        remaining = max(0.0, _shutdown_deadline - time.time())
+        return {"ok": True, "scheduled": True, "deadline": _shutdown_deadline,
+                "remaining": int(round(remaining))}
 
 
 def schedule_shutdown(delay):
     """定时关机：delay 秒后执行系统关机。返回 {ok, msg}。"""
-    global _shutdown_timer
+    global _shutdown_timer, _shutdown_deadline
     delay = max(0, min(int(delay), 3600))
     with _shutdown_lock:
         if _shutdown_timer is not None:
@@ -2347,31 +2359,37 @@ def schedule_shutdown(delay):
             _shutdown_timer = None
 
     def _do():
-        global _shutdown_timer
+        global _shutdown_timer, _shutdown_deadline
         with _shutdown_lock:
             _shutdown_timer = None
+            _shutdown_deadline = 0
         try:
-            if config.IS_WINDOWS:
-                subprocess.run(["shutdown", "/s", "/t", "0"], timeout=10)
+            if IS_WINDOWS:
+                # Windows：立即关机。使用 CREATE_NO_WINDOW 避免弹出控制台窗口
+                cf = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+                subprocess.run(["shutdown", "/s", "/t", "0"], timeout=10,
+                               creationflags=cf)
             else:
                 subprocess.run(["shutdown", "-h", "now"], timeout=10)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[shutdown] 关机执行失败: {e}")
 
     t = threading.Timer(delay, _do)
     t.daemon = True
     with _shutdown_lock:
         _shutdown_timer = t
+        _shutdown_deadline = time.time() + delay
     t.start()
     return {"ok": True, "msg": f"已计划 {delay} 秒后关机"}
 
 
 def cancel_shutdown():
     """取消已计划的定时关机。返回 {ok, msg}。"""
-    global _shutdown_timer
+    global _shutdown_timer, _shutdown_deadline
     with _shutdown_lock:
         if _shutdown_timer is None:
             return {"ok": False, "msg": "没有待执行的关机任务"}
         _shutdown_timer.cancel()
         _shutdown_timer = None
+        _shutdown_deadline = 0
     return {"ok": True, "msg": "已取消关机"}

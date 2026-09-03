@@ -1116,3 +1116,7 @@ def register(app):
     @app.route("/api/shutdown/cancel", methods=["POST"])
     def api_shutdown_cancel():
         return jsonify(svc.cancel_shutdown())
+
+    @app.route("/api/shutdown/status")
+    def api_shutdown_status():
+        return jsonify(svc.shutdown_status())

@@ -47,6 +47,10 @@ body::before{
 /* ====== 背景壁纸（图片或 mp4，叠加在默认背景之上） ====== */
 #wallpaper{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1;pointer-events:none;transition:opacity .4s ease}
 
+/* ====== 夜间主题：进度条玻璃暗色轨道 ====== */
+:root[data-theme="dark"] .pbar-bg,
+:root[data-theme="dark"] .minibar-bg{background:rgba(255,255,255,0.06);border-color:rgba(195,141,148,0.30);box-shadow:inset 0 1px 3px rgba(0,0,0,0.25)}
+
 /* ====== 壁纸启用后：全部表面透明 + 边框/阴影失效 + 可选毛玻璃（--wp-blur 像素） ====== */
 body.has-wallpaper{
   --bg:transparent;
@@ -240,15 +244,15 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--cyan);cursor:poin
 .pitem::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(74,111,165,0.3),transparent)}
 .phd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .pname{font-size:13px;font-weight:600;color:#2d3748}
-.pbar-bg{height:28px;background:rgba(74,111,165,0.10);border:1px solid rgba(74,111,165,0.20);border-radius:14px;overflow:hidden;position:relative}
-.pbar-fill{height:100%;border-radius:14px;transition:width 0.4s ease;background:linear-gradient(90deg,#6f92bd,#4a6fa5,#c38d94);background-size:200% 100%;animation:barShine 2s linear infinite;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-size:11px;color:#fff;font-weight:600;min-width:50px}
+.pbar-bg{height:28px;background:rgba(255,255,255,0.35);backdrop-filter:blur(6px);border:1px solid rgba(195,141,148,0.25);border-radius:14px;overflow:hidden;position:relative;box-shadow:inset 0 1px 3px rgba(195,141,148,0.10)}
+.pbar-fill{height:100%;border-radius:14px;transition:width 0.4s ease;background:linear-gradient(90deg,rgba(176,123,130,0.75),rgba(195,141,148,0.65),rgba(224,169,173,0.70));background-size:200% 100%;animation:barShine 2s linear infinite;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-size:11px;color:#fff;font-weight:600;min-width:50px;backdrop-filter:blur(4px);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.20)}
 @keyframes barShine{0%{background-position:200% 0}100%{background-position:0 0}}
 .pinfo{display:flex;justify-content:space-between;font-size:11.5px;color:var(--text2);margin-top:8px;font-family:var(--font)}
-.pbar-fill-clone{background:linear-gradient(90deg,var(--teal2),var(--teal),var(--cyan));background-size:200% 100%;animation:barShine 2s linear infinite}
+.pbar-fill-clone{background:linear-gradient(90deg,rgba(95,154,140,0.75),rgba(127,182,168,0.65),rgba(143,199,187,0.70));background-size:200% 100%;animation:barShine 2s linear infinite}
 
 .minibar{min-width:110px}
-.minibar-bg{background:rgba(74,111,165,0.10);height:14px;border-radius:7px;overflow:hidden;border:1px solid rgba(74,111,165,0.20)}
-.minibar-fill{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--cyan2),var(--cyan));transition:width 0.3s ease}
+.minibar-bg{background:rgba(255,255,255,0.35);backdrop-filter:blur(6px);height:14px;border-radius:7px;overflow:hidden;border:1px solid rgba(195,141,148,0.25);box-shadow:inset 0 1px 2px rgba(195,141,148,0.10)}
+.minibar-fill{height:100%;border-radius:7px;background:linear-gradient(90deg,rgba(176,123,130,0.80),rgba(195,141,148,0.70));transition:width 0.3s ease;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.18)}
 
 .qitem{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px;background:rgba(212,163,115,0.06);border:1px solid rgba(212,163,115,0.20);border-radius:14px;margin-bottom:8px}
 .qpos{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--amber2),var(--amber));color:#000;border-radius:50%;font-size:12px;font-weight:700;flex-shrink:0}
@@ -301,6 +305,14 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--cyan);cursor:poin
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(74,111,165,0.25);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:rgba(74,111,165,0.45)}
+
+/* ====== 玻璃滚动条类（半透明、偏粉色，供所有内嵌滚动条使用） ====== */
+.gscroll{scrollbar-width:thin;scrollbar-color:rgba(195,141,148,0.50) transparent}
+.gscroll::-webkit-scrollbar{width:8px;height:8px}
+.gscroll::-webkit-scrollbar-track{background:transparent}
+.gscroll::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(195,141,148,0.55),rgba(176,123,130,0.42));border-radius:8px;border:2px solid transparent;background-clip:padding-box;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.18)}
+.gscroll::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,rgba(195,141,148,0.78),rgba(176,123,130,0.62));background-clip:padding-box}
+.gscroll::-webkit-scrollbar-corner{background:transparent}
 
 @media(max-width:768px){
   #sidebar{width:var(--sidebar-cw)}#sidebar-hd span,.mt{display:none}
@@ -574,7 +586,7 @@ table code{border-color:transparent}
 
 /* 标签/徽章/进度条：弱化边框 */
 .badge,.db-ok,.db-fail{border-color:transparent}
-.pbar-bg,.minibar-bg{border-color:rgba(74,111,165,0.10)}
+.pbar-bg,.minibar-bg{border-color:rgba(195,141,148,0.25)}
 .notes-tag{border-color:transparent}
 .notes-preview code,.notes-preview pre{border-color:rgba(74,111,165,0.08)}
 
