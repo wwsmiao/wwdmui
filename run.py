@@ -1,6 +1,6 @@
 ﻿#!/usr/bin/env python3
 """
-ComfyUI 模型管理器 v3.7 — 入口脚本
+ComfyUI 模型管理器 v3.8 — 入口脚本
 用法: python run.py
 """
 
@@ -16,9 +16,9 @@ from wwdm_app.services import aria2_start, cleanup_all
 
 def _on_exit():
     """退出时强制清理所有子进程"""
-    print("\n[v3.7] 正在清理子进程...")
+    print("\n[v3.8] 正在清理子进程...")
     cleanup_all()
-    print("[v3.7] 已退出")
+    print("[v3.8] 已退出")
 
 
 atexit.register(_on_exit)
@@ -30,12 +30,12 @@ if hasattr(signal, "SIGTERM"):
 
 if __name__ == "__main__":
     import platform as _p
-    print("[v3.7] " + _p.system() + ", Python: " + sys.version.split()[0])
-    print("[v3.7] BASE_DIR: " + BASE_DIR)
-    print("[v3.7] DB: " + DB_PATH)
+    print("[v3.8] " + _p.system() + ", Python: " + sys.version.split()[0])
+    print("[v3.8] BASE_DIR: " + BASE_DIR)
+    print("[v3.8] DB: " + DB_PATH)
     if settings.get("auto_start_aria2", True):
         aria2_start()
-    print("\n  === ComfyUI 模型管理器 v3.7 ===\n  访问: http://127.0.0.1:7860\n")
+    print("\n  === ComfyUI 模型管理器 v3.8 ===\n  访问: http://127.0.0.1:7860\n")
     # 自动打开浏览器（延迟 1.5s 等待 Flask 就绪）
     def _open_browser():
         time.sleep(1.5)
