@@ -1890,11 +1890,76 @@ def _file_type(name):
     return "other"
 
 
+def _safe_rel(rel_path):
+    """把前端传来的相对路径规范化成安全形式；非法一律返回 None。
+
+    比「先拼好再 commonpath」更早、更明确地拦下这些：
+      * ``..`` 段（路径穿越）—— 含 Windows 会当成 ``..`` 处理的 ``.. `` / ``.. .``
+      * 前导 ``/`` 或 ``\\``（绝对路径 / UNC）
+      * 任意段里出现 ``:``（盘符 / 驱动器相对路径 / NTFS 数据流 ``a.txt:ads``）
+      * NUL 字节（Windows 的 abspath 不拒绝它，会一路漏到 open() 才炸成 500）
+
+    合法时返回以 ``/`` 分隔的相对路径；空串表示「根本身」。
+    """
+    r = str(rel_path or "").replace("\\", "/")
+    if not r:
+        return ""
+    if "\x00" in r:
+        return None
+    if r.startswith("/"):
+        return None
+    parts = []
+    for seg in r.split("/"):
+        if seg in ("", "."):
+            continue
+        # Windows 的文件名规则里，分量末尾的空格与点会被忽略，所以先按该口径归一：
+        #   ".." / ".. " / ".. ." / "... " 全部归一成空串（= 不表达任何层级），
+        #   而 "a." → "a"、"a..b" 不受影响。
+        # 归一后剩下空串的分量（纯点/纯空格）内部会整个丢掉它，正常文件名也不可能
+        # 长成这样，所以直接判非法 —— 比「先放行、指望后面 commonpath 兜住」清楚。
+        if not seg.rstrip(" ."):
+            return None
+        if ":" in seg:
+            return None
+        parts.append(seg)
+    return "/".join(parts)
+
+
+def _is_inside(root, target):
+    """target 是否落在 root 内。
+
+    跨盘符 / UNC 与本地盘混用时 ``os.path.commonpath`` 会抛
+    ``ValueError: Paths don't have the same drive``。旧实现让它直接冒到全局
+    错误处理器，于是 ``GET /api/output/browse?path=D:\\`` 这种请求变成 500
+    —— 局域网里谁都打得出来。这里统一吞成 False（= 越界）。
+    """
+    try:
+        return os.path.commonpath([root, target]) == root
+    except ValueError:
+        return False
+
+
 def _safe_path(root_dir, rel_path):
-    """防御路径穿越：将 rel_path 解析到 root_dir 内，越界则返回 None"""
+    """防御路径穿越：把 rel_path 解析到 root_dir 内；越界 / 非法一律返回 None。
+
+    这是全项目**唯一**的相对路径校验入口 —— ``_local_abs``（本地模型/插件那套）、
+    ``_save_upload_batch``（上传落盘）都走它，所以新增路由只要调用带路径参数的
+    服务函数就自动受保护，不必再各写一份 commonpath。
+
+    关于软链接（特意不处理）
+    ------------------------
+    这里**刻意不做 realpath**：「模型目录用目录联接（junction）指到别的盘」是本
+    项目常见且受支持的部署方式，realpath 之后父目录与目标的盘符会不一致，会把正常
+    目录误判成越界。而「在受管目录里放一个指向外部的链接」这条绕行，前提是攻击者
+    已经能在受管目录里创建链接 —— 那已经等价于本机文件系统写权限，再拦这一层没有
+    额外收益，却会实打实地弄坏正常部署。
+    """
     root = os.path.abspath(root_dir)
-    target = os.path.abspath(os.path.join(root, rel_path))
-    if os.path.commonpath([root, target]) != root:
+    r = _safe_rel(rel_path)
+    if r is None:
+        return None
+    target = os.path.abspath(os.path.join(root, r.replace("/", os.sep)))
+    if not _is_inside(root, target):
         return None
     return target
 
@@ -2455,7 +2520,9 @@ def workflows_new(root_dir, name):
         return {"ok": False, "msg": "无效的文件名"}
     if not safe_name.lower().endswith(".json"):
         safe_name += ".json"
-    t = os.path.join(root_dir, safe_name)
+    t = _safe_path(root_dir, safe_name)
+    if not t:
+        return {"ok": False, "msg": "无效的文件名"}
     if os.path.exists(t):
         return {"ok": False, "msg": "文件已存在: " + safe_name}
     try:
@@ -3607,17 +3674,19 @@ def _save_upload_batch(dest_abs, files, rel_paths=None):
                 results.append({"name": raw, "ok": False, "msg": "路径不合法，已跳过"})
                 continue
         if rel:
-            tgt = os.path.abspath(os.path.join(base, rel.replace("/", os.sep)))
-            try:
-                inside = os.path.commonpath([base, tgt]) == base
-            except ValueError:
-                inside = False
-            if not inside:
+            tgt = _safe_path(base, rel)
+            if not tgt:
                 failed += 1
                 results.append({"name": rel, "ok": False, "msg": "路径越界，已跳过"})
                 continue
         else:
-            tgt = os.path.join(base, raw)
+            # 原来这里直接 join：filename 是 "C:x" 时 join 会得到驱动器相对路径，
+            # 落到 C 盘当前目录去。统一过一遍 _safe_path。
+            tgt = _safe_path(base, raw)
+            if not tgt:
+                failed += 1
+                results.append({"name": raw, "ok": False, "msg": "文件名不合法，已跳过"})
+                continue
         tgt = _unique_path(tgt)
         try:
             sub = os.path.dirname(tgt)
@@ -3722,20 +3791,15 @@ def _local_rel(rel):
 
 
 def _local_abs(rel, scope="models"):
-    """相对路径 -> 绝对路径（并强制校验仍在根目录内）；非法返回 None"""
+    """相对路径 -> 绝对路径（并强制校验仍在根目录内）；非法返回 None
+
+    校验统一交给 ``_safe_path``，不再自己复一份 commonpath —— 两处实现分头演进
+    正是之前「这个入口拦得住、那个入口拦不住」的来源。
+    """
     r = _local_rel(rel)
     if r is None:
         return None
-    root = os.path.abspath(_local_root(scope))
-    if not r:
-        return root
-    p = os.path.abspath(os.path.join(root, r.replace("/", os.sep)))
-    try:
-        if os.path.commonpath([root, p]) != root:
-            return None
-    except ValueError:
-        return None
-    return p
+    return _safe_path(_local_root(scope), r)
 
 
 def _local_crumbs(rel, scope="models"):
