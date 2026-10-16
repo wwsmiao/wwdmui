@@ -1,0 +1,26 @@
+# 行尾约定（项目硬性规则，改动前先读 skills/wwdmui-safe-patch/SKILL.md）
+#
+# 背景：本项目按文件区分行尾，所有补丁脚本都会先探测行尾再改。
+# 若任其随 core.autocrlf 漂移，换机 clone / 重新 checkout 后会破坏该约定，
+# 导致补丁脚本锚点失效、diff 噪音。这里显式钉死，与仓库中现有存储形态一致。
+
+# 默认：文本文件统一 LF（git 自动识别二进制，二进制不受影响）
+* text=auto eol=lf
+
+# ---- 以下 5 个文件必须 CRLF ----
+wwdm_app/config.py              text eol=crlf
+wwdm_app/routes.py              text eol=crlf
+wwdm_app/services.py            text eol=crlf
+wwdm_app/templates/index.html   text eol=crlf
+wwdm_app/static/style.css       text eol=crlf
+
+# ---- 其余（run.py / README.md / database.py / __init__.py / kill_aria2.py 等）保持 LF ----
+
+# 二进制资源，禁止任何转换
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.png   binary
+*.jpg   binary
+*.mp3   binary
+*.db    binary
