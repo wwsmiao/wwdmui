@@ -14,6 +14,10 @@ dy_cookie.json
 
 # 缓存与临时文件
 _*.py
+# ⚠️ 必须放行：`_*.py` 会连 `__init__.py` 一起匹配（下划线开头 + .py 结尾）。
+# 一旦被忽略，**新建子包的 __init__.py 会静默消失**，提交时看不见、打包后才炸
+# （v5.0 拆 core/ 包时踩到）。`__init__.py` 永远不该被忽略。
+!__init__.py
 _*.js
 _*.txt
 *.bak
@@ -43,7 +47,7 @@ other/
 Thumbs.db
 .DS_Store
 
-# �����ļ�
+# �����ļ�
 *.bak_icons
 *.bak_scifi
 *.bak_enc
