@@ -3880,13 +3880,20 @@ def _ps_quote(s):
     return "'" + str(s).replace("'", "''") + "'"
 
 
-def _ps_run(script):
+def _ps_run(script, timeout=60):
+    """执行一段 PowerShell 脚本并返回 CompletedProcess。
+
+    ⚠️ 必须带 timeout。run.py 是 threaded=True：PowerShell 若卡住（等交互输入、
+    被安全软件拦截、目标文件被占用等），没有超时会**永久占住一个请求线程**，
+    线程池耗尽后整个管理端失去响应。超时抛 subprocess.TimeoutExpired，由调用方处理。
+    """
     cf = subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0
     return subprocess.run(
         ["powershell", "-NoProfile", "-NonInteractive",
          "-ExecutionPolicy", "Bypass", "-Command", script],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        text=True, encoding="utf-8", errors="replace", creationflags=cf)
+        text=True, encoding="utf-8", errors="replace", creationflags=cf,
+        timeout=timeout)
 
 
 class _SHFILEOPSTRUCTW(ctypes.Structure):
@@ -3953,6 +3960,9 @@ def _send_to_trash(paths):
                 # 兜底：原生 API 没删掉的交给 PowerShell（长路径/只读等场景）
                 try:
                     r = _ps_run(_ps_recycle_stage2(todo))
+                except subprocess.TimeoutExpired:
+                    return False, ("调用系统回收站超时（超过 60 秒），"
+                                   "可能有文件被占用或正在上传，请稍后重试")
                 except Exception as e:
                     return False, "调用系统回收站失败：%s" % e
                 out = r.stdout or ""

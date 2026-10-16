@@ -47,3 +47,8 @@ Thumbs.db
 *.bak_icons
 *.bak_scifi
 *.bak_enc
+
+# SQLite WAL 模式运行时产生的边车文件（models.db-wal / -shm）
+*.db-wal
+*.db-shm
+*.db-journal

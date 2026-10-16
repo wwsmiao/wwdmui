@@ -11,8 +11,15 @@ SORT_MAP = {
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=5)
     conn.row_factory = sqlite3.Row
+    # 与 notes.db 对齐：
+    #   WAL             —— 管理端的高频轮询读不再和后台写库（插件库更新/修复）互相阻塞
+    #   synchronous=NORMAL —— WAL 下已足够安全，写入明显更快
+    #   busy_timeout    —— 并发写时等锁而不是直接抛 "database is locked"
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA busy_timeout=5000")
     return conn
 
 
@@ -336,6 +343,14 @@ def plugin_repair_db():
     try:
         ts = _time.strftime("%Y%m%d_%H%M%S")
         backup = DB_PATH + "." + ts + ".bak"
+        # ⚠️ WAL 模式下最新提交可能还留在 models.db-wal 边车文件里，
+        # 直接 copy 主库会得到一份「少了最近数据」的备份 → 先 checkpoint 落盘
+        try:
+            _ck = sqlite3.connect(DB_PATH, timeout=5)
+            _ck.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            _ck.close()
+        except Exception:
+            pass
         shutil.copy2(DB_PATH, backup)
     except Exception as e:
         return False, {"msg": "备份数据库失败，已中止操作：%s" % e}
