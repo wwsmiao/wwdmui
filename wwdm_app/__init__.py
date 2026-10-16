@@ -19,6 +19,7 @@ def create_app():
     from .core import errors                  # 请求追踪号 trace_id + 统一错误体
     from .core import logging as wwdm_logging
     from .core import security                # 访问令牌 / 同源校验 / 上传上限
+    from .core import tasks                   # 任务总线（后台活儿统一上报）
 
     wwdm_logging.setup()   # 日志：控制台 + logs/wwdm.log（Werkzeug 噪音也在里面降级）
 
@@ -29,6 +30,7 @@ def create_app():
     routes.register(app)
     errors.register(app)    # 必须早于 security：先分配 trace_id，security 的日志才带号
     security.register(app)
+    tasks.register(app)     # 只读的 GET /api/tasks；不参与鉴权闸，放最后
     return app
 
 

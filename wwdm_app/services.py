@@ -4,6 +4,7 @@ from .config import (settings, DEFAULT_SETTINGS, IS_WINDOWS, IS_LINUX, BASE_DIR,
                      ARIA2_RPC_PORT, ARIA2_RPC_SECRET, _DEFAULT_ARIA2C, COMFYUI_DIR,
                      get_comfyui_dir, get_git_path)   # 访问器实现在 core/config.py
 from .database import db_get, db_get_many, plugin_get, plugin_get_many
+from .core import tasks as task_bus        # 任务总线：后台活儿统一上报
 
 # ---- 日志 ----
 # 里程碑（开始 / 完成 / 失败 / 清理）走 logging：控制台和 logs/wwdm.log 都能看到；
@@ -1292,6 +1293,7 @@ _repo_git_lock = threading.Lock()    # 同一仓库的 git 写操作串行
 BRANCHES_TTL = 600.0                 # 快照新鲜期（秒）：新鲜就直接返回，不惊动网络
 BRANCHES_RETRY_AFTER = 20.0          # 刷新失败后的重试间隔（秒），免得反复打网络
 BRANCHES_FETCH_TIMEOUT = 45          # 单次 git fetch 上限（秒）
+_BRANCHES_SKIP_MSG = "修复任务正在运行，本次跳过远端刷新"
 
 
 def _git_env():
@@ -1359,15 +1361,29 @@ def _branches_fetch_worker(git_path, comfyui_dir):
     ⚠️ 这是裸线程，拿不到 Flask 上下文 —— 不要去碰 request / g / trace_id。
     只做 subprocess + 模块级字典。
     """
+    # 任务总线上报（v5.0 试点：先接这一条，验证总线设计）。
+    # ⚠️ 这一步必须包 try：万一抛出去，下面的 _branches_fetching 就永远不会被
+    # discard，/api/repair/comfyui_branches 会一直显示 refreshing=True 卡住。
+    tid = task_bus.make_id(task_bus.KIND_BRANCHES, comfyui_dir)
+    try:
+        task_bus.upsert(tid, task_bus.KIND_BRANCHES, title="刷新 ComfyUI 远端分支",
+                        status=task_bus.RUNNING, message=comfyui_dir,
+                        detail={"dir": comfyui_dir})
+    except Exception:
+        tid = ""
+
     err = ""
+    skipped = False
     try:
         if _repair_busy():
             # 修复流程正在 git pull / checkout，这时再 fetch 会两边抢 ref 锁
-            err = "修复任务正在运行，本次跳过远端刷新"
+            skipped = True
+            err = _BRANCHES_SKIP_MSG
         else:
             with _repo_git_lock:
                 if _repair_busy():
-                    err = "修复任务正在运行，本次跳过远端刷新"
+                    skipped = True
+                    err = _BRANCHES_SKIP_MSG
                 else:
                     out, code = _git_run(git_path, ["fetch", "--all", "--tags"],
                                          comfyui_dir, timeout=BRANCHES_FETCH_TIMEOUT)
@@ -1398,6 +1414,22 @@ def _branches_fetch_worker(git_path, comfyui_dir):
             _branches_cache[comfyui_dir] = snap
     if err:
         log.info("[分支] 远端刷新未完成(%s): %s", comfyui_dir, err)
+
+    # 任务总线收尾（被修复任务挡住算「取消」，不算失败）
+    if tid:
+        try:
+            if skipped:
+                task_bus.cancel(tid, err)
+            elif err:
+                task_bus.fail(tid, err)
+            else:
+                task_bus.finish(tid, "已刷新远端分支", detail={
+                    "dir": comfyui_dir,
+                    "branches": len((snap or {}).get("branches") or []),
+                    "tags": len((snap or {}).get("tags") or []),
+                })
+        except Exception:
+            pass
 
 
 def _branches_payload(snap, key):

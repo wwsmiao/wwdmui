@@ -8,6 +8,7 @@
     logging.py    日志初始化（控制台 + logs/wwdm.log + trace_id 过滤器）
     errors.py     trace_id 分配 + 统一错误体 + 全局错误处理器
     security.py   访问令牌 / 同源校验 / 上传上限
+    tasks.py      任务总线：后台活儿统一上报，只读的 GET /api/tasks 读取
 
 ⚠️ ``config.py`` 是靠 ``__file__`` 反推 PACKAGE_DIR 的：它在 core/ 下，所以
 必须 `dirname` 两次才是 wwdm_app。**任何新搬进 core/ 的模块，只要用 __file__
