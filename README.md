@@ -24,6 +24,20 @@ python run.py                  # 自动打开 http://127.0.0.1:7860
 
 首次运行会在项目根目录生成 `settings.json`，可配置 ComfyUI 目录、输入/输出/工作流目录、pip 镜像、关机延迟等；数据库使用 SQLite，无需额外配置。
 
+## 📦 打包发布（维护者）
+
+发布包里的 `settings.json` 一律由白名单生成，避免把本机路径和访问令牌一起发出去：
+
+```bash
+python make_release_settings.py                    # 写入 run.dist/settings.json
+python make_release_settings.py --print            # 只看内容，不落盘
+python make_release_settings.py --check <文件>      # 体检一份现成的 settings.json
+```
+
+生成物只含 `wwdm_app/release.py` 中 `RELEASE_KEYS` 列出的键；`python_path` /
+`aria2c_path` / `comfyui_dir`（买家首启自动探测）与 `access_token`（买家首启自动
+生成）**强制排除**。规则写在 `wwdm_app/release.py`，新增设置项默认不进包。
+
 ## 📜 版本历史
 
 - **v4.0**：增加了更多插件和模型；实现了工作流模型、插件的完整分析，可以通过工作流补充模型和插件；修复若干细节问题
