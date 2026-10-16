@@ -493,16 +493,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--cyan);cursor:poin
 .wf-modal{width:min(900px,92vw);height:min(80vh,700px);background:var(--bg);border:1px solid var(--border);border-radius:20px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 14px 48px rgba(74,111,165,0.20)}
 .wf-modal-hd{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
 
-/* ========== 关机悬浮按钮 ========== */
-#shutdownFab{
-  position:fixed;left:24px;bottom:24px;width:52px;height:52px;border-radius:50%;
-  background:linear-gradient(135deg,#e8a87c,#c38d94);
-  color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;
-  box-shadow:0 6px 20px rgba(195,141,148,0.45);cursor:pointer;z-index:9999;
-  user-select:none;transition:transform .15s ease,box-shadow .15s ease;
-}
-#shutdownFab:hover{transform:scale(1.08);box-shadow:0 8px 26px rgba(195,141,148,0.6)}
-#shutdownFab:active{transform:scale(0.95)}
+/* 旧的独立关机悬浮按钮已并入右下角扇形菜单，样式一并删除 */
 
 /* ========== 信息弹窗 (toast，替代原生 alert) ========== */
 #notify-wrap{position:fixed;top:18px;right:18px;z-index:999999;display:flex;flex-direction:column;gap:10px;align-items:flex-end;pointer-events:none}
@@ -592,3 +583,109 @@ table code{border-color:transparent}
 
 /* 悬浮按钮：弱化边框 */
 #fabMain,.fab-sub{border-color:transparent}
+
+
+/* ====== 修复区域：当前镜像信息条 + 更新卡说明 ====== */
+.rmirror-bar{padding:14px 20px;background:linear-gradient(135deg,rgba(74,111,165,0.06),rgba(74,111,165,0.012))}
+:root[data-theme="dark"] .rmirror-bar{background:linear-gradient(135deg,rgba(143,179,224,0.11),rgba(143,179,224,0.02))}
+.rmirror-row{display:flex;align-items:center;gap:22px;flex-wrap:wrap;font-size:13px;color:var(--text2)}
+.rmirror-item{display:inline-flex;align-items:center;gap:7px}
+.rmirror-item>i{color:var(--cyan);font-size:14px}
+.rmirror-item>strong{color:var(--text);font-weight:600}
+.rmirror-link{margin-left:auto;color:var(--cyan);text-decoration:none;font-size:12px;white-space:nowrap}
+.rmirror-link:hover{text-decoration:underline}
+.rmirror-tip{margin-top:7px;font-size:11px;color:var(--text3);line-height:1.6}
+.rdesc{color:var(--text2);font-size:13px;line-height:1.85;margin-bottom:10px}
+.rdesc code{background:var(--bg2);border:1px solid var(--border);padding:1px 6px;border-radius:5px;font-size:12px}
+.rchipline{margin:0 0 12px;font-size:12px;color:var(--text2);background:rgba(74,111,165,0.055);border:1px solid var(--border);border-radius:10px;padding:8px 12px;line-height:1.75}
+:root[data-theme="dark"] .rchipline{background:rgba(143,179,224,0.10)}
+.rchipline strong{color:var(--cyan);font-weight:600}
+
+/* ============================================================
+   运行日志大弹窗（.lgmodal）— 仅修复安装页使用
+   ============================================================ */
+.lgmodal-mask{position:fixed;inset:0;z-index:999997;background:rgba(58,62,70,0.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn .2s ease}
+.lgmodal{width:min(1180px,94vw);height:min(86vh,880px);display:flex;flex-direction:column;background:linear-gradient(135deg,var(--card),var(--card2));border:1px solid var(--border2);border-radius:20px;box-shadow:0 20px 64px rgba(74,111,165,0.24);padding:22px 24px;animation:scaleIn .2s ease;overflow:hidden}
+.lgmodal-hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.lgmodal-hd h3{margin:0;font-size:17px;font-weight:700;background:linear-gradient(135deg,#4a6fa5,#c38d94);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:var(--font-serif)}
+.lgmodal-ico{font-size:22px;color:var(--cyan);line-height:1}
+.lgmodal-status{margin-left:auto;font-size:12px;color:var(--text2);background:rgba(74,111,165,0.07);border:1px solid var(--border);border-radius:999px;padding:4px 12px;white-space:nowrap}
+.lgmodal-body{flex:1 1 auto;min-height:0;margin:16px 0}
+.lgmodal-log{width:100%;height:100%;margin:0;box-sizing:border-box;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;overflow-y:auto;font-size:12.5px;line-height:1.75;color:var(--text);white-space:pre-wrap;word-break:break-all;font-family:'Cascadia Code','Consolas','Courier New',monospace}
+.lgmodal-ft{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-top:14px;border-top:1px solid var(--border)}
+.lgmodal-spacer{flex:1 1 auto}
+body.has-wallpaper .lgmodal{backdrop-filter:blur(var(--wp-blur,0px)) saturate(1.05);-webkit-backdrop-filter:blur(var(--wp-blur,0px)) saturate(1.05)}
+body.has-wallpaper .lgmodal-log{background:transparent;border:none}
+@media (max-width:820px){.lgmodal-mask{padding:12px}.lgmodal{width:96vw;height:92vh;padding:16px}}
+
+/* ============================================================
+   插件克隆日志弹窗（复用 .lgmodal 大弹窗类）
+   ============================================================ */
+.pllog-body{display:flex;flex-direction:column;gap:10px}
+.pllog-body .lgmodal-log{flex:1 1 auto;height:auto;min-height:120px}
+
+/* ============================================================
+   模型管理：模式切换（数据库模型 / 本地文件）
+   ============================================================ */
+.phead{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:26px}
+.phead .ptitle{margin-bottom:0}
+.modesw{display:inline-flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:13px;padding:4px;box-shadow:var(--glow-card)}
+.modesw .ms-btn{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;color:var(--text2);font-family:var(--font);font-size:12.5px;font-weight:600;padding:8px 16px;border-radius:9px;cursor:pointer;transition:all .2s ease;white-space:nowrap;line-height:1}
+.modesw .ms-btn i{font-size:14px;line-height:1}
+.modesw .ms-btn:hover{color:var(--text);background:rgba(74,111,165,0.09)}
+.modesw .ms-btn.active{background:linear-gradient(135deg,#4a6fa5,#6f92bd);color:#fff;box-shadow:0 4px 14px rgba(74,111,165,0.30)}
+.mmodesw-hint{font-size:11.5px;color:var(--text3)}
+:root[data-theme="dark"] .modesw .ms-btn.active{background:linear-gradient(135deg,#5c82b8,#8fb3e0);color:#1b2029}
+
+/* ---------- 面包屑 ---------- */
+.mlcrumbs{display:flex;align-items:center;gap:3px;flex-wrap:wrap;margin-bottom:15px;padding:9px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12.5px;box-shadow:var(--glow-card)}
+.mlcrumbs .cbc{display:inline-flex;align-items:center;gap:5px;color:var(--text2);cursor:pointer;padding:3px 8px;border-radius:7px;transition:all .15s ease;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mlcrumbs .cbc:hover{background:rgba(74,111,165,0.12);color:var(--text)}
+.mlcrumbs .cbc.cbroot{color:var(--cyan);font-weight:600}
+.mlcrumbs .cbc.cur{color:var(--text);font-weight:700;cursor:default}
+.mlcrumbs .cbc.cur:hover{background:transparent}
+.mlcrumbs .cbs{color:var(--text3);user-select:none}
+
+/* ---------- 列表里的文件夹行 ---------- */
+.mlico-dir{color:#e0a83c;margin-right:7px;font-size:13px;vertical-align:-1px}
+.mlsub{margin-left:7px;font-size:10.5px;color:var(--text3)}
+
+/* ---------- 文件表杂项 ---------- */
+.mltag{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.mltag-model{background:rgba(127,182,168,0.20);color:var(--green2)}
+.mltag-other{background:rgba(140,140,140,0.14);color:var(--text2)}
+.mltag-dir{background:rgba(224,168,60,0.16);color:#b07d18}
+.mltag-git{background:rgba(127,182,168,0.18);color:var(--green2);font-size:9.5px}
+:root[data-theme="dark"] .mltag-model{color:var(--teal)}
+:root[data-theme="dark"] .mltag-dir{color:#e0a83c}
+:root[data-theme="dark"] .mltag-git{color:var(--teal)}
+.mldim{color:var(--text3);font-size:11.5px;word-break:break-all}
+.mlchk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text2);cursor:pointer;white-space:nowrap;user-select:none}
+.mlchk input[type=checkbox]{width:16px;height:16px}
+
+/* ---------- 标题栏右侧（模式开关） ---------- */
+.phead-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+
+/* ---------- 本地模式：操作提示 ---------- */
+.mlhint{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--text3);white-space:nowrap;user-select:none}
+.mlhint i{font-size:13px;color:var(--text2)}
+
+/* ---------- 本地模式右键菜单（复用 .ctx-menu 外观） ---------- */
+.mlctx{min-width:210px;max-width:320px;padding:5px 0}
+.mlctx-hd{padding:7px 15px 8px;margin-bottom:3px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mlctx .ctx-item i{margin-right:9px;font-size:13px;color:var(--text2)}
+.mlctx .ctx-item:hover i{color:inherit}
+.mlctx .ctx-item.off{color:var(--text3);cursor:default;opacity:.55}
+.mlctx .ctx-item.off:hover{background:transparent;color:var(--text3)}
+.mlctx .ctx-item.off i{color:var(--text3)}
+.mlctx .ctx-item.danger{color:var(--red)}
+.mlctx .ctx-item.danger i{color:var(--red)}
+.mlctx .ctx-item.danger:hover{background:rgba(217,108,108,0.14);color:var(--red2)}
+
+/* ---------- 「移动到」选择弹窗 ---------- */
+.cdlg-wide{width:min(620px,94vw)}
+.mldestlist{max-height:46vh;overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2);padding:6px;margin-bottom:18px}
+.mldest{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;font-size:12.5px;color:var(--text);cursor:pointer;transition:all .14s ease;word-break:break-all}
+.mldest i{color:#e0a83c;flex-shrink:0}
+.mldest:hover{background:rgba(74,111,165,0.13)}
+.mldest-empty{padding:18px;text-align:center;color:var(--text3);font-size:12.5px}

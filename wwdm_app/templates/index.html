@@ -37,7 +37,7 @@
     <div class="mi" data-page="help" onclick="switchPage(event,'help')"><span class="mi-icon"><i class="bi bi-question-circle"></i></span><span class="mt">帮助</span></div>
     <div class="mi" data-page="about" onclick="switchPage(event,'about')"><span class="mi-icon"><i class="bi bi-info-circle"></i></span><span class="mt">关于</span></div>
   </div>
-  <div id="sidebar-ft">v3.8 &copy; 薇薇的猫</div>
+  <div id="sidebar-ft">v4.0 &copy; 薇薇的猫</div>
 </div>
 
 <!-- ====== MAIN ====== -->
@@ -66,7 +66,17 @@
 
 <!-- ====== 模型管理（含下载） ====== -->
 <div id="page-models" class="page">
-  <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-box-seam"></i></span>模型管理</h1>
+  <div class="phead">
+    <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-box-seam"></i></span>模型管理</h1>
+    <div class="phead-right">
+      <div class="modesw" id="mmodeSw" role="tablist">
+        <button class="ms-btn active" data-mode="db" onclick="LBm.setMode('db')"><i class="bi bi-database"></i> 数据库模型</button>
+        <button class="ms-btn" data-mode="local" onclick="LBm.setMode('local')"><i class="bi bi-folder2-open"></i> 本地文件</button>
+      </div>
+    </div>
+  </div>
+  <!-- ===== 模式一：数据库模型（原有功能） ===== -->
+  <div class="mmode" id="mmode-db">
   <div class="dlbar">
     <div class="a2stat"><span class="a2dot off" id="a2dot"></span><span id="a2text" style="font-size:12.5px">aria2c 未运行</span></div>
     <button class="btn btn2 btn-sm" onclick="a2Start()"><i class="bi bi-play-fill"></i> 启动</button>
@@ -107,11 +117,55 @@
   </div>
   <div class="card pcard" id="pcard" style="display:none"><h3>&#9200; 下载进度</h3><div id="plist_dl"></div></div>
   <div class="card pcard" id="qcard" style="display:none"><h3>&#9776; 下载队列</h3><div id="qlist"></div></div>
+  </div><!-- /#mmode-db -->
+
+  <!-- ===== 模式二：本地文件（直接管理 ComfyUI/models 目录） ===== -->
+  <div class="mmode" id="mmode-local" style="display:none">
+    <div class="dlbar">
+      <button class="btn btn6 btn-sm" id="mlUpBtn" onclick="LBm.up()" title="返回上级目录" disabled><i class="bi bi-arrow-up"></i> 上级</button>
+      <button class="btn btn6 btn-sm" onclick="LBm.refresh()" title="重新读取磁盘"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+      <button class="btn btn6 btn-sm" onclick="LBm.openDir()" title="在资源管理器中打开当前文件夹"><i class="bi bi-folder2-open"></i> 打开文件夹</button>
+      <span style="flex:1"></span>
+      <input type="text" id="mlSearch" placeholder="搜索模型文件..." oninput="LBm.filterLocal()" onkeydown="if(event.key==='Enter')LBm.searchNow()" style="width:200px">
+      <label class="mlchk" title="在 models 下所有子目录中递归搜索（结果沿用左侧排序）"><input type="checkbox" id="mlDeep" onchange="LBm.searchNow()"> 递归</label>
+      <button class="btn btn1 btn-sm" onclick="LBm.searchNow()"><i class="bi bi-search"></i> 搜索</button>
+    </div>
+
+    <div class="mlcrumbs" id="mlCrumbs"></div>
+
+    <div class="sbar" style="margin-bottom:14px">
+      <select id="mlSort" onchange="LBm.sortChanged()" style="width:170px" title="排序方式：按名称或修改时间，正序 / 倒序">
+        <option value="name_asc">名称 A-Z</option><option value="name_desc">名称 Z-A</option>
+        <option value="mtime_desc">修改时间：最新在前</option><option value="mtime_asc">修改时间：最早在前</option>
+      </select>
+      <span class="mlhint"><i class="bi bi-mouse2"></i> 右键可新建文件夹 / 上传文件 / 上传文件夹 / 重命名 / 移动 / 删除，空白处右键同样可用</span>
+      <span style="flex:1"></span>
+      <span style="font-size:11.5px;color:var(--text3)">已选 <strong id="mlSelCnt" style="color:var(--cyan)">0</strong></span>
+      <span id="mlStat" style="color:var(--text3);font-size:12px"></span>
+    </div>
+
+    <div class="card" id="mlTableCard"><div class="twrap gscroll">
+      <table><thead><tr>
+        <th class="cb-cell"><input type="checkbox" id="mlSelAll" onchange="LBm.toggleAll(this.checked)"></th>
+        <th>名称</th><th>类型</th><th>大小</th><th>修改时间</th><th>所在目录</th>
+      </tr></thead><tbody id="mlTbody"></tbody></table>
+    </div></div>
+  </div><!-- /#mmode-local -->
 </div>
 
 <!-- ====== 插件管理（含克隆） ====== -->
 <div id="page-plugins" class="page">
-  <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-puzzle"></i></span>插件管理</h1>
+  <div class="phead">
+    <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-puzzle"></i></span>插件管理</h1>
+    <div class="phead-right">
+      <div class="modesw" id="plmodeSw" role="tablist">
+        <button class="ms-btn active" data-mode="db" onclick="LBp.setMode('db')"><i class="bi bi-database"></i> 插件库</button>
+        <button class="ms-btn" data-mode="local" onclick="LBp.setMode('local')"><i class="bi bi-folder2-open"></i> 本地插件</button>
+      </div>
+    </div>
+  </div>
+  <!-- ===== 模式一：插件库（原有功能） ===== -->
+  <div class="mmode" id="plmode-db">
   <div class="dlbar">
     <div class="a2stat"><span class="a2dot off" id="gitdot"></span><span id="gittext" style="font-size:12.5px">Git 状态</span></div>
     <button class="btn btn6 btn-sm" onclick="checkGit()"><i class="bi bi-git"></i> 检测 Git</button>
@@ -128,10 +182,13 @@
     </select>
     <button class="btn btn6 btn-sm" onclick="resetPlugins()" title="重置搜索与排序"><i class="bi bi-arrow-counterclockwise"></i> 重置</button>
     <button class="btn btn2" onclick="openPluginModal()"><i class="bi bi-plus-lg"></i> 新增</button>
+    <button class="btn btn6 btn-sm" onclick="repairPluginDb()" title="去除重复插件（名称与仓库地址完全相同）并把插件序号整理为连续的 1~n，操作前自动备份数据库"><i class="bi bi-wrench-adjustable"></i> 修复插件库</button>
+    <button class="btn btn-teal btn-sm" onclick="updatePluginLibrary()" title="从 ComfyUI-Manager 官方数据源获取最新插件库：仓库地址已有的覆盖、没有的新增，并刷新「节点→插件」映射表（工作流解析用）"><i class="bi bi-cloud-arrow-down"></i> 更新插件库</button>
     <div class="bbar" style="margin:0 0 0 0;flex:1">
-      <button class="btn btn-teal btn-sm" onclick="batchClone(false)"><i class="bi bi-files"></i> 批量克隆</button>
-      <button class="btn btn5 btn-sm" onclick="batchClone(true)"><i class="bi bi-globe2"></i> 国内批量</button>
+      <button class="btn btn-teal btn-sm" onclick="batchClone()"><i class="bi bi-files"></i> 批量克隆</button>
+      <button class="btn btn6 btn-sm" onclick="plLogOpen()"><i class="bi bi-journal-text"></i> 克隆日志</button>
       <span style="flex:1"></span>
+      <span style="font-size:11.5px;color:var(--text3)">镜像: <strong id="plMirrorTag" style="color:var(--cyan)">-</strong></span>
       <span style="font-size:11.5px;color:var(--text3)">并发: <strong id="cld" style="color:var(--teal)">2</strong></span>
       <span id="plmcount" style="color:var(--text3);font-size:12px"></span>
     </div>
@@ -150,8 +207,40 @@
       </select>
     </div>
   </div>
-  <div class="card pcard" id="plpcard" style="display:none"><h3>&#9200; 克隆进度</h3><div id="plplist"></div></div>
-  <div class="card pcard" id="plqcard" style="display:none"><h3>&#9776; 克隆队列</h3><div id="plqlist"></div></div>
+  </div><!-- /#plmode-db -->
+
+  <!-- ===== 模式二：本地插件（直接管理 ComfyUI/custom_nodes 目录） ===== -->
+  <div class="mmode" id="plmode-local" style="display:none">
+    <div class="dlbar">
+      <button class="btn btn6 btn-sm" id="lplUpBtn" onclick="LBp.up()" title="返回上级目录" disabled><i class="bi bi-arrow-up"></i> 上级</button>
+      <button class="btn btn6 btn-sm" onclick="LBp.refresh()" title="重新读取磁盘"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+      <button class="btn btn6 btn-sm" onclick="LBp.openDir()" title="在资源管理器中打开当前文件夹"><i class="bi bi-folder2-open"></i> 打开文件夹</button>
+      <span style="flex:1"></span>
+      <input type="text" id="lplSearch" placeholder="搜索插件或文件..." oninput="LBp.filterLocal()" onkeydown="if(event.key==='Enter')LBp.searchNow()" style="width:200px">
+      <label class="mlchk" title="在 custom_nodes 下所有子目录中递归搜索（插件文件夹名与文件名都匹配）"><input type="checkbox" id="lplDeep" onchange="LBp.searchNow()"> 递归</label>
+      <button class="btn btn1 btn-sm" onclick="LBp.searchNow()"><i class="bi bi-search"></i> 搜索</button>
+    </div>
+
+    <div class="mlcrumbs" id="lplCrumbs"></div>
+
+    <div class="sbar" style="margin-bottom:14px">
+      <select id="lplSort" onchange="LBp.sortChanged()" style="width:170px" title="排序方式：按名称或修改时间，正序 / 倒序">
+        <option value="name_asc">名称 A-Z</option><option value="name_desc">名称 Z-A</option>
+        <option value="mtime_desc">修改时间：最新在前</option><option value="mtime_asc">修改时间：最早在前</option>
+      </select>
+      <span class="mlhint"><i class="bi bi-mouse2"></i> 右键可新建文件夹 / 上传文件 / 上传文件夹 / 重命名 / 移动 / 删除，空白处右键同样可用</span>
+      <span style="flex:1"></span>
+      <span style="font-size:11.5px;color:var(--text3)">已选 <strong id="lplSelCnt" style="color:var(--cyan)">0</strong></span>
+      <span id="lplStat" style="color:var(--text3);font-size:12px"></span>
+    </div>
+
+    <div class="card" id="lplTableCard"><div class="twrap gscroll">
+      <table><thead><tr>
+        <th class="cb-cell"><input type="checkbox" id="lplSelAll" onchange="LBp.toggleAll(this.checked)"></th>
+        <th>名称</th><th>类型</th><th>大小</th><th>修改时间</th><th>所在目录</th>
+      </tr></thead><tbody id="lplTbody"></tbody></table>
+    </div></div>
+  </div><!-- /#plmode-local -->
 </div>
 
 <!-- ====== 抖音提取 ====== -->
@@ -376,11 +465,13 @@
 
 <!-- 工作流解析结果弹窗 -->
 <div id="wfAnaModal" class="wf-modal-mask" style="display:none" onclick="if(event.target===this)wfAnaClose()">
-  <div class="wf-modal" style="max-width:760px">
+  <div class="wf-modal" style="max-width:900px">
     <div class="wf-modal-hd">
-      <span id="wfAnaName" style="font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">模型解析</span>
+      <span id="wfAnaName" style="font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">工作流解析</span>
       <span id="wfAnaCount" style="color:var(--text3);font-size:11.5px;margin-right:10px"></span>
-      <button class="btn btn2" onclick="wfAnaCopy()" title="复制所有模型名称" style="font-size:12px;padding:4px 10px"><i class="bi bi-clipboard"></i> 复制全部</button>
+      <button class="btn btn2" id="wfAnaCopyModelsBtn" onclick="wfAnaCopyModels()" title="复制全部模型文件名" style="font-size:12px;padding:4px 10px"><i class="bi bi-clipboard"></i> 模型名</button>
+      <button class="btn btn2" id="wfAnaCopyPluginsBtn" onclick="wfAnaCopyPlugins()" title="复制缺失插件及其仓库地址" style="font-size:12px;padding:4px 10px;margin-left:6px"><i class="bi bi-clipboard"></i> 缺失插件</button>
+      <button class="btn btn-teal" id="wfAnaDownloadAllBtn" onclick="wfAnaAllClick()" title="按「全局设置 → GitHub 镜像」依次克隆所有缺失插件到 custom_nodes；并发上限取「最大同时克隆数」，超出的自动排队" style="font-size:12px;padding:4px 10px;margin-left:6px" disabled><i class="bi bi-download"></i> 下载缺失插件</button>
       <button class="btn btn7" onclick="wfAnaClose()" style="font-size:12px;padding:4px 10px"><i class="bi bi-x-lg"></i> 关闭</button>
     </div>
     <div id="wfAnaBody" class="gscroll" style="flex:1;overflow:auto;padding:6px 4px"></div>
@@ -564,8 +655,6 @@
 
     <!-- 搜索 + 排序 + 分页控制 -->
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-      <input type="file" id="outFileInput" multiple style="display:none" onchange="outUploadFiles(this.files)">
-      <button class="btn btn6" onclick="document.getElementById('outFileInput').click()" title="上传文件到当前输出目录" style="font-size:15px;padding:4px 8px"><i class="bi bi-upload"></i></button>
       <button class="btn btn6" onclick="outOpenFolder()" title="在资源管理器中打开输出文件夹" style="font-size:18px;padding:4px 8px"><i class="bi bi-folder2-open"></i></button>
       <span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 2px"></span>
       <label class="btn btn6" style="font-size:12px;padding:4px 8px;cursor:pointer;margin:0;display:inline-flex;align-items:center;gap:4px">
@@ -611,8 +700,6 @@
 
     <!-- 搜索 + 排序 + 分页控制 -->
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-      <input type="file" id="inFileInput" multiple style="display:none" onchange="inUploadFiles(this.files)">
-      <button class="btn btn6" onclick="document.getElementById('inFileInput').click()" title="上传文件到当前输入目录" style="font-size:15px;padding:4px 8px"><i class="bi bi-upload"></i></button>
       <button class="btn btn6" onclick="inOpenFolder()" title="在资源管理器中打开输入文件夹" style="font-size:18px;padding:4px 8px"><i class="bi bi-folder2-open"></i></button>
       <span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 2px"></span>
       <label class="btn btn6" style="font-size:12px;padding:4px 8px;cursor:pointer;margin:0;display:inline-flex;align-items:center;gap:4px">
@@ -668,15 +755,36 @@
           <div id="adr"></div>
         </div>
         <div class="srow srow-full" style="margin-top:12px">
-          <div class="slabel-block"><div class="slabel">pip 镜像源</div><div class="shint">安装 Python 依赖时使用的镜像源，国内用户推荐清华源</div></div>
-          <select id="spm" class="sinput-wide">
-            <option value="default">国外官方 (pypi.org) - 推荐</option>
-            <option value="tsinghua">清华大学 (推荐)</option>
-            <option value="aliyun">阿里云</option>
-            <option value="tencent">腾讯云</option>
-            <option value="douban">豆瓣</option>
-            <option value="ustc">中科大</option>
+          <div class="slabel-block"><div class="slabel">pip 镜像源</div><div class="shint">安装 Python 依赖时使用的镜像源。本工具会把它作为 -i 显式传给 pip，优先级高于电脑里已有的 pip 镜像配置，国内用户推荐清华源</div></div>
+          <select id="spm" class="sinput-wide" onchange="repairLoadMirrorInfo()">
+            <option value="default">国外官方 (pypi.org)</option>
+            <option value="tsinghua">清华大学 (tuna.tsinghua.edu.cn) - 国内推荐</option>
+            <option value="aliyun">阿里云 (mirrors.aliyun.com)</option>
+            <option value="tencent">腾讯云 (mirrors.cloud.tencent.com)</option>
+            <option value="douban">豆瓣 (pypi.douban.com)</option>
+            <option value="ustc">中科大 (pypi.mirrors.ustc.edu.cn)</option>
           </select>
+          <div class="shint" id="spmNote" style="margin-top:6px"></div>
+        </div>
+        <div class="srow srow-full" style="margin-top:12px">
+          <div class="slabel-block"><div class="slabel">GitHub 镜像</div><div class="shint">克隆 ComfyUI 插件、更新 ComfyUI 时使用的 GitHub 通道。镜像仓库直接替换 github.com 域名，加速网站为前缀加速；建议先点右侧按钮做连通性测试再选择</div></div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <select id="sghm" class="sinput-wide" onchange="applyGithubMirrorLabels()">
+              <option value="official">GitHub 官方 (github.com)</option>
+              <optgroup label="镜像仓库 · 替换 github.com 域名">
+                <option value="gitclone">gitclone.com</option>
+                <option value="ur1">github.ur1.fun</option>
+              </optgroup>
+              <optgroup label="加速网站 · 前缀加速">
+                <option value="ghproxy">gh-proxy.com</option>
+                <option value="ghproxynet">ghproxy.net</option>
+                <option value="homeboyc">ghproxy.homeboyc.cn</option>
+                <option value="akams">github.akams.cn</option>
+              </optgroup>
+            </select>
+            <button class="btn btn6" style="min-width:112px;flex-shrink:0" id="ghmTestBtn" onclick="ghMirrorTest()"><i class="bi bi-activity"></i> 连通性测试</button>
+          </div>
+          <div id="ghmResult" style="display:none;margin-top:10px"></div>
         </div>
       </div>
 
@@ -772,7 +880,7 @@
       </select>
 
       <h2 class="sg-title">关机功能</h2>
-      <div class="srow"><div class="slabel-block"><div class="slabel">默认关机延迟(秒)</div><div class="shint">点击右下角菜单的关机按钮后，等待多少秒执行关机，可填 0-3600</div></div>
+      <div class="srow"><div class="slabel-block"><div class="slabel">默认关机延迟(秒)</div><div class="shint">点击右下角菜单的关机按钮后，等待多少秒执行关机。1-3600 = 可随时取消的倒计时；0 = 立即关机（不可取消）</div></div>
         <input type="number" id="sdly" class="sinput" style="width:140px" min="0" max="3600" placeholder="60">
       </div>
 
@@ -795,15 +903,17 @@
 
   <div class="card">
     <div class="card-title"><span class="mi-icon"><i class="bi bi-git"></i></span> 克隆 ComfyUI 仓库</div>
+    <div class="rdesc">从 GitHub 克隆一份 ComfyUI 到指定目录。git 使用全局设置里的 GitHub 镜像（在「全局设置 → GitHub 镜像」选择并保存后即刻生效）。</div>
     <div class="srow"><span class="sl">安装目录</span><input id="rclone_dir" class="sinput sinput-wide" placeholder="如 C:\ComfyUI\ComfyUI2" style="width:100%"></div>
-    <div class="srow" style="flex-direction:row;align-items:center;gap:12px"><span class="sl">使用镜像</span><label class="sw"><input type="checkbox" id="rclone_mirror" checked><span class="st">国内镜像 (api.gitproxy.dev)</span></label></div>
+    <div class="rchipline" data-mirror-note="git"></div>
     <div id="rclone_warn" style="margin-bottom:10px;display:none"></div>
     <button class="btn btn2" id="rclone_btn" onclick="repairClone()"><i class="bi bi-pc-display"></i> 克隆 ComfyUI</button>
   </div>
 
   <div class="card">
     <div class="card-title"><span class="mi-icon"><i class="bi bi-tools"></i></span> 安装 requirements.txt 依赖</div>
-    <div style="color:var(--text2);margin-bottom:10px">基于 ComfyUI 根目录，执行 <code>pip install -r requirements.txt</code></div>
+    <div style="color:var(--text2);margin-bottom:10px">基于 ComfyUI 根目录，执行 <code>pip install -r requirements.txt</code>（使用全局设置里的 pip 镜像源，并以 <code>-i</code> 显式指定，优先于系统 pip 配置）</div>
+    <div class="rchipline" data-mirror-note="pip"></div>
     <button class="btn btn1" id="rreq_btn" onclick="repairRequirements()"><i class="bi bi-tools"></i> 安装 requirements.txt</button>
   </div>
 
@@ -813,63 +923,61 @@
     <div class="srow"><span class="sl">PyTorch 版本</span><select id="rpt_ver" class="sinput sinput-wide" onchange="repairUpdateVariants()" style="width:100%"><option value="">加载中...</option></select></div>
     <div class="srow"><span class="sl">计算平台</span><select id="rpt_var" class="sinput sinput-wide" style="width:100%" onchange="repairUpdateCmd()"><option value="">请先选择版本</option></select></div>
     <div class="srow"><span class="sl">安装命令</span><code id="rpt_cmd" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:12px;word-break:break-all;min-height:38px;display:flex;align-items:center;width:100%;box-sizing:border-box">等待选择...</code></div>
+    <div class="rchipline" data-mirror-note="pytorch"></div>
     <button class="btn btn5" id="rpt_btn" onclick="repairPytorch()"><i class="bi bi-cpu"></i> 安装 PyTorch</button>
   </div>
 
   <!-- ====== 修复区域 ====== -->
   <div class="section-title"><span class="mi-icon"><i class="bi bi-wrench-adjustable"></i></span> 修复区域</div>
 
+  <!-- 当前镜像信息条 -->
+  <div class="card rmirror-bar">
+    <div class="rmirror-row">
+      <span class="rmirror-item"><i class="bi bi-git"></i><span>GitHub 镜像</span><strong id="rCuiGhMirror">读取中…</strong></span>
+      <span class="rmirror-item"><i class="bi bi-box-seam"></i><span>pip 镜像源</span><strong id="rCuiPipMirror">读取中…</strong></span>
+      <a href="javascript:switchPage(null,'settings')" class="rmirror-link">前往全局设置修改 <i class="bi bi-chevron-right"></i></a>
+    </div>
+    <div class="rmirror-tip">修复区域里的 git / pip 操作都会使用上面这两个镜像，并在日志开头打印实际使用的源与完整命令行；镜像可用性可在全局设置中一键测试。</div>
+  </div>
+
   <div class="card">
     <div class="card-title"><span class="mi-icon"><i class="bi bi-arrow-up-circle"></i></span> 更新 ComfyUI</div>
-    <div style="color:var(--text2);margin-bottom:10px">使用 git 更新 ComfyUI 到最新版或切换到特定分支/标签。需要 ComfyUI 根目录为 Git 仓库。普通用户只需要点更新到最新版按钮即可。</div>
+    <div class="rdesc">用 <strong>git</strong> 更新 ComfyUI 到最新版或切换到指定分支/标签，完成后自动用 <strong>pip</strong> 安装根目录下的 <code>requirements.txt</code> 依赖。<br>需要 ComfyUI 根目录是 Git 仓库；普通用户直接点「更新到最新版」即可。</div>
     <div class="srow"><span class="sl">版本选择</span>
       <select id="rcui_branch" class="sinput sinput-wide" style="width:100%" onchange="repairCuiBranchChange()">
         <option value="">加载中...</option>
       </select>
     </div>
+    <div class="rchipline" id="rCuiUpdateHint">正在读取镜像配置…</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn btn5" id="rcui_latest_btn" onclick="repairComfyUIUpdate('')"><i class="bi bi-arrow-up-circle"></i> 更新到最新版 (git pull)</button>
+      <button class="btn btn5" id="rcui_latest_btn" onclick="repairComfyUIUpdate('')"><i class="bi bi-arrow-up-circle"></i> 更新到最新版</button>
       <button class="btn btn1" id="rcui_tag_btn" onclick="repairComfyUIUpdate(document.getElementById('rcui_branch').value)"><i class="bi bi-arrow-up-circle"></i> 更新到选中版本</button>
     </div>
   </div>
 
   <div class="card">
     <div class="card-title"><span class="mi-icon"><i class="bi bi-box-seam"></i></span> 安装依赖</div>
-    <div style="color:var(--text2);margin-bottom:10px">使用全局设置中的 Python 路径安装 pip 依赖包。多个包名用空格分隔。</div>
+    <div style="color:var(--text2);margin-bottom:10px">使用全局设置中的 Python 路径与 pip 镜像源安装依赖包。多个包名用空格分隔。</div>
     <div class="srow"><span class="sl">包名</span><input id="rpip_pkgs" class="sinput sinput-wide" placeholder="例如: numpy pandas torch==2.1.0" style="width:100%"></div>
-    <div class="srow"><span class="sl">镜像源</span><select id="rpip_mirror" class="sinput sinput-wide" style="width:100%"><option value="official">官方源 (pypi.org)</option><option value="tsinghua">清华源 (tuna.tsinghua.edu.cn)</option><option value="aliyun">阿里源 (mirrors.aliyun.com)</option></select></div>
+    <div class="rchipline" data-mirror-note="pip"></div>
     <button class="btn btn1" id="rpip_btn" onclick="repairPipInstall()"><i class="bi bi-box-seam"></i> 安装依赖</button>
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="mi-icon"><i class="bi bi-box-arrow-in-down"></i></span> 下载文件</div>
-    <div style="color:var(--text2);margin-bottom:10px">使用 aria2c 下载远程文件。如不填保存路径，默认保存到 ComfyUI\models 目录。</div>
-    <div class="srow"><span class="sl">下载链接</span><input id="rdl_url" class="sinput sinput-wide" placeholder="https://huggingface.co/.../model.safetensors" style="width:100%"></div>
-    <div class="srow"><span class="sl">保存路径</span><input id="rdl_path" class="sinput sinput-wide" placeholder="留空则默认：ComfyUI 根目录\models" style="width:100%"></div>
-    <button class="btn btn2" id="rdl_btn" onclick="repairDownload()"><i class="bi bi-download"></i> 下载文件</button>
-  </div>
-
-  <div class="card">
     <div class="card-title"><span class="mi-icon"><i class="bi bi-puzzle"></i></span> 修复单个插件</div>
-    <div style="color:var(--text2);margin-bottom:10px">输入 custom_nodes 中的插件文件夹名，执行 <strong>git pull</strong> 更新 + 安装 requirements.txt 依赖</div>
+    <div style="color:var(--text2);margin-bottom:10px">输入 custom_nodes 中的插件文件夹名，执行 <strong>git pull</strong> 更新 + 安装 requirements.txt 依赖。<br>git 与 pip 均使用全局设置，页面不再单独选择镜像。</div>
     <div class="srow"><span class="sl">插件名称</span><input id="rplugin_name" class="sinput sinput-wide" placeholder="例如: ComfyUI-Manager" style="width:100%"></div>
+    <div class="rchipline" data-mirror-note="both"></div>
     <div style="margin-top:8px">
       <button class="btn btn1" id="rplugin_btn" onclick="repairPlugin()"><i class="bi bi-wrench"></i> 修复此插件</button>
-      <select id="rplugin_mirror" style="margin-left:8px;padding:6px 10px;border-radius:6px;font-size:13px">
-        <option value="">&#127760; 官方源 (直连)</option>
-        <option value="https://api.gitproxy.dev/github.com/">&#128640; api.gitproxy.dev 镜像</option>
-      </select>
     </div>
   </div>
 
   <div class="card">
     <div class="card-title"><span class="mi-icon"><i class="bi bi-puzzle-fill"></i></span> 修复所有插件</div>
-    <div style="color:var(--text2);margin-bottom:10px">扫描 custom_nodes 下所有 Git 插件，逐个执行 <strong>git pull</strong> + requirements.txt 依赖安装</div>
+    <div style="color:var(--text2);margin-bottom:10px">扫描 custom_nodes 下所有 Git 插件，逐个执行 <strong>git pull</strong> + requirements.txt 依赖安装。<br>git 与 pip 均使用全局设置，页面不再单独选择镜像。</div>
+    <div class="rchipline" data-mirror-note="both"></div>
     <button class="btn btn1" id="rall_btn" onclick="repairAllPlugins()"><i class="bi bi-tools"></i> 批量修复全部插件</button>
-    <select id="rall_mirror" style="margin-left:8px;padding:6px 10px;border-radius:6px;font-size:13px" onchange="repairAllMirrorChanged()">
-      <option value="">&#127760; 官方源 (直连)</option>
-      <option value="https://api.gitproxy.dev/github.com/">&#128640; api.gitproxy.dev 镜像</option>
-    </select>
   </div>
 
   <div class="card" style="border-color:rgba(239,68,68,0.5);background:rgba(239,68,68,0.04)">
@@ -882,14 +990,26 @@
     </div>
   </div>
 
-  <!-- ====== 日志 + 控制 ====== -->
+  <!-- ====== 工具区域 ====== -->
+  <div class="section-title"><span class="mi-icon"><i class="bi bi-tools"></i></span> 工具区域</div>
+
   <div class="card">
-    <div class="card-title"><span class="mi-icon"><i class="bi bi-journal-text"></i></span> 运行日志 <span id="rlog_status" style="font-size:12px;font-weight:400;color:var(--text2);margin-left:12px">空闲</span></div>
-    <pre id="rlog" class="gscroll" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;max-height:420px;overflow-y:auto;font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-all;font-family:'Cascadia Code','Consolas','Courier New',monospace">等待操作...</pre>
-    <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
-      <button class="btn btn3" id="rstop_btn" onclick="repairStop()" disabled><i class="bi bi-stop-circle"></i> 停止操作</button>
-      <button class="btn btn4" id="rpurge_btn" onclick="repairPurgeCache()"><i class="bi bi-trash"></i> 清除 pip 缓存</button>
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-box-arrow-in-down"></i></span> 下载文件</div>
+    <div class="rdesc">使用 <strong>aria2c</strong> 下载远程文件。<strong>文件名称、下载链接、保存路径三项都需要手动填写</strong>，不再使用任何默认路径。</div>
+    <div class="srow"><span class="sl">文件名称</span><input id="rdl_name" class="sinput sinput-wide" placeholder="例如: flux1-dev.safetensors" style="width:100%"></div>
+    <div class="srow"><span class="sl">下载链接</span><input id="rdl_url" class="sinput sinput-wide" placeholder="https://huggingface.co/.../model.safetensors" style="width:100%"></div>
+    <div class="srow"><span class="sl">保存路径</span><input id="rdl_path" class="sinput sinput-wide" placeholder="例如: C:\ComfyUI\ComfyUI\models\checkpoints" style="width:100%"></div>
+    <div class="rchipline" data-mirror-note="aria2c"></div>
+    <button class="btn btn2" id="rdl_btn" onclick="repairDownload()"><i class="bi bi-download"></i> 下载文件</button>
+  </div>
+
+  <!-- ====== 运行日志（大弹窗入口） ====== -->
+  <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+    <div style="min-width:240px">
+      <div class="card-title" style="margin:0"><span class="mi-icon"><i class="bi bi-journal-text"></i></span> 运行日志</div>
+      <div class="rdesc" style="margin:6px 0 0">安装 / 修复 / 下载的实时输出，以及「停止操作」「清除 pip 缓存」都在大弹窗中。当前：<span id="rlog_status2">空闲</span></div>
     </div>
+    <button class="btn btn1" onclick="rlogOpen()"><i class="bi bi-window-stack"></i> 打开运行日志</button>
   </div>
 </div></div>
 
@@ -973,8 +1093,33 @@
       <div style="position:relative;margin-bottom:32px">
         <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px rgba(74,111,165,0.40)"></div>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-          <span style="display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(74,111,165,0.15),rgba(74,111,165,0.04));color:var(--cyan);font-weight:700;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid rgba(74,111,165,0.25)">v3.8</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(74,111,165,0.15),rgba(74,111,165,0.04));color:var(--cyan);font-weight:700;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid rgba(74,111,165,0.25)">v4.0</span>
           <span style="font-size:12px;color:var(--text3)">最新</span>
+        </div>
+        <div style="color:var(--text2);font-size:13px;line-height:1.8;padding-left:4px">
+          • 增加了更多插件和模型<br>
+          • 实现了工作流模型、插件的完整分析，可以通过工作流补充模型和插件<br>
+          • 修复若干细节问题
+        </div>
+      </div>
+
+      <div style="position:relative;margin-bottom:32px">
+        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--text3);box-shadow:0 0 8px rgba(74,111,165,0.12)"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;background:rgba(74,111,165,0.05);color:var(--text3);font-weight:600;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">v3.9</span>
+        </div>
+        <div style="color:var(--text2);font-size:13px;line-height:1.8;padding-left:4px">
+          • 全面性能优化：服务开启多线程，ComfyUI 运行期间界面不再卡死<br>
+          • 去掉状态轮询里的重复数据库查询与磁盘扫描，插件筛选下推到数据库<br>
+          • ComfyUI 日志轮询降频，并修复日志越滚越卡的问题<br>
+          • 修复若干细节问题
+        </div>
+      </div>
+
+      <div style="position:relative;margin-bottom:32px">
+        <div style="position:absolute;left:-27px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--text3);box-shadow:0 0 8px rgba(74,111,165,0.12)"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;background:rgba(74,111,165,0.05);color:var(--text3);font-weight:600;font-size:13px;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">v3.8</span>
         </div>
         <div style="color:var(--text2);font-size:13px;line-height:1.8;padding-left:4px">
           • 增加了更多模型和插件<br>
@@ -1055,6 +1200,48 @@
 </div><!-- /#main -->
 </div><!-- /.layout -->
 
+<!-- ====== 运行日志大弹窗（仅修复安装页使用） ====== -->
+<div class="lgmodal-mask" id="rlogModal" style="display:none" onclick="if(event.target===this)rlogClose()">
+  <div class="lgmodal">
+    <div class="lgmodal-hd">
+      <span class="lgmodal-ico"><i class="bi bi-journal-text"></i></span>
+      <h3>运行日志</h3>
+      <span class="lgmodal-status" id="rlog_status">空闲</span>
+    </div>
+    <div class="lgmodal-body">
+      <pre id="rlog" class="lgmodal-log gscroll">等待操作...</pre>
+    </div>
+    <div class="lgmodal-ft">
+      <button class="btn btn3" id="rstop_btn" onclick="repairStop()" disabled><i class="bi bi-stop-circle"></i> 停止操作</button>
+      <button class="btn btn4" id="rpurge_btn" onclick="repairPurgeCache()"><i class="bi bi-trash"></i> 清除 pip 缓存</button>
+      <button class="btn btn1" id="rlogCopyBtn" onclick="rlogCopy()"><i class="bi bi-clipboard"></i> 复制日志</button>
+      <span class="lgmodal-spacer"></span>
+      <button class="btn btn2" onclick="rlogClose()"><i class="bi bi-x-lg"></i> 关闭弹窗</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 插件克隆日志弹窗（仅插件管理页使用） ====== -->
+<div class="lgmodal-mask" id="plLogModal" style="display:none" onclick="if(event.target===this)plLogClose()">
+  <div class="lgmodal">
+    <div class="lgmodal-hd">
+      <span class="lgmodal-ico"><i class="bi bi-cloud-arrow-down"></i></span>
+      <h3>插件克隆日志</h3>
+      <span class="lgmodal-status" id="plLogStatus">空闲</span>
+    </div>
+    <div class="lgmodal-body pllog-body">
+      <div class="rchipline" id="plMirrorLine" style="margin:0"></div>
+      <pre id="plClog" class="lgmodal-log gscroll">等待克隆任务 ...</pre>
+    </div>
+    <div class="lgmodal-ft">
+      <button class="btn btn3" id="plStopAllBtn" onclick="plStopAll()" title="停止所有克隆；克隆到一半的插件文件夹会被删除，已克隆完成的会保留"><i class="bi bi-stop-circle"></i> 停止克隆</button>
+      <button class="btn btn4" onclick="plLogClear()"><i class="bi bi-eraser"></i> 清空日志</button>
+      <span class="lgmodal-spacer"></span>
+      <button class="btn btn2" onclick="plLogClose()"><i class="bi bi-x-lg"></i> 关闭弹窗</button>
+    </div>
+  </div>
+</div>
+
 <!-- ====== 模型模态框 ====== -->
 <div class="modal-bg" id="mbg"><div class="modal gscroll">
   <h3 id="mtitle">新增模型</h3><input type="hidden" id="eid">
@@ -1130,7 +1317,7 @@ function updateBanner(){
     document.querySelectorAll('#bCntP,#bCntP2').forEach(function(e){e.textContent=pc});
   }).catch(function(){});
 }
-updateBanner();setInterval(updateBanner,30000);
+updateBanner();setInterval(function(){if(!document.hidden)updateBanner()},30000);
 
 // ============================================================
 // 通用
@@ -1239,15 +1426,17 @@ function switchPage(e,p){
   else{var mi=document.querySelector('.mi[data-page="'+p+'"]');if(mi)mi.classList.add('active')}
   sessionStorage.setItem('lastPage',p);
   if(p==='launcher'){cuiCheckStatus()}
-  if(p==='models'){checkA2();loadModels();restoreDlState()}
-  if(p==='plugins'){checkGit();loadPlugins();restoreCloneState()}
+  if(p==='models'){checkA2();loadModels();restoreDlState();mlOnEnter()}
+  if(p==='plugins'){checkGit();loadPlugins();restoreCloneState();plLoadMirror();plOnEnter()}
   if(p==='input'){inInitView();browseInput('')}
   if(p==='output')browseOutput('')
   if(p==='settings')loadSF()
   if(p==='douyin'){loadDySettings()}
   if(p==='notes'){notesInit()}
   if(p==='workflows'){wfInit()}
-  if(p==='repair'){repairLoadPytorch();repairLoadComfyUIBranches();repairCheckStatus()}
+  if(p==='repair'){repairLoadPytorch();repairLoadComfyUIBranches();repairCheckStatus();repairLoadMirrorInfo()}
+  else{rlogClose()}
+  if(p!=='plugins')plLogClose();
 }
 
 
@@ -1350,26 +1539,6 @@ function outClearSearch(){
 }
 function outOpenFolder(){
   fetch('/api/output/open_dir').then(function(r){return r.json()}).then(function(d){if(!d.ok)notify(d.msg)});
-}
-
-function outUploadFiles(files){
-  if(!files||!files.length)return;
-  var formData=new FormData();
-  for(var i=0;i<files.length;i++) formData.append('files',files[i]);
-  formData.append('dest',outPath);
-  var input=document.getElementById('outFileInput');
-  input.disabled=true;
-  fetch('/api/output/upload',{method:'POST',body:formData})
-    .then(function(r){return r.json()})
-    .then(function(d){
-      input.disabled=false; input.value='';
-      if(d.ok){ browseOutput(outPath,1); }
-      else { notify(d.msg); }
-    })
-    .catch(function(e){
-      input.disabled=false; input.value='';
-      notify('上传失败: '+e.message);
-    });
 }
 
 var _viewTimer=null;
@@ -1512,7 +1681,18 @@ function showCtxMenu(el,x,y,path,isDir){
   var pasteEl=document.getElementById('ctxPaste'),s1=document.getElementById('ctxSep1'),s2=document.getElementById('ctxSep2');
   var delEl=document.getElementById('ctxDelete'),renEl=document.getElementById('ctxRename'),s3=document.getElementById('ctxSep3');
   var mkEl=document.getElementById('ctxNewFolder'),sendEl=document.getElementById('ctxSendToInput');
-  var dlEl=document.getElementById('ctxDownload');
+  var dlEl=document.getElementById('ctxDownload'),s0=document.getElementById('ctxSep0');
+  var upFEl=document.getElementById('ctxUploadFile'),upDEl=document.getElementById('ctxUploadFolder');
+
+  // 上传 / 新建的目标：右键命中文件夹 -> 进该文件夹；否则 -> 当前目录（与模型/插件本地页同一口径）
+  var _ci=_ctxInfo();
+  var _dest=_ctxTarget.is_dir?_ctxTarget.path:(_ci.path||'');
+  var _nm=_dest?String(_dest).split('/').pop():'根目录';
+  var _suffix=_dest?('「'+escHtml(_nm)+'」'):'根目录';
+  var _isOut=(window._curPage!=='input'&&window._curPage!=='workflows');
+  if(mkEl)mkEl.innerHTML='<i class="bi bi-folder-plus"></i> 新建文件夹';
+  if(upFEl)upFEl.innerHTML='<i class="bi bi-upload"></i> 上传文件到 '+_suffix;
+  if(upDEl)upDEl.innerHTML='<i class="bi bi-folder-symlink"></i> 上传文件夹到 '+_suffix;
 
   if(_ctxTarget.is_blank){
     if(copyEl)copyEl.style.display='none';
@@ -1520,11 +1700,14 @@ function showCtxMenu(el,x,y,path,isDir){
     if(delEl)delEl.style.display='none';
     if(renEl)renEl.style.display='none';
     if(dlEl)dlEl.style.display='none';
+    if(s0)s0.style.display='';
     if(s1)s1.style.display='none';
     if(s3)s3.style.display='none';
     if(pasteEl)pasteEl.style.display=_clipboard.paths.length>0?'':'none';
     if(s2)s2.style.display=_clipboard.paths.length>0?'':'none';
     if(mkEl)mkEl.style.display='';
+    if(upFEl)upFEl.style.display='';
+    if(upDEl)upDEl.style.display='';
     if(sendEl)sendEl.style.display='none';
   }else{
     if(copyEl)copyEl.style.display='';
@@ -1532,17 +1715,24 @@ function showCtxMenu(el,x,y,path,isDir){
     if(delEl)delEl.style.display='';
     if(renEl)renEl.style.display='';
     if(dlEl)dlEl.style.display='';
+    if(s0)s0.style.display='';
     if(s1)s1.style.display='';
     if(s3)s3.style.display='';
     if(pasteEl)pasteEl.style.display=_clipboard.paths.length>0?'':'none';
     if(s2)s2.style.display=_clipboard.paths.length>0?'':'none';
     if(mkEl)mkEl.style.display='';
-    if(sendEl)sendEl.style.display='';
+    if(upFEl)upFEl.style.display='';
+    if(upDEl)upDEl.style.display='';
+    if(sendEl)sendEl.style.display=_isOut?'':'none';
   }
 
-  m.style.left=Math.min(x,window.innerWidth-180)+'px';
-  m.style.top=Math.min(y,window.innerHeight-m.offsetHeight-10)+'px';
+  // 先显示再量尺寸：display:none 时 offsetHeight 恒为 0，
+  // 菜单变高后（新增上传项）就会溢出到视口外看不见。
   m.style.display='block';
+  m.style.left='0px';m.style.top='0px';
+  var _mw=m.offsetWidth,_mh=m.offsetHeight;
+  m.style.left=Math.max(6,Math.min(x,window.innerWidth-_mw-8))+'px';
+  m.style.top=Math.max(6,Math.min(y,window.innerHeight-_mh-8))+'px';
 }
 
 function _ctxInfo(){
@@ -1663,15 +1853,78 @@ async function ctxSendToInput(){
 
 async function ctxNewFolder(){
   var ci=_ctxInfo();
-  var nm=await promptDialog('新建文件夹名称:','',{title:'新建文件夹'});
+  var base=(_ctxTarget&&_ctxTarget.is_dir)?_ctxTarget.path:(ci.path||'');
+  var where=base?('「'+String(base).split('/').pop()+'」'):'根目录';
+  var nm=await promptDialog('在 '+where+' 下新建文件夹名称:','',{title:'新建文件夹'});
   hideCtxMenu();
   if(!nm)return;
-  var p=ci.path?ci.path+'/'+nm:nm;
+  var p=base?base+'/'+nm:nm;
   fetch(ci.api+'/mkdir',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({path:p})}).then(function(r){return r.json()}).then(function(d){
-      if(d.ok)ci.browse(ci.path,ci.data?ci.data.page:1);
+      if(d.ok){notify(d.msg||'目录已创建');ci.browse(ci.path,ci.data?ci.data.page:1)}
       else notify(d.msg||'创建失败');
     });
+}
+
+// ---- 右键上传（文件 / 文件夹，支持批量；文件夹会还原原目录结构）----
+var _ctxUpFiles=null,_ctxUpDir=null,_ctxUpDest='',_ctxUpBrowse=null;
+
+function _ctxUpToast(text){
+  var t=notify(text,'info',1800000);
+  return{
+    set:function(s){var b=t&&t.querySelector('.ntf-body');if(b)b.textContent=s},
+    close:function(){var x=t&&t.querySelector('.ntf-x');if(x)x.click()}
+  };
+}
+function _ctxMkInput(dirMode){
+  var i=document.createElement('input');
+  i.type='file';i.multiple=true;i.style.display='none';
+  i.id=dirMode?'ctxUpDirInput':'ctxUpFilesInput';
+  if(dirMode){i.webkitdirectory=true;i.setAttribute('webkitdirectory','')}
+  i.addEventListener('change',function(){
+    // FileList 是活的：i.value='' 会把它一起清空，必须先拷成真数组
+    var fs=i.files?Array.prototype.slice.call(i.files):[];
+    var rels=[];
+    if(dirMode){for(var k=0;k<fs.length;k++)rels.push(fs[k].webkitRelativePath||fs[k].name)}
+    i.value='';
+    if(fs.length)_ctxDoUpload(fs,rels);
+  });
+  document.body.appendChild(i);
+  return i;
+}
+function _ctxPickUpload(dirMode){
+  var ci=_ctxInfo();
+  _ctxUpDest=(_ctxTarget&&_ctxTarget.is_dir)?_ctxTarget.path:(ci.path||'');
+  _ctxUpBrowse=function(){try{ci.browse(ci.path,ci.data?ci.data.page:1)}catch(e){}};
+  if(dirMode){if(!_ctxUpDir)_ctxUpDir=_ctxMkInput(true);_ctxUpDir.click();}
+  else{if(!_ctxUpFiles)_ctxUpFiles=_ctxMkInput(false);_ctxUpFiles.click();}
+}
+function ctxUploadFile(){_ctxPickUpload(false)}
+function ctxUploadFolder(){_ctxPickUpload(true)}
+function _ctxDoUpload(files,rels){
+  var ci=_ctxInfo();
+  var n=files.length;
+  var fd=new FormData();
+  for(var i=0;i<n;i++)fd.append('files',files[i]);
+  fd.append('dest',_ctxUpDest||'');
+  for(var r=0;r<(rels||[]).length;r++)fd.append('paths',rels[r]);
+  var t=_ctxUpToast('正在上传 '+n+' 个文件…');
+  var x=new XMLHttpRequest();
+  x.open('POST',ci.api+'/upload');
+  x.upload.onprogress=function(e){
+    if(e&&e.lengthComputable&&e.total)t.set('正在上传 '+n+' 个文件… '+Math.round(e.loaded*100/e.total)+'%');
+  };
+  x.onload=function(){
+    t.close();
+    var j=null;try{j=JSON.parse(x.responseText)}catch(err){}
+    if(!j){notify('上传失败：服务端返回异常（HTTP '+x.status+'）');return}
+    if(!j.ok){notify(j.msg||'上传失败');return}
+    notify(j.msg||('已上传 '+n+' 个文件'));
+    if(_ctxUpBrowse)_ctxUpBrowse();
+  };
+  x.onerror=function(){t.close();notify('上传失败：连接中断')};
+  x.onabort=function(){t.close();notify('上传已取消')};
+  x.send(fd);
 }
 
 // ---- Ctrl+Click 多选 ----
@@ -1697,20 +1950,18 @@ async function ctxNewFolder(){
   },true);
 })();
 
-// 全局右键监听
+// 全局右键监听（整页生效；工具栏/表单控件保留原生菜单）
 (function(){
-  var grid=document.getElementById('outGrid');
-  if(grid)grid.addEventListener('contextmenu',function(e){
+  var box=document.getElementById('page-output');
+  if(!box)return;
+  box.addEventListener('contextmenu',function(e){
+    if(!e.target.closest)return;
+    if(e.target.closest('input, select, textarea, button, a, label'))return;
+    e.preventDefault();
+    window._curPage='output';
     var el=e.target.closest('[data-path]');
-    if(el){
-      e.preventDefault();
-      window._curPage='output';
-      showCtxMenu(el,e.clientX,e.clientY,el.getAttribute('data-path'),el.getAttribute('data-is-dir'));
-    }else if(e.target.closest('#outGrid')||e.target.closest('#page-output')){
-      e.preventDefault();
-      window._curPage='output';
-      showCtxMenu(null,e.clientX,e.clientY,'',false);
-    }
+    if(el)showCtxMenu(el,e.clientX,e.clientY,el.getAttribute('data-path'),el.getAttribute('data-is-dir'));
+    else showCtxMenu(null,e.clientX,e.clientY,'',false);
   });
 })();
 
@@ -1982,6 +2233,7 @@ async function loadModels(){
 function renderModels(){
   var tb=document.getElementById('mtbody');tb.innerHTML='';
   if(mData.length===0){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:24px">暂无数据</td></tr>'}
+  var _h=[];
   mData.forEach(function(m){
     var ch=dlSelIds.has(m.id)?'checked':'';
     var st=dlLastStates[m.id]||{},stat=st.status||'none';
@@ -1990,8 +2242,9 @@ function renderModels(){
     var actions='<div style="display:flex;gap:3px;flex-wrap:wrap">'+
       '<button class="btn btn4 btn-xs" onclick="editModel('+m.id+')"><i class="bi bi-pencil"></i> 编辑</button>'+
             dlBtns(m.id,stat)+'</div>';
-    tb.innerHTML+='<tr id="dlr-'+m.id+'"><td class="cb-cell"><input type="checkbox" class="dlcb" value="'+m.id+'" '+ch+' onchange="dlOnSel('+m.id+',this.checked)"></td><td>'+m.id+'</td><td>'+esc(m.name)+'</td><td><code>'+esc(m.save_path)+'</code></td><td><a href="'+m.download_url+'" target="_blank" title="'+esc(m.download_url)+'">'+esc(us)+'</a></td><td id="dsz-'+m.id+'">'+sz+' MB</td><td id="dpg-'+m.id+'">'+renderMiniBar(st.progress||0)+'</td><td id="dst-'+m.id+'">'+dlBadge(stat)+'</td><td class="acts">'+actions+'</td></tr>'
+    _h.push('<tr id="dlr-'+m.id+'"><td class="cb-cell"><input type="checkbox" class="dlcb" value="'+m.id+'" '+ch+' onchange="dlOnSel('+m.id+',this.checked)"></td><td>'+m.id+'</td><td>'+esc(m.name)+'</td><td><code>'+esc(m.save_path)+'</code></td><td><a href="'+m.download_url+'" target="_blank" title="'+esc(m.download_url)+'">'+esc(us)+'</a></td><td id="dsz-'+m.id+'">'+sz+' MB</td><td id="dpg-'+m.id+'">'+renderMiniBar(st.progress||0)+'</td><td id="dst-'+m.id+'">'+dlBadge(stat)+'</td><td class="acts">'+actions+'</td></tr>')
   });
+  if(_h.length)tb.innerHTML+=_h.join('');
   dlUpCnt();
   document.getElementById('mcount').textContent='共 '+mTotal+' 条'
 }
@@ -2061,6 +2314,31 @@ async function extractNames(){
     btn.disabled=false;btn.textContent='提取';
   }
 }
+// 输入时本地实时预览（与服务端 /api/models/extract_names 同一套规则；正则语法非法就地提示）
+// 注意：改这里必须同步改 routes.api_extract_names，两边规则要一致
+var _batPvTimer=null;
+function parseBatchUrls(){clearTimeout(_batPvTimer);_batPvTimer=setTimeout(_parseBatchUrlsNow,180)}
+function _parseBatchUrlsNow(){
+  var prev=document.getElementById('batPreview');if(!prev)return;
+  var msgEl=document.getElementById('batMsg');
+  _batItems=[];                       // 输入已变，之前「提取」的结果作废，防止提交过期数据
+  var urls=(document.getElementById('batUrls').value||'').split(/\r?\n/).map(function(s){return s.trim()}).filter(Boolean);
+  if(urls.length===0){prev.innerHTML='等待输入链接...';if(msgEl)msgEl.textContent='';return}
+  var regex=(document.getElementById('batRegex').value||'').trim(),re=null;
+  if(regex){
+    try{re=new RegExp(regex,'i')}
+    catch(e){
+      prev.innerHTML='<span style="color:var(--red)">正则表达式错误: '+esc(e.message)+'</span>';
+      if(msgEl)msgEl.textContent='';return;
+    }
+  }
+  _renderBatPreview(urls.map(function(url){
+    var name='';
+    if(re){var m=re.exec(url);if(m){name=(m.length>1&&m[1]!=null)?m[1]:m[0]}}
+    return {url:url,name:name};
+  }));
+  if(msgEl)msgEl.textContent='共 '+urls.length+' 个链接（预览），点「提取」确认';
+}
 document.addEventListener('DOMContentLoaded',function(){
   var ta=document.getElementById('batUrls');
   if(ta){ta.addEventListener('input',parseBatchUrls)}
@@ -2104,6 +2382,743 @@ async function saveModel(){
   try{if(id){await fetch('/api/models/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}else{var r=await fetch('/api/models',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});var j=await r.json();if(!j.ok){notify(j.msg);return}}closeModal()}catch(e){notify('保存失败: '+e.message)}
 }
 async function delModel(id){if(!(await confirmDialog('确认删除 #'+id+'？',{danger:true})))return;try{await fetch('/api/models/'+id,{method:'DELETE'});loadModels()}catch(e){notify('删除失败')}}
+
+// ============================================================
+// 本地文件浏览引擎：模型管理（ComfyUI/models）与插件管理（ComfyUI/custom_nodes）共用
+// 每个页面一个实例（元素 id 用各自前缀），后端按 scope 区分根目录
+// ============================================================
+function mlEsc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function mlBytes(n) {
+  n = Number(n) || 0;
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+  if (n < 1073741824) return (n / 1048576).toFixed(1) + ' MB';
+  if (n < 1099511627776) return (n / 1073741824).toFixed(2) + ' GB';
+  return (n / 1099511627776).toFixed(2) + ' TB';
+}
+function mlTime(ts) {
+  if (!ts) return '-';
+  var d = new Date(ts * 1000);
+  function p(x) { return (x < 10 ? '0' : '') + x }
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+// 打开右键菜单后的短暂保护期：忽略期间发生的 scroll（多为浏览器自动滚动/重排引起）
+var mlCtxGuardUntil = 0;
+
+function mkLocalView(cfg) {
+  var P = cfg.prefix, SCOPE = cfg.scope;
+  var SW = cfg.sw, DB = cfg.db, LO = cfg.local;
+  var SORT_KEY = cfg.sortKey || ('lvSort_' + SCOPE);
+  var S = {
+    mode: 'db', cur: '', parent: null, foldersRaw: [], files: [], deep: null,
+    sel: new Set(), rootName: cfg.rootName,
+    stat: { free: 0, stats: null, deep: '' }, statSeq: 0
+  };
+
+  function el(k) { return document.getElementById(P + k) }
+  function qVal() { var e = el('Search'); return e ? String(e.value || '').trim() : '' }
+  function deepOn() { var e = el('Deep'); return !!(e && e.checked) }
+  function sortVal() { var e = el('Sort'); return e ? e.value : 'name_asc' }
+  function lower(s) { return String(s == null ? '' : s).toLowerCase() }
+  function isDir(f) { return !!(f && f.is_dir) }
+  function qs(extra) { return 'scope=' + encodeURIComponent(SCOPE) + (extra ? '&' + extra : '') }
+  function getJSON(path, extra) { return fetch(path + '?' + qs(extra)).then(function (r) { return r.json() }) }
+  function postJSON(path, body) {
+    body = body || {}; body.scope = SCOPE;
+    return fetch(path, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json() });
+  }
+
+  // ---------------- 模式切换 ----------------
+  function setMode(m, keep) {
+    loadSort();
+    S.mode = (m === 'local') ? 'local' : 'db';
+    try { localStorage.setItem(cfg.store, S.mode) } catch (e) { }
+    var sw = document.getElementById(SW);
+    if (sw) {
+      var btns = sw.querySelectorAll('.ms-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle('active', btns[i].getAttribute('data-mode') === S.mode);
+      }
+    }
+    var dbBox = document.getElementById(DB), loBox = document.getElementById(LO);
+    if (dbBox) dbBox.style.display = (S.mode === 'db') ? '' : 'none';
+    if (loBox) loBox.style.display = (S.mode === 'local') ? '' : 'none';
+    if (S.mode === 'local') { if (!keep) refresh() } else { ctxHide() }
+  }
+  function onEnter() {
+    var saved = null;
+    try { saved = localStorage.getItem(cfg.store) } catch (e) { }
+    setMode(saved === 'local' ? 'local' : 'db', false);
+  }
+
+  // ---------------- 排序（记忆在浏览器，按页面分开存） ----------------
+  function sortChanged() {
+    try { localStorage.setItem(SORT_KEY, sortVal()) } catch (e) { }
+    refresh();
+  }
+  function loadSort() {
+    var v = null;
+    try { v = localStorage.getItem(SORT_KEY) } catch (e) { }
+    var e = el('Sort');
+    if (!e || !v) return;
+    for (var i = 0; i < e.options.length; i++) {
+      if (e.options[i].value === v) { e.value = v; return }
+    }
+  }
+
+  // ---------------- 视图计算 ----------------
+  function pickFolders() {
+    if (SCOPE !== 'plugins' || S.deep) return S.foldersRaw;
+    var q = lower(qVal());
+    if (!q) return S.foldersRaw;
+    return S.foldersRaw.filter(function (f) { return lower(f.name).indexOf(q) >= 0 });
+  }
+  function visibleFiles() {
+    if (S.deep) return S.deep.items || [];
+    var q = lower(qVal());
+    if (!q || deepOn()) return S.files;
+    return S.files.filter(function (f) { return lower(f.name).indexOf(q) >= 0 });
+  }
+  function emptyWord() { return SCOPE === 'plugins' ? '插件或文件' : '文件' }
+
+  function paintStat() {
+    var e = el('Stat');
+    if (!e) return;
+    var tip;
+    if (S.deep) {
+      e.textContent = S.stat.deep;
+      tip = '递归搜索：在 ' + (S.cur || S.rootName) + ' 下所有子目录里按名称匹配';
+    } else {
+      var t = [pickFolders().length + ' 个子文件夹'];
+      var st = S.stat.stats;
+      if (st) {
+        t.push('共 ' + Number(st.files || 0) + ' 个文件');
+        t.push(mlBytes(st.size || 0));
+      } else {
+        t.push('统计中…');
+      }
+      t.push('磁盘可用 ' + mlBytes(S.stat.free));
+      e.textContent = t.join(' · ');
+      tip = '当前目录：' + (S.cur || S.rootName) +
+        '\n子文件夹 = 当前目录的直接子文件夹数（同列表中标「文件夹」的行数）' +
+        '\n文件数与占用 = 当前目录下所有层级的合计';
+    }
+    e.title = tip;
+  }
+
+  // ---------------- 目录浏览 ----------------
+  function go(rel) {
+    S.sel.clear();
+    S.deep = null;
+    var d = el('Deep'); if (d) d.checked = false;
+    var s = el('Search'); if (s) s.value = '';
+    S.cur = rel || '';
+    refresh();
+  }
+  function up() { if (S.parent === null || S.parent === undefined) return; go(S.parent) }
+
+  async function refresh() {
+    if (deepOn() && qVal()) return searchNow();
+    S.deep = null;
+    var j;
+    try {
+      j = await getJSON('/api/models/local/list',
+        'rel=' + encodeURIComponent(S.cur) + '&sort=' + encodeURIComponent(sortVal()));
+    } catch (e) { notify('读取失败: ' + e.message); return }
+    if (!j.ok) {
+      S.foldersRaw = []; S.files = []; S.parent = null; S.stat.stats = null; S.stat.deep = '';
+      var tb0 = el('Tbody');
+      if (tb0) tb0.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);padding:24px">' + mlEsc(j.msg || '读取失败') + '</td></tr>';
+      var c0 = el('TableCard'); if (c0) c0.style.display = '';
+      var st0 = el('Stat'); if (st0) { st0.textContent = ''; st0.title = '' }
+      renderCrumbs([{ name: S.rootName, rel: '' }]);
+      updateSel();
+      return;
+    }
+    S.foldersRaw = j.folders || [];
+    S.files = j.files || [];
+    S.parent = j.parent;
+    S.cur = j.rel || '';
+    if (j.crumbs && j.crumbs.length) S.rootName = j.crumbs[0].name || S.rootName;
+    S.stat.free = j.disk_free || 0;
+    S.stat.stats = j.stats || null;
+    var ub = el('UpBtn'); if (ub) ub.disabled = (S.cur === '');
+    renderCrumbs(j.crumbs || [{ name: S.rootName, rel: '' }]);
+    renderFiles(); paintStat(); updateSel();
+    loadStats();
+  }
+
+  // 递归统计较慢（插件目录可能上万文件），列表先出、数字后补
+  async function loadStats() {
+    if (S.deep) return;
+    var want = S.cur, seq = ++S.statSeq;
+    var j;
+    try { j = await getJSON('/api/models/local/stats', 'rel=' + encodeURIComponent(want)) }
+    catch (e) { return }
+    if (seq !== S.statSeq || want !== S.cur || S.deep) return;
+    if (!j || !j.ok) return;
+    S.stat.stats = j;
+    var kids = j.kids || {};
+    S.foldersRaw.forEach(function (f) {
+      var b = kids[f.name];
+      if (b) { f.size = b.size; f.files = b.files; f.dirs = b.dirs; f.rec = true }
+    });
+    renderFiles(); paintStat();
+  }
+
+  function renderCrumbs(crumbs) {
+    var box = el('Crumbs');
+    if (!box) return;
+    box.innerHTML = '';
+    crumbs.forEach(function (c, i) {
+      if (i > 0) {
+        var sep = document.createElement('span');
+        sep.className = 'cbs'; sep.textContent = '/';
+        box.appendChild(sep);
+      }
+      var last = (i === crumbs.length - 1);
+      var e = document.createElement('span');
+      e.className = 'cbc' + (last ? ' cur' : '') + (i === 0 ? ' cbroot' : '');
+      if (i === 0) {
+        var ic = document.createElement('i');
+        ic.className = 'bi bi-hdd-stack';
+        e.appendChild(ic);
+        e.appendChild(document.createTextNode(' '));
+      }
+      var nm = document.createElement('span');
+      nm.textContent = c.name || S.rootName;
+      e.appendChild(nm);
+      if (!last) e.addEventListener('click', function () { go(c.rel) });
+      box.appendChild(e);
+    });
+  }
+
+  // 列表数据：子文件夹排在文件前面（递归搜索时结果自身已含文件夹，不再另加）
+  function listItems() {
+    if (S.deep) return visibleFiles();
+    return pickFolders().concat(visibleFiles());
+  }
+
+  // 文件夹没有单一"大小"，显示递归合计并在后面缀文件数
+  function folderSizeCell(f) {
+    if (f.files === null || f.files === undefined) return '<span class="mldim">统计中…</span>';
+    var tip = f.files + ' 个文件' + (f.dirs ? ' · ' + f.dirs + ' 个子目录' : '');
+    return '<span title="' + mlEsc(tip) + '">' + mlBytes(f.size || 0) + '</span>' +
+      '<span class="mlsub">' + f.files + ' 个文件</span>';
+  }
+
+  function renderFiles() {
+    var tb = el('Tbody');
+    if (!tb) return;
+    var card = el('TableCard');
+    var folders = S.deep ? [] : pickFolders();
+    var files = visibleFiles().slice();
+    var q = qVal();
+    var filtering = !!S.deep || !!q;
+    // 递归搜索时文件夹结果排在前面（插件目录里搜的主要是插件）
+    if (S.deep && files.length) {
+      var hasDir = false;
+      for (var i = 0; i < files.length; i++) { if (isDir(files[i])) { hasDir = true; break } }
+      if (hasDir) files.sort(function (a, b) { return (isDir(b) ? 1 : 0) - (isDir(a) ? 1 : 0) });
+    }
+    // 当前目录既无子文件夹也无文件（且不是搜索过滤）时不显示表格，避免残留表头
+    if (!folders.length && !files.length && !filtering) {
+      if (card) card.style.display = 'none';
+      tb.innerHTML = '';
+      return;
+    }
+    if (card) card.style.display = '';
+    var curDir = S.cur || S.rootName;
+    if (!folders.length && !files.length) {
+      tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">没有匹配的' + emptyWord() + '</td></tr>';
+      return;
+    }
+    var html = folders.map(function (f) {
+      var checked = S.sel.has(f.rel) ? ' checked' : '';
+      var git = (SCOPE === 'plugins' && f.git) ? ' <span class="mltag-git">git</span>' : '';
+      return '<tr data-rel="' + mlEsc(f.rel) + '" data-kind="folder" title="右键可重命名 / 移动 / 删除">' +
+        '<td class="cb-cell"><input type="checkbox" class="mlcb" data-rel="' + mlEsc(f.rel) + '"' + checked + '></td>' +
+        '<td><i class="bi bi-folder-fill mlico-dir"></i>' + mlEsc(f.name) + git + '</td>' +
+        '<td><span class="mltag mltag-dir">文件夹</span></td>' +
+        '<td>' + folderSizeCell(f) + '</td>' +
+        '<td class="mldim">' + (f.mtime ? mlTime(f.mtime) : '-') + '</td>' +
+        '<td class="mldim">' + mlEsc(curDir) + '</td>' +
+        '</tr>';
+    }).join('');
+    html += files.map(function (f) {
+      var dir = S.deep ? (f.dir || (S.rootName + ' 根目录')) : curDir;
+      var checked = S.sel.has(f.rel) ? ' checked' : '';
+      var kind = isDir(f) ? 'folder' : 'file';
+      var typeCell = isDir(f)
+        ? '<span class="mltag mltag-dir">文件夹</span>'
+        : '<span class="mltag ' + (f.is_model ? 'mltag-model' : 'mltag-other') + '">' + mlEsc(f.ext || '文件') + '</span>';
+      var nameCell = isDir(f)
+        ? '<i class="bi bi-folder-fill mlico-dir"></i>' + mlEsc(f.name)
+        : mlEsc(f.name);
+      return '<tr data-rel="' + mlEsc(f.rel) + '" data-kind="' + kind + '" title="右键可重命名 / 移动 / 删除">' +
+        '<td class="cb-cell"><input type="checkbox" class="mlcb" data-rel="' + mlEsc(f.rel) + '"' + checked + '></td>' +
+        '<td>' + nameCell + '</td>' +
+        '<td>' + typeCell + '</td>' +
+        '<td>' + (isDir(f) ? '-' : mlBytes(f.size)) + '</td>' +
+        '<td class="mldim">' + mlTime(f.mtime) + '</td>' +
+        '<td class="mldim">' + mlEsc(dir) + '</td>' +
+        '</tr>';
+    }).join('');
+    tb.innerHTML = html;
+  }
+
+  // 搜索框输入：纯前端过滤当前目录（插件目录连文件夹卡片一起过滤）
+  function filterLocal() {
+    if (deepOn()) return;
+    S.deep = null;
+    renderFiles(); paintStat(); updateSel();
+  }
+
+  function updateSel() {
+    var n = S.sel.size;
+    var c = el('SelCnt');
+    if (c) c.textContent = n;
+    var sa = el('SelAll');
+    if (sa) {
+      var total = listItems().length;
+      sa.checked = (total > 0 && n >= total);
+      sa.indeterminate = (n > 0 && n < total);
+    }
+  }
+  function setSel(rel, on) { if (on) { S.sel.add(rel) } else { S.sel.delete(rel) } updateSel() }
+  function toggleAll(c) {
+    var list = listItems();
+    if (c) { list.forEach(function (f) { S.sel.add(f.rel) }) } else { S.sel.clear() }
+    renderFiles();
+    updateSel();
+  }
+
+  // ---------------- 搜索 ----------------
+  async function searchNow() {
+    var q = qVal();
+    if (!q) { S.deep = null; return refresh() }
+    if (!deepOn()) { return filterLocal() }
+    var j;
+    try {
+      j = await getJSON('/api/models/local/search', 'q=' + encodeURIComponent(q) +
+        '&rel=' + encodeURIComponent(S.cur) + '&sort=' + encodeURIComponent(sortVal()));
+    } catch (e) { notify('搜索失败: ' + e.message); return }
+    if (!j.ok) { notify(j.msg || '搜索失败'); return }
+    S.deep = { items: j.items || [], q: q };
+    S.stat.deep = '递归搜索「' + q + '」命中 ' + S.deep.items.length + ' 个' +
+      (SCOPE === 'plugins' ? '结果' : '文件') + (j.truncated ? '（已截断）' : '');
+    renderFiles(); paintStat(); updateSel();
+  }
+
+  // ---------------- 打开 / 定位 ----------------
+  function openDir() {
+    getJSON('/api/models/local/open', 'rel=' + encodeURIComponent(S.cur))
+      .then(function (j) { if (!j.ok) notify(j.msg) }).catch(function () { });
+  }
+  function reveal(rel) {
+    getJSON('/api/models/local/open', 'rel=' + encodeURIComponent(rel) + '&select=1')
+      .then(function (j) { if (!j.ok) notify(j.msg) }).catch(function () { });
+  }
+
+  // ---------------- 重命名 / 移动 / 删除 ----------------
+  async function renameOne(rel) {
+    var old = String(rel).split('/').pop();
+    var nv = await promptDialog('重命名「' + old + '」为：', old, { title: '重命名', okText: '确定' });
+    if (nv === null || nv === undefined) return;
+    nv = String(nv).trim();
+    if (!nv || nv === old) return;
+    try {
+      var j = await postJSON('/api/models/local/rename', { rel: rel, new_name: nv });
+      if (!j.ok) { notify(j.msg || '重命名失败'); return }
+      notify(j.msg);
+      S.sel.delete(rel);
+      refresh();
+    } catch (e) { notify('重命名失败: ' + e.message) }
+  }
+
+  function pickDest(count) {
+    return new Promise(function (resolve) {
+      var mask = document.createElement('div');
+      mask.className = 'cdlg-mask';
+      mask.innerHTML = '<div class="cdlg cdlg-wide">' +
+        '<div class="cdlg-hd"><span class="cdlg-ico"><i class="bi bi-arrows-move"></i></span><h3>移动到…</h3></div>' +
+        '<div class="cdlg-body">共 ' + count + ' 项将被移动，请选择 ' + mlEsc(S.rootName) + ' 下的目标文件夹：</div>' +
+        '<div class="cdlg-input-wrap"><input class="cdlg-input" type="text" placeholder="输入关键字过滤文件夹…"></div>' +
+        '<div class="mldestlist gscroll"></div>' +
+        '<div class="cdlg-ft"><button class="btn btn6 cdlg-cancel">取消</button></div></div>';
+      document.body.appendChild(mask);
+      var listBox = mask.querySelector('.mldestlist');
+      var input = mask.querySelector('.cdlg-input');
+      var items = [];
+      function done(v) { mask.remove(); document.removeEventListener('keydown', onKey); resolve(v) }
+      function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); done(null) } }
+      function draw() {
+        var q = lower(input.value);
+        var hit = items.filter(function (it) { return !q || lower(it.rel).indexOf(q) >= 0 });
+        listBox.innerHTML = hit.length
+          ? hit.map(function (it) {
+            return '<div class="mldest" data-rel="' + mlEsc(it.rel) + '" style="padding-left:' +
+              (11 + (it.depth || 0) * 16) + 'px">' +
+              '<i class="bi bi-folder-fill"></i><span>' + mlEsc(it.rel || (S.rootName + '（根目录）')) + '</span></div>';
+          }).join('')
+          : '<div class="mldest-empty">没有匹配的文件夹</div>';
+      }
+      listBox.addEventListener('click', function (e) {
+        var e2 = e.target.closest ? e.target.closest('.mldest') : null;
+        if (e2) done(e2.getAttribute('data-rel'));
+      });
+      input.addEventListener('input', draw);
+      mask.querySelector('.cdlg-cancel').addEventListener('click', function () { done(null) });
+      mask.addEventListener('click', function (e) { if (e.target === mask) done(null) });
+      document.addEventListener('keydown', onKey);
+      getJSON('/api/models/local/move_targets').then(function (j) {
+        items = j.items || [];
+        draw();
+      }).catch(function () { listBox.innerHTML = '<div class="mldest-empty">读取文件夹失败</div>' });
+      input.focus();
+    });
+  }
+
+  async function moveRels(rels) {
+    if (!rels || !rels.length) { notify('请先勾选要移动的项目'); return }
+    var dest = await pickDest(rels.length);
+    if (dest === null) return;
+    try {
+      var j = await postJSON('/api/models/local/move', { rels: rels, dest: dest });
+      if (!j.ok) { notify(j.msg || '移动失败') }
+      else { notify(j.msg); rels.forEach(function (x) { S.sel.delete(x) }) }
+      refresh();
+    } catch (e) { notify('移动失败: ' + e.message) }
+  }
+
+  async function deleteRels(rels) {
+    if (!rels || !rels.length) { notify('请先勾选要删除的项目'); return }
+    var names = rels.slice(0, 6).map(function (x) { return '· ' + x }).join('\n');
+    if (rels.length > 6) names += '\n… 以及另外 ' + (rels.length - 6) + ' 项';
+    var ok = await confirmDialog(
+      '以下 ' + rels.length + ' 项将被移入系统回收站（可从回收站还原）：\n\n' + names,
+      { title: '删除确认', okText: '移入回收站', danger: true });
+    if (!ok) return;
+    try {
+      var j = await postJSON('/api/models/local/delete', { rels: rels });
+      if (!j.ok) { notify(j.msg || '删除失败'); return }
+      notify(j.msg);
+      rels.forEach(function (x) { S.sel.delete(x) });
+      refresh();
+    } catch (e) { notify('删除失败: ' + e.message) }
+  }
+
+  // ---------------- 上传文件（右键菜单入口，支持单个 / 多个） ----------------
+  var _upInput = null, _upDirInput = null, _upDest = '';
+
+  function mkUpInput(dirMode) {
+    var i = document.createElement('input');
+    i.type = 'file';
+    i.multiple = true;
+    i.id = P + (dirMode ? 'UpDirInput' : 'UpInput');
+    i.style.display = 'none';
+    if (dirMode) { i.webkitdirectory = true; i.setAttribute('webkitdirectory', ''); }
+    i.addEventListener('change', function () {
+      // 注意：FileList 是活的，i.value='' 会把它一起清空，
+      // 必须先拷成真数组再清 value，否则上传会被静默跳过。
+      var fs = i.files ? Array.prototype.slice.call(i.files) : [];
+      var rels = [];
+      if (dirMode) {
+        for (var k = 0; k < fs.length; k++) rels.push(fs[k].webkitRelativePath || fs[k].name);
+      }
+      i.value = '';                 // 清空，保证同一个文件还能再次触发 change
+      if (fs.length) doUpload(fs, rels);
+    });
+    document.body.appendChild(i);
+    return i;
+  }
+  function ensureUpInput() {
+    if (!_upInput) _upInput = mkUpInput(false);
+    return _upInput;
+  }
+  function ensureUpDirInput() {
+    if (!_upDirInput) _upDirInput = mkUpInput(true);
+    return _upDirInput;
+  }
+
+  function pickUpload(destRel) {
+    _upDest = destRel || '';
+    ensureUpInput().click();
+  }
+  function pickUploadFolder(destRel) {
+    _upDest = destRel || '';
+    ensureUpDirInput().click();
+  }
+
+  // 进度提示：模型文件动辄几百 MB，用 XHR 才能拿到 upload.onprogress
+  function upToast(text) {
+    var t = notify(text, 'info', 1800000);
+    return {
+      set: function (s) { var b = t && t.querySelector('.ntf-body'); if (b) b.textContent = s },
+      close: function () { var x = t && t.querySelector('.ntf-x'); if (x) x.click() }
+    };
+  }
+
+  function doUpload(files, relPaths) {
+    var dest = _upDest || '';
+    var n = files.length;
+    var fd = new FormData();
+    for (var i = 0; i < n; i++) fd.append('files', files[i]);
+    fd.append('dest', dest);
+    fd.append('scope', SCOPE);
+    for (var r = 0; r < (relPaths || []).length; r++) fd.append('paths', relPaths[r]);
+    var t = upToast('正在上传 ' + n + ' 个文件…');
+    var x = new XMLHttpRequest();
+    x.open('POST', '/api/models/local/upload');
+    x.upload.onprogress = function (e) {
+      if (e && e.lengthComputable && e.total) {
+        t.set('正在上传 ' + n + ' 个文件… ' + Math.round(e.loaded * 100 / e.total) + '%');
+      }
+    };
+    x.onload = function () {
+      t.close();
+      var j = null;
+      try { j = JSON.parse(x.responseText) } catch (err) { }
+      if (!j) { notify('上传失败：服务端返回异常（HTTP ' + x.status + '）'); return }
+      if (!j.ok) { notify(j.msg || '上传失败'); return }
+      notify(j.msg || ('已上传 ' + n + ' 个文件'));
+      S.sel.clear();
+      refresh();
+    };
+    x.onerror = function () { t.close(); notify('上传失败：连接中断') };
+    x.onabort = function () { t.close(); notify('上传已取消') };
+    x.send(fd);
+  }
+
+  // ---------------- 右键菜单（增删改查入口） ----------------
+  function kindOf(rel) {
+    for (var i = 0; i < S.foldersRaw.length; i++) {
+      if (S.foldersRaw[i].rel === rel) return 'folder';
+    }
+    if (S.deep) {
+      var arr = S.deep.items || [];
+      for (var j = 0; j < arr.length; j++) {
+        if (arr[j].rel === rel) return isDir(arr[j]) ? 'folder' : 'file';
+      }
+    }
+    return 'file';
+  }
+  function ctxHide() {
+    var e = el('Ctx');
+    if (e) { e.style.display = 'none'; e._targets = null; e._upDest = '' }
+  }
+  function ctxRun(act, targets) {
+    var rels = targets.map(function (t) { return t.rel });
+    if (act === 'enter') go(rels[0]);
+    else if (act === 'rename') renameOne(rels[0]);
+    else if (act === 'move') moveRels(rels);
+    else if (act === 'reveal') reveal(rels[0]);
+    else if (act === 'del') deleteRels(rels);
+  }
+  function ctxClearSel() {
+    S.sel.clear();
+    renderFiles();
+    updateSel();
+  }
+  function ctxEl() {
+    var e = el('Ctx');
+    if (e) return e;
+    e = document.createElement('div');
+    e.id = P + 'Ctx';
+    e.className = 'ctx-menu mlctx';
+    e.addEventListener('mousedown', function (ev2) {
+      var it = ev2.target.closest ? ev2.target.closest('.ctx-item') : null;
+      ev2.preventDefault();
+      ev2.stopPropagation();
+      if (!it || it.className.indexOf('off') >= 0) return;
+      var act = it.getAttribute('data-act');
+      var tg = e._targets || [];
+      var up = e._upDest || '';
+      ctxHide();
+      if (act === 'unsel') ctxClearSel();
+      else if (act === 'mkdir') mkdirDialog(up);
+      else if (act === 'upload') pickUpload(up);
+      else if (act === 'uploadfolder') pickUploadFolder(up);
+      else if (act === 'refresh') refresh();
+      else ctxRun(act, tg);
+    });
+    document.body.appendChild(e);
+    return e;
+  }
+
+  // 上传目标：右键命中的是单个文件夹 → 传进该文件夹；否则传进当前所在目录
+  function uploadDest(targets) {
+    if (targets && targets.length === 1 && targets[0].kind === 'folder') return targets[0].rel;
+    return S.cur || '';
+  }
+  function uploadLabel(dest) {
+    if (!dest) return '上传文件到 ' + S.rootName + ' 根目录';
+    var parts = String(dest).split('/');
+    return '上传文件到 「' + parts[parts.length - 1] + '」';
+  }
+  function uploadFolderLabel(dest) {
+    if (!dest) return '上传文件夹到 ' + S.rootName + ' 根目录';
+    var parts = String(dest).split('/');
+    return '上传文件夹到 「' + parts[parts.length - 1] + '」';
+  }
+  function mkdirLabel(dest) {
+    if (!dest) return '新建文件夹（' + S.rootName + '）';
+    var parts = String(dest).split('/');
+    return '新建文件夹（' + parts[parts.length - 1] + '）';
+  }
+  async function mkdirDialog(destRel) {
+    var where = destRel ? ('「' + String(destRel).split('/').pop() + '」') : (S.rootName + ' 根目录');
+    var nm = await promptDialog('在 ' + where + ' 下新建文件夹名称：', '', { title: '新建文件夹' });
+    if (!nm) return;
+    try {
+      var j = await postJSON('/api/models/local/mkdir', { rel: destRel || '', name: nm });
+      if (!j.ok) { notify(j.msg || '创建失败'); return }
+      notify(j.msg || '已创建');
+      refresh();
+    } catch (e) { notify('创建失败: ' + e.message) }
+  }
+
+  function ctxShow(ev, rel, kind) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    // 右键的项目若不在当前勾选中，则把它设为唯一选中项
+    if (!S.sel.has(rel)) {
+      S.sel.clear();
+      S.sel.add(rel);
+      renderFiles();
+      updateSel();
+    }
+    var targets = [];
+    if (S.sel.size > 1) {
+      S.sel.forEach(function (r) { targets.push({ rel: r, kind: kindOf(r) }) });
+    } else {
+      targets.push({ rel: rel, kind: kind || kindOf(rel) });
+    }
+    var n = targets.length, one = targets[0];
+    var isFolder = (n === 1 && one.kind === 'folder');
+    var word = isFolder ? (SCOPE === 'plugins' ? '插件文件夹' : '文件夹') : '文件';
+    var upDest = uploadDest(targets);
+    var items = [];
+    if (isFolder) items.push({ act: 'enter', ico: 'bi-folder2-open', txt: '打开该文件夹' });
+    items.push({ act: 'mkdir', ico: 'bi-folder-plus', txt: mkdirLabel(upDest) });
+    items.push({ act: 'upload', ico: 'bi-upload', txt: uploadLabel(upDest) });
+    items.push({ act: 'uploadfolder', ico: 'bi-folder-symlink', txt: uploadFolderLabel(upDest) });
+    items.push({ sep: 1 });
+    items.push({ act: 'rename', ico: 'bi-input-cursor-text', txt: '重命名', off: n > 1 });
+    items.push({ act: 'move', ico: 'bi-arrows-move', txt: n > 1 ? ('移动 ' + n + ' 项到…') : '移动到…' });
+    items.push({
+      act: 'reveal', ico: 'bi-crosshair',
+      txt: n > 1 ? '在资源管理器中显示第 1 项' : (isFolder ? '在资源管理器中定位' : '在资源管理器中显示')
+    });
+    items.push({ sep: 1 });
+    items.push({ act: 'unsel', ico: 'bi-x-circle', txt: '取消选择' });
+    items.push({ act: 'del', ico: 'bi-trash3', txt: n > 1 ? ('删除 ' + n + ' 项（回收站）') : '删除（回收站）', danger: true });
+    var head = (n > 1) ? ('已选 ' + n + ' 项') : (word + ' · ' + one.rel);
+    ctxPaint(ctxEl(), ev, items, head, one.rel, targets, upDest);
+  }
+
+  // 右键菜单统一渲染（行菜单与空白处菜单共用一份）
+  function ctxPaint(e, ev, items, head, tip, targets, upDest) {
+    e._targets = targets || [];
+    e._upDest = upDest || '';
+    e.innerHTML = '<div class="mlctx-hd" title="' + mlEsc(tip || '') + '">' + mlEsc(head) + '</div>' +
+      items.map(function (it) {
+        if (it.sep) return '<div class="ctx-sep"></div>';
+        return '<div class="ctx-item' + (it.off ? ' off' : '') + (it.danger ? ' danger' : '') +
+          '" data-act="' + it.act + '"><i class="bi ' + it.ico + '"></i>' + mlEsc(it.txt) + '</div>';
+      }).join('');
+    e.style.display = 'block';
+    e.style.left = '0px';
+    e.style.top = '0px';
+    var w = e.offsetWidth, h = e.offsetHeight;
+    e.style.left = Math.max(6, Math.min(ev.clientX, window.innerWidth - w - 8)) + 'px';
+    e.style.top = Math.max(6, Math.min(ev.clientY, window.innerHeight - h - 8)) + 'px';
+    mlCtxGuardUntil = Date.now() + 400;
+  }
+
+  // 空白区右键：当前目录一行都没有时也得能上传（空目录正是"要往里传文件"的场景）
+  function ctxShowBlank(ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    var dest = S.cur || '';
+    ctxPaint(ctxEl(), ev, [
+      { act: 'mkdir', ico: 'bi-folder-plus', txt: mkdirLabel(dest) },
+      { act: 'upload', ico: 'bi-upload', txt: uploadLabel(dest) },
+      { act: 'uploadfolder', ico: 'bi-folder-symlink', txt: uploadFolderLabel(dest) },
+      { sep: 1 },
+      { act: 'refresh', ico: 'bi-arrow-clockwise', txt: '刷新列表' }
+    ], '当前目录 · ' + (dest || S.rootName), dest || S.rootName, [], dest);
+  }
+
+  function bindEvents() {
+    var tb = el('Tbody');
+    if (tb) {
+      tb.addEventListener('click', function (e) {
+        var cb = e.target.closest ? e.target.closest('input.mlcb') : null;
+        if (cb) { setSel(cb.getAttribute('data-rel'), cb.checked); return }
+        var tr = e.target.closest ? e.target.closest('tr[data-rel]') : null;
+        if (tr && tr.getAttribute('data-kind') === 'folder') go(tr.getAttribute('data-rel'));
+      });
+      tb.addEventListener('contextmenu', function (e) {
+        var tr = e.target.closest ? e.target.closest('tr[data-rel]') : null;
+        if (!tr) return;
+        ctxShow(e, tr.getAttribute('data-rel'), tr.getAttribute('data-kind') || 'file');
+      });
+    }
+    // 空白区右键（工具条 / 输入框除外）→ 上传到当前目录 / 刷新
+    var box = document.getElementById(LO);
+    if (box) {
+      box.addEventListener('contextmenu', function (e) {
+        var t = e.target;
+        if (!t || !t.closest) return;
+        if (t.closest('tr[data-rel]')) return;                          // 行上的右键另走 ctxShow
+        if (t.closest('input, select, textarea, button, a, label')) return;  // 工具条保留原生菜单
+        ctxShowBlank(e);
+      });
+    }
+    document.addEventListener('mousedown', function (e) {
+      var m = el('Ctx');
+      if (!m || m.style.display === 'none') return;
+      if (!e.target.closest || !e.target.closest('#' + P + 'Ctx')) ctxHide();
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') ctxHide() });
+    window.addEventListener('resize', ctxHide);
+    window.addEventListener('scroll', function () {
+      if (Date.now() < mlCtxGuardUntil) return;
+      ctxHide();
+    }, true);
+    window.addEventListener('wheel', ctxHide, { passive: true });
+  }
+  document.addEventListener('DOMContentLoaded', bindEvents);
+
+  return {
+    S: S, setMode: setMode, onEnter: onEnter, go: go, up: up, refresh: refresh,
+    sortChanged: sortChanged, filterLocal: filterLocal, searchNow: searchNow,
+    openDir: openDir, toggleAll: toggleAll, setSel: setSel, ctxHide: ctxHide,
+    clearSel: ctxClearSel, updateSel: updateSel, renderFiles: renderFiles,
+    kindOf: kindOf, listItems: listItems,
+    pickUpload: pickUpload, pickUploadFolder: pickUploadFolder,
+    mkdir: mkdirDialog, ctxShowBlank: ctxShowBlank
+  };
+}
+
+// 模型管理（ml / ComfyUI/models）与插件管理（lpl / ComfyUI/custom_nodes）
+var LBm = mkLocalView({
+  prefix: 'ml', scope: 'models', rootName: 'models', store: 'mMode',
+  sortKey: 'mlSort', sw: 'mmodeSw', db: 'mmode-db', local: 'mmode-local'
+});
+var LBp = mkLocalView({
+  prefix: 'lpl', scope: 'plugins', rootName: 'custom_nodes', store: 'plLocalMode',
+  sw: 'plmodeSw', db: 'plmode-db', local: 'plmode-local'
+});
+function mlOnEnter() { LBp.ctxHide(); LBm.onEnter() }
+function plOnEnter() { LBm.ctxHide(); LBp.onEnter() }
 
 // ---- 下载控制 ----
 function renderMiniBar(pct){if(!pct||pct<=0)return '<span style="color:var(--text3);font-size:11px">-</span>';return '<div class="minibar"><div class="minibar-bg"><div class="minibar-fill" style="width:'+pct+'%"></div></div></div><span style="font-size:10px;color:var(--text2);margin-left:4px">'+pct.toFixed(1)+'%</span>'}
@@ -2162,11 +3177,12 @@ async function restoreDlState(){
 // 插件管理（CRUD + 克隆）
 // ============================================================
 var plData=[],plPage=1,plPageSize=20,plTotalPages=1,plTotal=0;
-var plActiveIds=new Set(),plQueuedIds=new Set(),plSelIds=new Set(),plProgTimer=null,plLastStates={},plPrevActive=new Set();
+var plActiveIds=new Set(),plQueuedIds=new Set(),plSelIds=new Set(),plProgTimer=null,plLastStates={},plPrevActive=new Set(),plCancelledIds=new Set(),plProgSeen={},plQueuedSeen={},plKnownNames={},plMirrorInfo=null;
 
 async function loadPlugins(){var q=document.getElementById('ps').value.trim(),sort=document.getElementById('plsort').value;var params='?page='+plPage+'&page_size='+plPageSize+'&sort='+sort;if(sort==='installed')params+='&installed=1';if(q)params+='&q='+encodeURIComponent(q);try{var r=await fetch('/api/plugins'+params);var j=await r.json();plData=j.items||[];plTotal=j.total||0;plPage=j.page||1;plTotalPages=j.total_pages||1;renderPlugins();updatePlPagination();document.getElementById('plmcount').textContent='共 '+plTotal+' 条'}catch(e){}}
 function renderPlugins(){
   var tb=document.getElementById('pltbody');tb.innerHTML='';
+  var _h=[];
   plData.forEach(function(p){
     var ch=plSelIds.has(p.id)?'checked':'',st=plLastStates[p.id]||{},stat=st.status||'none';
     var inst=p.installed?'<span class="badge bg-inst" style="margin-left:4px">已安装</span>':'';
@@ -2175,8 +3191,9 @@ function renderPlugins(){
       '<button class="btn btn4 btn-xs" onclick="editPlugin('+p.id+')"><i class="bi bi-pencil"></i> 编辑</button>'+
       (p.installed?'<button class="btn btn3 btn-xs" onclick="delPlugin('+p.id+')"><i class="bi bi-trash"></i> 卸载</button>':'<button class="btn btn3 btn-xs" disabled style="opacity:0.35"><i class="bi bi-trash"></i> 卸载</button>')+
       clBtns(p.id,stat,p.installed)+'</div>';
-    tb.innerHTML+='<tr id="plr-'+p.id+'"><td class="cb-cell"><input type="checkbox" class="plcb" value="'+p.id+'" '+ch+' onchange="plOnSel('+p.id+',this.checked)"></td><td>'+p.id+'</td><td>'+esc(p.name)+inst+'</td><td><a href="'+p.repo_url+'" target="_blank" style="font-size:11px">'+esc(urlDisp)+'</a></td><td style="color:var(--text2);font-size:11.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(p.desc||'')+'">'+esc(p.desc||'')+'</td><td id="plst-'+p.id+'">'+clBadge(stat)+'</td><td class="acts">'+actions+'</td></tr>'
+    _h.push('<tr id="plr-'+p.id+'"><td class="cb-cell"><input type="checkbox" class="plcb" value="'+p.id+'" '+ch+' onchange="plOnSel('+p.id+',this.checked)"></td><td>'+p.id+'</td><td>'+esc(p.name)+inst+'</td><td><a href="'+p.repo_url+'" target="_blank" style="font-size:11px">'+esc(urlDisp)+'</a></td><td style="color:var(--text2);font-size:11.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(p.desc||'')+'">'+esc(p.desc||'')+'</td><td id="plst-'+p.id+'">'+clBadge(stat)+'</td><td class="acts">'+actions+'</td></tr>')
   });
+  if(_h.length)tb.innerHTML+=_h.join('');
   plUpCnt()
 }
 function updatePlPagination(){document.getElementById('plinfo').textContent='第 '+plPage+' / '+plTotalPages+' 页';document.getElementById('plprev').disabled=plPage<=1;document.getElementById('plnext').disabled=plPage>=plTotalPages}
@@ -2196,11 +3213,11 @@ async function savePlugin(){
   if(!b.name||!b.url){notify('请填写完整');return}
   try{if(id){await fetch('/api/plugins/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}else{var r=await fetch('/api/plugins',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});var j=await r.json();if(!j.ok){notify(j.msg);return}}closePluginModal()}catch(e){notify('保存失败: '+e.message)}
 }
-async function delPlugin(id){if(!(await confirmDialog('确认卸载该插件？插件文件夹将被删除！',{danger:true})))return;try{var r=await fetch('/api/plugins/'+id,{method:'DELETE'});var d=await r.json();if(!d.ok){notify(d.error||'卸载失败')}else{notify(d.msg||'已卸载')};loadPlugins()}catch(e){notify('卸载失败: '+e)}}
+async function delPlugin(id){if(!(await confirmDialog('确认卸载该插件？\n\n仅删除 custom_nodes 下的插件文件夹，不会删除插件库中的记录，之后仍可重新克隆。',{danger:true,title:'卸载插件'})))return;try{var r=await fetch('/api/plugins/'+id,{method:'DELETE'});var d=await r.json();if(!d.ok){notify(d.error||'卸载失败')}else{notify(d.msg||'已卸载')};loadPlugins()}catch(e){notify('卸载失败: '+e)}}
 
 // ---- 克隆控制 ----
 function clBadge(s){var m={cloning:'bg-cloning|克隆中',complete:'bg-done|已完成',error:'bg-err|错误',queue:'bg-q|排队中'},p=(m[s]||'bg-off|未开始').split('|');return'<span class="badge '+p[0]+'">'+p[1]+'</span>'}
-function clBtns(id,s,installed){var done=s==='complete'||installed;return'<button class="btn btn-teal btn-xs" id="cbclone-'+id+'" onclick="clStart('+id+',false)"'+(done?' disabled':'')+'>'+(installed?'<i class="bi bi-check-lg"></i> 已安装':s==='complete'?'<i class="bi bi-check-lg"></i> 已完成':'<i class="bi bi-download"></i> 克隆')+'</button><button class="btn btn5 btn-xs" id="cbmirr-'+id+'" onclick="clStart('+id+',true)"'+(done?' disabled':'')+'>'+'<i class="bi bi-globe2"></i> 国内</button><button class="btn btn3 btn-xs" id="cbcancel-'+id+'" onclick="clCancel('+id+')"'+(s==='cloning'||s==='queue'?'':' disabled')+'><i class="bi bi-x-lg"></i> 取消</button>'}
+function clBtns(id,s,installed){var done=s==='complete'||installed;return'<button class="btn btn-teal btn-xs" id="cbclone-'+id+'" onclick="clStart('+id+')"'+(done?' disabled':'')+'>'+(installed?'<i class="bi bi-check-lg"></i> 已安装':s==='complete'?'<i class="bi bi-check-lg"></i> 已完成':'<i class="bi bi-download"></i> 克隆')+'</button><button class="btn btn3 btn-xs" id="cbcancel-'+id+'" onclick="clCancel('+id+')"'+(s==='cloning'||s==='queue'?'':' disabled')+'><i class="bi bi-x-lg"></i> 取消</button>'}
 function plOnSel(id,c){if(c)plSelIds.add(id);else plSelIds.delete(id);plUpCnt()}
 function plSelAll(c){if(c){plData.forEach(function(p){plSelIds.add(p.id)})}else{plSelIds.clear()}renderPlugins()}
 function plUpCnt(){var e=document.getElementById('pbcnt');if(e)e.textContent='已选 '+plSelIds.size}
@@ -2208,28 +3225,141 @@ function plUpCnt(){var e=document.getElementById('pbcnt');if(e)e.textContent='�
 async function checkGit(){try{var r=await fetch('/api/git/detect');var d=await r.json();var dot=document.getElementById('gitdot'),t=document.getElementById('gittext');if(d.found){dot.className='a2dot on';t.textContent='Git '+esc(d.version||'')}else{dot.className='a2dot off';t.textContent='Git 未找到'}return d.found}catch(e){return false}}
 async function detectGit(){var d=document.getElementById('gtr');d.innerHTML='<span style="color:var(--text3);font-size:12px">检测中...</span>';try{var r=await fetch('/api/git/detect');var j=await r.json();if(j.found){document.getElementById('sgp').value=j.path;d.innerHTML='<span class="db db-ok">'+esc(j.version||j.path)+'</span>'}else{d.innerHTML='<span class="db db-fail">未找到 Git</span>'}}catch(e){d.innerHTML='<span class="db db-fail">检测失败</span>'}}
 async function detectPy(){var d=document.getElementById('pyr');d.innerHTML='<span style="color:var(--text3);font-size:12px">检测中...</span>';try{var r=await fetch('/api/python/detect');var j=await r.json();if(j.found){document.getElementById('spy').value=j.path;d.innerHTML='<span class="db db-ok">'+esc(j.version||j.path)+'</span>'}else{d.innerHTML='<span class="db db-fail">未找到 Python</span>'}}catch(e){d.innerHTML='<span class="db db-fail">检测失败</span>'}}
-async function batchClone(mir){if(plSelIds.size===0){notify('请先勾选插件');return}if(!await checkGit()){notify('Git 未找到，请在设置中配置');return}var ids=Array.from(plSelIds);try{var r=await fetch('/api/plugins/clone_batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids,mirror:!!mir})});var j=await r.json();if(!j.ok)return;var s=0,q=0;j.results.forEach(function(x){x.ok&&(x.msg.indexOf('队列')>=0?q++:s++)});notify('批量克隆: 开始 '+s+' 队列 '+q);plSelIds.clear();renderPlugins();plStartTimer();await restoreCloneState()}catch(e){notify('批量克隆失败: '+e.message)}}
-async function clStart(id,mir){if(!await checkGit()){notify('Git 未找到');return}try{var r=await fetch('/api/plugins/clone/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mirror:!!mir})});var j=await r.json();if(!j.ok){notify(j.msg);return}if(j.msg.indexOf('队列')>=0){plQueuedIds.add(id)}else{plActiveIds.add(id)}plLastStates[id]={status:j.msg.indexOf('队列')>=0?'queue':'cloning',progress:0,mirror:!!mir};renderPlugins();plStartTimer()}catch(e){notify('克隆失败')}}
-async function clCancel(id){if(!(await confirmDialog('确认取消？')))return;if(plQueuedIds.has(id)){try{await fetch('/api/plugins/clone_cancel_queue/'+id,{method:'POST'});plQueuedIds.delete(id);delete plLastStates[id];renderPlugins()}catch(e){}return}try{var r=await fetch('/api/plugins/clone_cancel/'+id,{method:'POST'});var j=await r.json();j.ok&&(plActiveIds.delete(id),delete plLastStates[id],renderPlugins())}catch(e){}}
+async function batchClone(){if(plSelIds.size===0){notify('请先勾选插件');return}if(!await checkGit()){notify('Git 未找到，请在设置中配置');return}var ids=Array.from(plSelIds);try{var r=await fetch('/api/plugins/clone_batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids})});var j=await r.json();if(!j.ok)return;var s=0,q=0,names={};plData.forEach(function(p){names[p.id]=p.name});j.results.forEach(function(x){x.ok&&(x.msg.indexOf('队列')>=0?q++:s++)});plLogBanner();plLogAppend('批量克隆：共 '+ids.length+' 个（直接开始 '+s+' / 排队 '+q+'）');j.results.forEach(function(x){if(!x.ok)plLogAppend('  x '+(names[x.id]||('#'+x.id))+'  '+x.msg)});notify('批量克隆: 开始 '+s+' 队列 '+q);plSelIds.clear();renderPlugins();plStartTimer();await restoreCloneState()}catch(e){notify('批量克隆失败: '+e.message)}}
+async function clStart(id){if(!await checkGit()){notify('Git 未找到');return}try{var r=await fetch('/api/plugins/clone/'+id,{method:'POST'});var j=await r.json();if(!j.ok){notify(j.msg);return}var q=j.msg.indexOf('队列')>=0;if(q){plQueuedIds.add(id)}else{plActiveIds.add(id)}plLastStates[id]={status:q?'queue':'cloning',progress:0};plLogStart(id,j.msg);renderPlugins();plStartTimer()}catch(e){notify('克隆失败')}}
+async function clCancel(id){if(!(await confirmDialog('确认取消？')))return;plCancelledIds.add(id);plLogOpen();if(plQueuedIds.has(id)){try{await fetch('/api/plugins/clone_cancel_queue/'+id,{method:'POST'});plQueuedIds.delete(id);delete plLastStates[id];renderPlugins();plLogAppend('… '+(plKnownNames[id]||('#'+id))+'  已从队列移除')}catch(e){}return}try{var r=await fetch('/api/plugins/clone_cancel/'+id,{method:'POST'});var j=await r.json();if(j.ok){plActiveIds.delete(id);delete plLastStates[id];renderPlugins();plLogAppend('x '+(plKnownNames[id]||('#'+id))+'  已取消克隆')}}catch(e){}}
 function plStartTimer(){if(!plProgTimer)plProgTimer=setInterval(fetchClAllStatus,2000)}
 async function fetchClAllStatus(){
   try{var r=await fetch('/api/plugins/clone_all_status');var d=await r.json(),any=false,nowActive=new Set();
-    d.active.forEach(function(x){nowActive.add(x.id);any=true;plLastStates[x.id]={status:x.status,progress:x.progress||0,phase:x.phase,msg:x.msg};clUpdateCell(x.id,x)});
-    plPrevActive.forEach(function(id){if(!nowActive.has(id)&&!plQueuedIds.has(id)){plActiveIds.delete(id);if(!plLastStates[id]||plLastStates[id].status!=='error'){plLastStates[id]={status:'complete',progress:100}}renderPlugins()}});
+    d.active.forEach(function(x){nowActive.add(x.id);any=true;plKnownNames[x.id]=x.name||plKnownNames[x.id];plLastStates[x.id]={status:x.status,progress:x.progress||0,phase:x.phase,msg:x.msg};clUpdateCell(x.id,x)});
+    plPrevActive.forEach(function(id){
+      if(!nowActive.has(id)&&!plQueuedIds.has(id)){
+        var nm=plKnownNames[id]||('#'+id);
+        plActiveIds.delete(id);
+        if(plCancelledIds.has(id)){plCancelledIds.delete(id)}
+        else if(!plLastStates[id]||plLastStates[id].status!=='error'){plLastStates[id]={status:'complete',progress:100};plLogAppend('v '+nm+'  克隆完成')}
+        else{plLogAppend('x '+nm+'  克隆失败：'+((plLastStates[id]||{}).msg||''))}
+        renderPlugins()
+      }
+    });
     plPrevActive=new Set(nowActive);
     d.queue&&d.queue.length>0&&(any=true);
-    clUpdateCards(d.active);clUpdateQueue(d.queue);
-    if(!any){clearInterval(plProgTimer);plProgTimer=null}
+    plLogSync(d.active,d.queue);
+    if(!any){clearInterval(plProgTimer);plProgTimer=null;plLogStatus('空闲')}
   }catch(e){}
 }
-function clUpdateCell(id,s){var sc=document.getElementById('plst-'+id);if(!sc)return;sc.innerHTML=clBadge(s.status)+(s.status==='cloning'?'<span style="font-size:10px;color:var(--text2);margin-left:4px">'+esc(s.phase)+' '+s.progress+'%</span>':'');var bc=document.getElementById('cbclone-'+id),bm=document.getElementById('cbmirr-'+id),bn=document.getElementById('cbcancel-'+id);if(!bc)return;if(s.status==='cloning'){bc.disabled=true;bc.textContent='克隆中';bm.disabled=true;bm.textContent='国内';bn.disabled=false}else if(s.status==='complete'){bc.disabled=true;bc.textContent='已完成';bm.disabled=true;bm.textContent='已完成';bn.disabled=true}else if(s.status==='error'){bc.disabled=false;bc.textContent='克隆';bm.disabled=false;bm.textContent='国内';bn.disabled=true}}
-function clUpdateCards(active){var con=document.getElementById('plplist'),cel=document.getElementById('plpcard');con.innerHTML='';if(!active||active.length===0){cel.style.display='none'}else{cel.style.display='block';active.forEach(function(s){var pct=s.progress||0,card=document.createElement('div');card.className='pitem';card.innerHTML='<div class="phd"><span class="pname">'+esc(s.name||'#'+s.id)+(s.mirror?' <span style="color:var(--purple);font-size:11px">[镜像]</span>':'')+'</span><span style="font-size:11px;color:var(--text2)">'+s.status+'</span></div><div class="pbar-bg"><div class="pbar-fill pbar-fill-clone" style="width:'+Math.max(pct,3)+'%">'+pct+'%</div></div><div class="pinfo"><span>'+esc(s.phase||'')+'</span><span>'+esc(s.msg||'')+'</span></div>';con.appendChild(card)})}}
-function clUpdateQueue(queue){var con=document.getElementById('plqlist'),cel=document.getElementById('plqcard');if(!queue||queue.length===0){cel.style.display='none';return}cel.style.display='block';con.innerHTML='';queue.forEach(function(q){var div=document.createElement('div');div.className='qitem';div.innerHTML='<div class="qpos">'+q.queue_position+'</div><span style="flex:1;font-size:12.5px">'+esc(q.name||'#'+q.id)+'</span><span style="font-size:11px;color:var(--text2)"><code>'+esc(q.repo_url.substring(0,40))+'</code></span><button class="btn btn3 btn-xs" onclick="clCancel('+q.id+')"><i class="bi bi-x-lg"></i> 取消</button>';con.appendChild(div)})}
+
+// ============================================================
+// 插件克隆日志弹窗（仅插件管理页使用）
+// ============================================================
+function plLogOpen(){var m=document.getElementById('plLogModal');if(m)m.style.display='flex';plRenderMirrorLine()}
+function plLogClose(){var m=document.getElementById('plLogModal');if(m)m.style.display='none'}
+function plLogClear(){var el=document.getElementById('plClog');if(el)el.textContent='等待克隆任务 ...';plProgSeen={};plQueuedSeen={}}
+function plLogStatus(t){var e=document.getElementById('plLogStatus');if(e)e.textContent=t}
+function plLogAppend(line){var el=document.getElementById('plClog');if(!el)return;if(el.textContent==='等待克隆任务 ...')el.textContent='';var t=new Date();var ts=('0'+t.getHours()).slice(-2)+':'+('0'+t.getMinutes()).slice(-2)+':'+('0'+t.getSeconds()).slice(-2);el.textContent+='['+ts+'] '+line+'\n';el.scrollTop=el.scrollHeight}
+async function plLoadMirror(){try{var r=await fetch('/api/repair/mirror_info');plMirrorInfo=await r.json()}catch(e){}plRenderMirrorLine()}
+function plRenderMirrorLine(){
+  var j=plMirrorInfo||{},lbl=j.github_label||'GitHub 官方';
+  var el=document.getElementById('plMirrorLine');
+  if(el)el.innerHTML='<i class="bi bi-globe2" style="color:var(--cyan)"></i> 克隆镜像源：<strong>'+esc(lbl)+'</strong>'+(j.github_prefix?('　<code style="font-size:11px">'+esc(j.github_prefix)+'</code>'):'　<span style="color:var(--text3)">（官方直连，国内可能较慢）</span>');
+  var tg=document.getElementById('plMirrorTag');if(tg)tg.textContent=lbl;
+}
+function plLogBanner(){plRenderMirrorLine();var j=plMirrorInfo||{};plLogAppend('克隆镜像源：'+(j.github_label||'GitHub 官方')+(j.github_prefix?('  ('+j.github_prefix+')'):'  (官方直连)'))}
+function plLogStart(id,msg){plLogOpen();plLogBanner();plLogAppend((plKnownNames[id]||('#'+id))+'  '+msg)}
+function plLogSync(active,queue){
+  (active||[]).forEach(function(s){
+    plKnownNames[s.id]=s.name||plKnownNames[s.id]||('#'+s.id);
+    var prev=plProgSeen[s.id]||{},pct=s.progress||0,ph=s.phase||'';
+    var isNew=prev.status!==s.status,big=pct-(prev.pct===undefined?-100:prev.pct)>=10,phaseChanged=prev.phase!==ph;
+    if(isNew||big||phaseChanged||pct>=100){
+      plProgSeen[s.id]={status:s.status,phase:ph,pct:pct};
+      var nm=plKnownNames[s.id];
+      if(s.status==='cloning'){
+        if(isNew)plLogAppend(nm+'  开始克隆'+(s.mirror?('（镜像：'+(s.mirror_label||'镜像')+'）'):'（官方直连）'));
+        plLogAppend('    '+nm+'  '+(ph||'cloning')+'  '+pct+'%'+(s.msg?('  '+s.msg):''));
+      }else if(s.status==='error'){plLogAppend('x '+nm+'  失败：'+(s.msg||''))}
+    }
+  });
+  (queue||[]).forEach(function(q){
+    plKnownNames[q.id]=q.name||plKnownNames[q.id]||('#'+q.id);
+    if(plQueuedSeen[q.id]!==q.queue_position){plQueuedSeen[q.id]=q.queue_position;plLogAppend('… '+plKnownNames[q.id]+'  排队中（位置 '+q.queue_position+'）')}
+  });
+  var a=(active||[]).length,qn=(queue||[]).length;
+  plLogStatus((a||qn)?((a?a+' 克隆中':'')+(a&&qn?' · ':'')+(qn?qn+' 排队中':'')):'空闲');
+}
+
+async function plStopAll(){
+  var cnt=(plActiveIds.size)+(plQueuedIds.size);
+  var ok=await confirmDialog('停止克隆将执行两步操作：\n\n1. 立即停止所有正在进行的克隆（含排队中的任务）\n2. 删除「克隆到一半」的插件文件夹\n   （已克隆完成的插件会保留，不会被删除）\n\n'+(cnt?('当前有 '+cnt+' 个任务在克隆/排队。'):'当前没有进行中的克隆任务。')+'\n是否继续？',{title:'停止克隆',okText:'停止并清理',danger:true,icon:'bi-stop-circle'});
+  if(!ok)return;
+  plLogOpen();
+  plLogAppend('=== 停止克隆并清理目录 ===');
+  try{
+    var r=await fetch('/api/plugins/clone_stop_all',{method:'POST'});
+    var j=await r.json();
+    if(!j.ok){notify(j.msg||'操作失败');return}
+    (j.stopped||[]).forEach(function(nm){plLogAppend('x 已停止克隆: '+nm)});
+    (j.removed||[]).forEach(function(nm){plLogAppend('  已删除目录（未克隆完成）: '+nm)});
+    (j.kept||[]).forEach(function(nm){plLogAppend('v 已保留（克隆完成）: '+nm)});
+    (j.skipped||[]).forEach(function(nm){plLogAppend('  - 无目录可删: '+nm)});
+    plLogStatus('空闲');
+    notify(j.msg);
+  }catch(e){notify('操作失败: '+e.message)}
+  plActiveIds.clear();plQueuedIds.clear();plLastStates={};plPrevActive=new Set();plCancelledIds.clear();
+  plProgSeen={};plQueuedSeen={};
+  if(plProgTimer){clearInterval(plProgTimer);plProgTimer=null}
+  renderPlugins();
+}
+
+// ---- 插件数据库修复：去重 + 序号整理为 1~n（操作前自动备份）----
+async function repairPluginDb(){
+  var ok=await confirmDialog('将对插件数据库执行以下操作：\n\n1. 备份数据库文件（可回滚）\n2. 去除重复插件（名称与仓库地址都相同的记录，保留最早一条）\n3. 把插件序号重新整理为连续的 1~n\n\n同名但不同仓库的插件属于不同插件，不会被合并。是否继续？',{title:'修复插件库',okText:'开始修复',icon:'bi-wrench-adjustable'});
+  if(!ok)return;
+  notify('正在修复插件库...');
+  try{
+    var r=await fetch('/api/plugins/repair_db',{method:'POST'});var j=await r.json();
+    if(!j.ok){notify(j.msg||'修复失败');return}
+    var d=j.result||{};
+    var names=(d.removed||[]).map(function(x){return (x.name||('#'+x.id))+' (#'+x.id+')'});
+    console.log('[插件库修复] 删除的重复项：',d.removed);
+    notify('修复完成：共 '+d.total_before+' → '+d.total_after+' 条，去除重复 '+(d.removed_count||0)+' 个，序号已整理为 1-'+d.total_after+' 连续序列。\n已备份：'+(d.backup||'').split(/[\\/]/).pop());
+    plLogBanner();plLogAppend('插件库修复：'+d.total_before+' → '+d.total_after+' 条，去除重复 '+(d.removed_count||0)+' 个，序号已整理为 1-'+d.total_after);
+    names.slice(0,20).forEach(function(n){plLogAppend('  已删除重复: '+n)});
+    plSelIds.clear();loadPlugins();
+  }catch(e){notify('修复失败: '+e.message)}
+}
+var _plLibBusy=false;
+async function updatePluginLibrary(){
+  if(_plLibBusy){notify('正在更新中，请稍候…');return}
+  var ok=await confirmDialog('将从 ComfyUI-Manager 的官方数据源下载最新插件库，合并写入本地数据库：\n\n• 仓库地址已存在的插件 → 覆盖名称与描述\n• 仓库地址没有的插件 → 新增\n• 不会产生重复记录，也不会删除你手动添加的条目\n• 同时刷新「节点 → 插件」映射表（工作流解析用）\n\n需要联网。是否继续？',{title:'更新插件库',okText:'开始更新',icon:'bi-cloud-arrow-down'});
+  if(!ok)return;
+_plLibBusy=true;
+  notify('正在下载插件库，请稍候…');
+  plLogBanner();plLogAppend('开始更新插件库（数据源：ComfyUI-Manager 官方）…');
+  try{
+    var r=await fetch('/api/plugins/update_library',{method:'POST'});
+    var j=await r.json();
+    if(!j.ok){
+      notify(j.msg||'更新失败');
+      (j.errors||[]).slice(0,6).forEach(function(e){plLogAppend('  x '+e)});
+      return;
+    }
+    var nm=j.node_map||{};
+    var line='插件库更新完成（'+(j.elapsed||0)+'s · 源：'+(j.source||'-')+'）：已有覆盖 '+(j.updated||0)+' · 新增 '+(j.added||0)+' · 未变 '+(j.unchanged||0)+' · 共 '+(j.total||0)+' 条';
+    var line2='节点映射表：'+(nm.pairs||0)+' 条关联 · '+(nm.nodes||0)+' 个节点 · '+(nm.urls||0)+' 个插件';
+    notify(line+'\n'+line2);
+    plLogAppend(line);plLogAppend(line2);
+    (j.errors||[]).slice(0,6).forEach(function(e){plLogAppend('  次要：'+e)});
+    plPage=1;loadPlugins();
+  }catch(e){notify('更新失败: '+e.message);plLogAppend('  更新失败: '+e.message)}
+  finally{_plLibBusy=false}
+}
+function clUpdateCell(id,s){var sc=document.getElementById('plst-'+id);if(!sc)return;sc.innerHTML=clBadge(s.status)+(s.status==='cloning'?'<span style="font-size:10px;color:var(--text2);margin-left:4px">'+esc(s.phase)+' '+s.progress+'%</span>':'');var bc=document.getElementById('cbclone-'+id),bn=document.getElementById('cbcancel-'+id);if(!bc)return;if(s.status==='cloning'){bc.disabled=true;bc.textContent='克隆中';bn.disabled=false}else if(s.status==='complete'){bc.disabled=true;bc.textContent='已完成';bn.disabled=true}else if(s.status==='error'){bc.disabled=false;bc.textContent='克隆';bn.disabled=true}}
 async function restoreCloneState(){
   try{var r=await fetch('/api/plugins/clone_all_status');var d=await r.json();plActiveIds.clear();plQueuedIds.clear();plLastStates={};plPrevActive=new Set();
-    d.active.forEach(function(x){plActiveIds.add(x.id);plPrevActive.add(x.id);plLastStates[x.id]={status:x.status,progress:x.progress||0,phase:x.phase,msg:x.msg,mirror:x.mirror}});
-    d.queue.forEach(function(x){plQueuedIds.add(x.id);plLastStates[x.id]={status:'queue',progress:0}});
-    renderPlugins();clUpdateCards(d.active);clUpdateQueue(d.queue);if(d.active.length>0||d.queue.length>0)plStartTimer()
+    d.active.forEach(function(x){plActiveIds.add(x.id);plPrevActive.add(x.id);plKnownNames[x.id]=x.name||plKnownNames[x.id];plLastStates[x.id]={status:x.status,progress:x.progress||0,phase:x.phase,msg:x.msg,mirror:x.mirror}});
+    d.queue.forEach(function(x){plQueuedIds.add(x.id);plKnownNames[x.id]=x.name||plKnownNames[x.id];plLastStates[x.id]={status:'queue',progress:0}});
+    renderPlugins();plLogSync(d.active,d.queue);if(d.active.length>0||d.queue.length>0){plStartTimer();plLogOpen()}
   }catch(e){}
 }
 
@@ -2242,7 +3372,7 @@ async function cuiCheckStatus(){
     var sb=document.getElementById('cuiStartBtn'),stb=document.getElementById('cuiStopBtn'),
         st=document.getElementById('cuiStatus');
     if(d.running){sb.disabled=true;stb.disabled=false;st.innerHTML='<span style="color:var(--green)">&#9673; 运行中</span> (PID '+d.pid+')';
-      if(!cuiPollTimer){cuiPollTimer=setInterval(cuiPollLogs,600);cuiPollLogs()}
+      if(!cuiPollTimer){cuiPollTimer=setInterval(cuiPollLogs,1200);cuiPollLogs()}
     }else{sb.disabled=false;stb.disabled=true;
       if(cuiLogIdx>0){st.textContent='已停止'}else{st.textContent='准备就绪'}
       if(cuiPollTimer){clearInterval(cuiPollTimer);cuiPollTimer=null}}
@@ -2280,9 +3410,11 @@ async function cuiStop(){
   try{await fetch('/api/comfyui/stop',{method:'POST'});cuiCheckStatus()}catch(e){notify('停止失败: '+e.message)}
 }
 async function cuiPollLogs(){
+  if(document.hidden)return;
   try{var r=await fetch('/api/comfyui/logs?since='+cuiLogIdx);var d=await r.json();
     if(d.lines&&d.lines.length>0){var log=document.getElementById('cuiLog');
-      d.lines.forEach(function(l){log.textContent+=l+'\n'});
+      log.appendChild(document.createTextNode(d.lines.join('\n')+'\n'));
+      if(log.textContent.length>500000){log.textContent=log.textContent.slice(-250000)}
       if(cuiAutoScroll)log.scrollTop=log.scrollHeight;cuiLogIdx=d.next_index}
   }catch(e){}
 }
@@ -2387,26 +3519,6 @@ function inClearSearch(){
 function inOpenFolder(){
   fetch('/api/input/open_dir').then(function(r){return r.json()}).then(function(d){if(!d.ok)notify(d.msg)});
 }
-async function inUploadFiles(files){
-  if(!files||!files.length)return;
-  var formData=new FormData();
-  for(var i=0;i<files.length;i++)formData.append('files',files[i]);
-  formData.append('dest',inPath);
-  var input=document.getElementById('inFileInput');
-  input.disabled=true;
-  fetch('/api/input/upload',{method:'POST',body:formData})
-    .then(function(r){return r.json()})
-    .then(function(d){
-      input.disabled=false; input.value='';
-      if(d.ok){ browseInput(inPath,1); }
-      else { notify(d.msg); }
-    })
-    .catch(function(e){
-      input.disabled=false; input.value='';
-      notify('上传失败: '+e.message);
-    });
-}
-
 var _inViewTimer=null;
 function inViewChange(){
   inView=document.getElementById('inViewSel').value||'grid';
@@ -2586,23 +3698,19 @@ function inOpenFile(path){
   },true);
 })();
 
-// Contextmenu for input grid - reuse shared ctx functions via curPage()
+// Contextmenu for input page - reuse shared ctx functions via curPage()
 (function(){
-  var grid=document.getElementById('inGrid');
-  if(grid)grid.addEventListener('contextmenu',function(e){
+  var box=document.getElementById('page-input');
+  if(!box)return;
+  box.addEventListener('contextmenu',function(e){
+    if(!e.target.closest)return;
+    if(e.target.closest('input, select, textarea, button, a, label'))return;
+    e.preventDefault();
+    window._curPage='input';
+    window._curPath=inPath; window._curData=inData; window._curBrowse=browseInput;
     var el=e.target.closest('[data-path]');
-    if(el){
-      e.preventDefault();
-      // Set current page context for shared ctx functions
-      window._curPage='input';
-      window._curPath=inPath; window._curData=inData; window._curBrowse=browseInput;
-      showCtxMenu(el,e.clientX,e.clientY,el.getAttribute('data-path'),el.getAttribute('data-is-dir'));
-    }else if(e.target.closest('#inGrid')||e.target.closest('#page-input')){
-      e.preventDefault();
-      window._curPage='input';
-      window._curPath=inPath; window._curData=inData; window._curBrowse=browseInput;
-      showCtxMenu(null,e.clientX,e.clientY,'',false);
-    }
+    if(el)showCtxMenu(el,e.clientX,e.clientY,el.getAttribute('data-path'),el.getAttribute('data-is-dir'));
+    else showCtxMenu(null,e.clientX,e.clientY,'',false);
   });
 })();
 
@@ -2855,7 +3963,7 @@ function dyOpenSaveDir(){
 async function loadSF(){
   try{var r=await fetch('/api/settings');var s=await r.json();
     setVal('sap',s.aria2c_path);setVal('scd',s.comfyui_dir);setVal('spy',s.python_path);setVal('sgp',s.git_path);
-    setVal('spm',s.pip_mirror||'default');
+    setVal('spm',s.pip_mirror||'default');setVal('sghm',s.github_mirror||'official');applyGithubMirrorLabels();
     setVal('smc',s.max_concurrent_downloads);setVal('scl',s.max_concurrent_clones);
     setVal('smcs',s.max_connection_per_server);setVal('sspl',s.split);setVal('smss',s.min_split_size);
     setVal('sct',s.connect_timeout);setVal('sto',s.timeout);setVal('sls',s.lowest_speed_limit);
@@ -2874,7 +3982,7 @@ async function loadSF(){
     setVal('swall',s.wallpaper_path);
     setVal('swallo',s.wallpaper_blur==null?0:s.wallpaper_blur);
     setVal('dyCookieFile',s.douyin_cookie_file);setVal('dySaveDirSet',s.douyin_save_dir);
-    setVal('sdly',s.shutdown_delay||60);
+    setVal('sdly',s.shutdown_delay==null?60:s.shutdown_delay);
     cuiCmdPreview();applyWallpaper()
   }catch(e){}
 }
@@ -2901,7 +4009,7 @@ function applyWallpaper(){
   el.style.opacity='1';
   document.body.appendChild(el);
 }
-function setVal(id,v){var e=document.getElementById(id);if(e)e.value=v||''}
+function setVal(id,v){var e=document.getElementById(id);if(e)e.value=(v===undefined||v===null)?'':v}
 async function saveS(){
   var d={aria2c_path:gv('sap'),comfyui_dir:gv('scd'),python_path:gv('spy'),git_path:gv('sgp'),
     max_concurrent_downloads:gvi('smc',3),max_concurrent_clones:gvi('scl',2),
@@ -2916,13 +4024,72 @@ async function saveS(){
     comfyui_presets:collectPresets(),
     input_dir:gv('sind'),output_dir:gv('soutd'),workflow_backup_dir:gv('swfbd'),
     wallpaper_path:gv('swall'),wallpaper_blur:gvi('swallo',0),
-    pip_mirror:gv('spm')||'default',douyin_cookie_file:gv('dyCookieFile'),douyin_save_dir:gv('dySaveDirSet'),shutdown_delay:gvi('sdly',60)};
+    pip_mirror:gv('spm')||'default',github_mirror:gv('sghm')||'official',douyin_cookie_file:gv('dyCookieFile'),douyin_save_dir:gv('dySaveDirSet'),shutdown_delay:gviClamp('sdly',60,0,3600)};
   try{var r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});var j=await r.json();
-    if(j.ok){document.getElementById('mcd').textContent=d.max_concurrent_downloads;document.getElementById('cld').textContent=d.max_concurrent_clones;cuiCmdPreview();applyWallpaper();notify(j.msg)}else{notify('保存失败: '+j.msg)}}catch(e){notify('保存失败: '+e.message)}
+    if(j.ok){document.getElementById('mcd').textContent=d.max_concurrent_downloads;document.getElementById('cld').textContent=d.max_concurrent_clones;cuiCmdPreview();applyWallpaper();repairLoadMirrorInfo();notify(j.msg)}else{notify('保存失败: '+j.msg)}}catch(e){notify('保存失败: '+e.message)}
 }
 function gv(id){return document.getElementById(id).value.trim()}
 function gvi(id,d){return parseInt(document.getElementById(id).value)||d}
+function gviClamp(id,d,lo,hi){var v=parseInt(document.getElementById(id).value,10);if(isNaN(v))return d;return Math.max(lo,Math.min(hi,v))}
 function gvf(id,d){var v=parseFloat(document.getElementById(id).value);return isNaN(v)?d:v}
+// ---- GitHub 镜像连通性测试 ----
+var _ghmResults=[];
+function ghMirrorPick(k){
+  document.getElementById('sghm').value=k;
+  var lb='';for(var i=0;i<_ghmResults.length;i++){if(_ghmResults[i].key===k)lb=_ghmResults[i].label}
+  applyGithubMirrorLabels();
+  notify('已选择：'+(lb||k)+'，点「保存设置」后生效');
+}
+function applyGithubMirrorLabels(){
+  var M=GH_MIRROR_LABELS;
+  var el0=document.getElementById('sghm');
+  var k=(el0&&el0.value)||'official';
+  if(typeof repairLoadMirrorInfo==='function')repairLoadMirrorInfo();
+}
+function renderGhMirrorResult(list,current){
+  var box=document.getElementById('ghmResult');
+  var best=null;list.forEach(function(x){if((x.status==='ok'||x.status==='slow')&&(!best||x.ms<best.ms))best=x});
+  var h='<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">';
+  h+='<div style="display:flex;gap:10px;padding:7px 12px;font-size:11px;color:var(--text3);background:rgba(74,111,165,0.04)"><span style="flex:0 0 140px">镜像</span><span style="flex:0 0 62px">类型</span><span style="flex:0 0 84px">状态</span><span style="flex:0 0 66px">延迟</span><span style="flex:1 1 auto">说明</span><span style="flex:0 0 50px;text-align:right">操作</span></div>';
+  list.forEach(function(x){
+    var col=x.status==='ok'?'var(--green)':(x.status==='slow'?'var(--amber)':'var(--red)');
+    var ico=x.status==='ok'?'bi-check-circle-fill':(x.status==='slow'?'bi-exclamation-triangle-fill':'bi-x-circle-fill');
+    var txt=x.status==='ok'?'可用':(x.status==='slow'?'较慢':'不可用');
+    var sel=x.key===current;
+    h+='<div style="display:flex;gap:10px;align-items:center;padding:8px 12px;font-size:12px;border-top:1px solid var(--border)'+(sel?';background:rgba(74,111,165,0.06)':'')+'">';
+    var rec=(best&&x.key===best.key&&list.length>1);
+    h+='<span style="flex:0 0 140px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(x.label)+(rec?' <span style="font-size:10px;color:var(--green)">推荐</span>':'')+(sel?' <span style="font-size:10px;color:var(--cyan)">当前</span>':'')+'</span>';
+    h+='<span style="flex:0 0 62px;color:var(--text3);font-size:11px">'+esc(x.group)+'</span>';
+    h+='<span style="flex:0 0 84px;color:'+col+';font-size:11px;white-space:nowrap"><i class="bi '+ico+'"></i> '+txt+'</span>';
+    h+='<span style="flex:0 0 66px;color:var(--text2);font-size:11px">'+(x.ms?x.ms+' ms':'-')+'</span>';
+    h+='<span style="flex:1 1 auto;color:var(--text3);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escAttr(x.msg||'')+'">'+esc(x.msg||'')+'</span>';
+    h+='<span style="flex:0 0 50px;text-align:right">'+(sel?'':'<button class="btn btn6 btn-xs" onclick="ghMirrorPick(&quot;'+x.key+'&quot;)">选用</button>')+'</span>';
+    h+='</div>';
+  });
+  h+='</div>';
+  h+='<div style="margin-top:8px;font-size:11px;color:var(--text3);line-height:1.8">'
+    +'探测目标：octocat/Hello-World 仓库的 git 端点（等价于 git clone 的第一步），延迟越低越好；结果仅代表当前网络环境。<br>'
+    +'若某个镜像始终不可用，说明它目前无法直接用于 git 克隆（例如 github.akams.cn 是节点门户，其加速节点为另外的域名），换其他镜像即可。'
+    +'</div>';
+  box.innerHTML=h;
+}
+async function ghMirrorTest(){
+  var btn=document.getElementById('ghmTestBtn'),box=document.getElementById('ghmResult');
+  if(!btn||btn.disabled)return;
+  btn.disabled=true;btn.innerHTML='<i class="bi bi-hourglass-split"></i> 测试中...';
+  box.style.display='block';
+  box.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px 2px"><i class="bi bi-arrow-repeat"></i> 正在并发测试各镜像的 git 连通性，请稍候…</div>';
+  try{
+    var r=await fetch('/api/github/mirror_test');var j=await r.json();
+    if(!j.ok){box.innerHTML='<div style="font-size:12px;color:var(--red);padding:8px 2px">'+esc(j.msg||'测试失败')+'</div>';return}
+    _ghmResults=j.results||[];
+    renderGhMirrorResult(_ghmResults,j.current||'official');
+  }catch(e){
+    box.innerHTML='<div style="font-size:12px;color:var(--red);padding:8px 2px">测试失败: '+esc(e.message)+'</div>';
+  }finally{
+    btn.disabled=false;btn.innerHTML='<i class="bi bi-activity"></i> 连通性测试';
+  }
+}
 // 环境变量预设
 function collectPresets(){var r=[];document.querySelectorAll('#presetList .pr-row').forEach(function(row){var k=row.querySelector('.pr-key'),v=row.querySelector('.pr-val');if(k&&v){var key=k.value.trim(),val=v.value.trim();if(key)r.push({key:key,value:val})}});return r}
 function addPreset(k,v){k=k||'';v=v||'';var d=document.createElement('div');d.className='pr-row';d.innerHTML='<input class="pr-key sinput" value="'+esc(k)+'" placeholder="变量名" style="width:200px;font-size:13px;padding:4px 8px;"><span style="margin:0 4px;color:#888;align-self:center;font-size:13px;">=</span><input class="pr-val sinput" value="'+esc(v)+'" placeholder="值" style="width:140px;font-size:13px;padding:4px 8px;"><button class="btn btn-xs btn-danger" onclick="this.closest(\'.pr-row\').remove();cuiCmdPreview()" style="margin-left:6px;"><i class="bi bi-x"></i> 删除</button>';d.querySelectorAll('input').forEach(function(e){e.addEventListener('input',cuiCmdPreview)});document.getElementById('presetList').appendChild(d);cuiCmdPreview()}
@@ -2964,7 +4131,7 @@ function repairLogPoll(){
     fetch('/api/repair/status').then(function(r){return r.json()}).then(function(s){
       if(!s.running){
         clearInterval(rlogTimer);rlogTimer=null;
-        document.getElementById('rlog_status').textContent=s.action?'完成: '+s.action:'空闲';
+        setRlogStatus(s.action?'完成: '+s.action:'空闲');
         document.getElementById('rstop_btn').disabled=true;
         repairEnableBtns(true)
       }
@@ -2973,8 +4140,41 @@ function repairLogPoll(){
 }
 
 function repairStartTimer(){
+  rlogOpen();
   if(!rlogTimer){rlogTimer=setInterval(repairLogPoll,800)}
 }
+
+// ---- 运行日志大弹窗（仅修复安装页使用）----
+function setRlogStatus(t){
+  var a=document.getElementById('rlog_status'),b=document.getElementById('rlog_status2');
+  if(a)a.textContent=t;
+  if(b)b.textContent=t;
+}
+function rlogOpen(){
+  var m=document.getElementById('rlogModal');
+  if(m)m.style.display='flex';
+}
+function rlogClose(){
+  var m=document.getElementById('rlogModal');
+  if(m)m.style.display='none';
+}
+function rlogCopy(){
+  var el=document.getElementById('rlog');
+  if(!el)return;
+  var text=el.textContent||'';
+  if(!text.trim()||text.trim()==='等待操作...'){notify('暂无日志可复制');return}
+  var done=function(){notify('\u2705 已复制完整日志到剪贴板')};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done,function(){fallbackCopy(text,done)});
+  }else{fallbackCopy(text,done)}
+}
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Escape')return;
+  var m=document.getElementById('rlogModal');
+  if(m&&m.style.display==='flex')rlogClose();
+  var m2=document.getElementById('plLogModal');
+  if(m2&&m2.style.display==='flex')plLogClose();
+});
 
 function repairEnableBtns(en){
   var ids=['rclone_btn','rreq_btn','rpt_btn','rpurge_btn','rcui_latest_btn','rcui_tag_btn','rpip_btn','rdl_btn','rplugin_btn','rall_btn','rkill_cui','rkill_a2'];
@@ -2984,12 +4184,11 @@ function repairEnableBtns(en){
 async function repairClone(){
   var dir=document.getElementById('rclone_dir').value.trim();
   if(!dir){notify('请填写安装目录');return}
-  var mir=document.getElementById('rclone_mirror').checked;
   var log=document.getElementById('rlog');log.textContent='正在克隆 ComfyUI ...\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
-  document.getElementById('rlog_status').textContent='运行中: 克隆';
+  setRlogStatus('运行中: 克隆');
   repairEnableBtns(false);
-  try{var r=await fetch('/api/repair/clone',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target_dir:dir,mirror:mir})});
+  try{var r=await fetch('/api/repair/clone',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target_dir:dir})});
     var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
   }catch(e){notify('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
@@ -2998,7 +4197,7 @@ async function repairClone(){
 async function repairRequirements(){
   var log=document.getElementById('rlog');log.textContent='正在安装 requirements.txt ...\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
-  document.getElementById('rlog_status').textContent='运行中: requirements';
+  setRlogStatus('运行中: requirements');
   repairEnableBtns(false);
   try{var r=await fetch('/api/repair/requirements',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
     var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
@@ -3012,7 +4211,7 @@ async function repairPytorch(){
   if(!cmd.startsWith('pip install')){notify('无效命令');return}
   var log=document.getElementById('rlog');log.textContent='正在安装 PyTorch ...\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
-  document.getElementById('rlog_status').textContent='运行中: PyTorch';
+  setRlogStatus('运行中: PyTorch');
   repairEnableBtns(false);
   try{var r=await fetch('/api/repair/pytorch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cmd:cmd})});
     var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
@@ -3023,7 +4222,7 @@ async function repairPytorch(){
 async function repairStop(){
   try{var r=await fetch('/api/repair/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
     var j=await r.json();if(rlogTimer){clearInterval(rlogTimer);rlogTimer=null}
-    document.getElementById('rlog_status').textContent=j.ok?'已停止':'空闲';
+    setRlogStatus(j.ok?'已停止':'空闲');
     document.getElementById('rstop_btn').disabled=true;repairEnableBtns(true);
   }catch(e){}
 }
@@ -3032,7 +4231,7 @@ async function repairPurgeCache(){
   if(!(await confirmDialog('确认清除 pip 缓存？这将删除所有已下载的 wheel 文件。',{danger:true})))return;
   var log=document.getElementById('rlog');log.textContent='正在清除 pip 缓存 ...\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
-  document.getElementById('rlog_status').textContent='运行中: 清除缓存';
+  setRlogStatus('运行中: 清除缓存');
   repairEnableBtns(false);
   try{var r=await fetch('/api/repair/purge_cache',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
     var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
@@ -3074,26 +4273,28 @@ function repairUpdateCmd(){
 async function repairPipInstall(){
   var pkgs=document.getElementById('rpip_pkgs').value.trim();
   if(!pkgs){notify('请填写要安装的包名');return}
-  var mir=document.getElementById('rpip_mirror').value;
-  var log=document.getElementById('rlog');log.textContent='正在安装: '+pkgs+' (镜像: '+mir+')...\n';
+  var log=document.getElementById('rlog');log.textContent='正在安装: '+pkgs+' ...\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
-  document.getElementById('rlog_status').textContent='运行中: pip install';
+  setRlogStatus('运行中: pip install');
   repairEnableBtns(false);
-  try{var r=await fetch('/api/repair/pip_install',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packages:pkgs,mirror:mir})});
+  try{var r=await fetch('/api/repair/pip_install',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packages:pkgs})});
     var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
   }catch(e){notify('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
 }
 
 async function repairDownload(){
+  var nm=document.getElementById('rdl_name').value.trim();
   var url=document.getElementById('rdl_url').value.trim();
-  if(!url){notify('请填写下载链接');return}
   var sp=document.getElementById('rdl_path').value.trim();
-  var log=document.getElementById('rlog');log.textContent='正在下载: '+url+'\n';
+  if(!nm){notify('请填写文件名称');return}
+  if(!url){notify('请填写下载链接');return}
+  if(!sp){notify('请填写保存路径');return}
+  var log=document.getElementById('rlog');log.textContent='正在下载: '+nm+'\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
-  document.getElementById('rlog_status').textContent='运行中: 下载文件';
+  setRlogStatus('运行中: 下载文件');
   repairEnableBtns(false);
-  try{var r=await fetch('/api/repair/download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url,save_path:sp})});
+  try{var r=await fetch('/api/repair/download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:nm,url:url,save_path:sp})});
     var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
   }catch(e){notify('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
@@ -3102,33 +4303,27 @@ async function repairDownload(){
 async function repairPlugin(){
   var nm=document.getElementById('rplugin_name').value.trim();
   if(!nm){notify('请填写插件名称');return}
-  var mir=document.getElementById('rplugin_mirror').value;
-  var lab=mir?'[镜像] ':'';
-  var log=document.getElementById('rlog');log.textContent='正在修复插件'+lab+': '+nm+'\n';
+  var log=document.getElementById('rlog');log.textContent='正在修复插件: '+nm+'\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
-  document.getElementById('rlog_status').textContent='运行中: 修复插件 '+nm+lab;
+  setRlogStatus('运行中: 修复插件 '+nm);
   repairEnableBtns(false);
-  try{var r=await fetch('/api/repair/plugin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plugin_name:nm,mirror:mir||null})});
+  try{var r=await fetch('/api/repair/plugin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plugin_name:nm})});
     var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
   }catch(e){notify('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
 }
 
 async function repairAllPlugins(){
-  var mir=document.getElementById('rall_mirror').value;
-  var lab=mir?'[镜像] ':'';
-  if(!(await confirmDialog('确认'+(mir?'[镜像] ':'')+'批量修复所有插件？这将依次 git pull 并安装依赖，可能耗时较长。')))return;
-  var log=document.getElementById('rlog');log.textContent='正在扫描 custom_nodes 并批量修复所有插件...'+(mir?' (镜像加速)':'')+'\n';
+  if(!(await confirmDialog('确认批量修复所有插件？这将依次 git pull 并安装依赖，可能耗时较长。')))return;
+  var log=document.getElementById('rlog');log.textContent='正在扫描 custom_nodes 并批量修复所有插件...\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
-  document.getElementById('rlog_status').textContent='运行中: 批量修复插件'+lab;
+  setRlogStatus('运行中: 批量修复插件');
   repairEnableBtns(false);
-  try{var r=await fetch('/api/repair/all_plugins',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mirror:mir||null})});
+  try{var r=await fetch('/api/repair/all_plugins',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
     var j=await r.json();if(!j.ok){notify(j.msg);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true;return}
     repairStartTimer()
   }catch(e){notify('失败: '+e.message);repairEnableBtns(true);document.getElementById('rstop_btn').disabled=true}
 }
-
-async function repairAllMirrorChanged(){}
 
 async function repairKillComfyUI(){
   if(!(await confirmDialog('确认强制结束所有 ComfyUI Python 进程？\n\n这将关闭所有正在运行的 ComfyUI 实例，可能导致未保存的工作丢失。',{danger:true,title:'强制结束'})))return;
@@ -3147,6 +4342,63 @@ async function repairKillAria2(){
 
 
 // ---- 更新 ComfyUI ----
+var GH_MIRROR_LABELS={official:'GitHub 官方直连',gitclone:'gitclone.com 镜像',ur1:'github.ur1.fun 镜像',ghproxy:'gh-proxy.com 加速',ghproxynet:'ghproxy.net 加速',homeboyc:'ghproxy.homeboyc.cn 加速',akams:'github.akams.cn 加速'};
+var PIP_MIRROR_LABELS={default:'国外官方 (pypi.org)',tsinghua:'清华大学 (tuna.tsinghua.edu.cn)',aliyun:'阿里云 (mirrors.aliyun.com)',tencent:'腾讯云 (mirrors.cloud.tencent.com)',douban:'豆瓣 (pypi.douban.com)',ustc:'中科大 (pypi.mirrors.ustc.edu.cn)'};
+// URL 表以后端 /api/repair/mirror_info 的 pip_mirrors 为准，这里只作兜底
+var PIP_MIRROR_URLS={default:'https://pypi.org/simple',tsinghua:'https://pypi.tuna.tsinghua.edu.cn/simple',aliyun:'https://mirrors.aliyun.com/pypi/simple/',tencent:'https://mirrors.cloud.tencent.com/pypi/simple',douban:'http://pypi.douban.com/simple/',ustc:'https://pypi.mirrors.ustc.edu.cn/simple'};
+function _normMirrorUrl(u){return String(u==null?'':u).trim().toLowerCase().replace(/\/+$/,'')}
+
+async function repairLoadMirrorInfo(){
+  var elG=document.getElementById('rCuiGhMirror'),elP=document.getElementById('rCuiPipMirror'),elH=document.getElementById('rCuiUpdateHint');
+  try{
+    var r=await fetch('/api/repair/mirror_info');var j=await r.json();
+    if(!j.ok)throw new Error(j.msg||'读取失败');
+    var gl=GH_MIRROR_LABELS[j.github_mirror]||j.github_label||'GitHub 官方直连';
+    var pl=j.pip_label||PIP_MIRROR_LABELS[j.pip_mirror]||j.pip_mirror||'官方源';
+    var ambWarn='';
+    if(j.pip_env_conflict){
+      ambWarn=' <span style="color:var(--amber)">本机已有的 pip 配置指向 '+esc(j.pip_ambient_url||'')+'，实际执行时已被上面的设置覆盖</span>';
+    }
+    if(elG)elG.textContent=gl+(j.github_prefix?'':'（直连）');
+    if(elP)elP.textContent=pl;
+    if(elH){
+      elH.innerHTML='本次更新将使用 — GitHub 镜像：<strong>'+esc(gl)+'</strong> ｜ pip 镜像源：<strong>'+esc(pl)+'</strong>（<code style="font-size:11px">'+esc(j.pip_url||'')+'</code>）；更新完会自动安装 requirements.txt 依赖。'
+        +(j.github_prefix?'':' <span style="color:var(--amber)">当前为官方直连，国内可能较慢</span>')+ambWarn;
+    }
+    var spmN=document.getElementById('spmNote');
+    if(spmN){
+      if(!j.pip_ambient_url){
+        spmN.textContent='未检测到系统 pip 镜像配置，pip 将直接访问所选镜像。';
+      }else{
+        // 与「下拉框当前选择」对比（可能是尚未保存的选择），而不是与已保存值对比
+        var URLS=(j.pip_mirrors&&Object.keys(j.pip_mirrors).length)?j.pip_mirrors:PIP_MIRROR_URLS;
+        var sel=(document.getElementById('spm')||{}).value||j.pip_mirror;
+        var selUrl=URLS[sel]||j.pip_url||'';
+        var same=_normMirrorUrl(selUrl)===_normMirrorUrl(j.pip_ambient_url);
+        spmN.innerHTML='检测到系统 pip 配置：<code style="font-size:11px">'+esc(j.pip_ambient_url)+'</code>'
+          +(same?' <span style="color:var(--green)">与当前选择一致</span>'
+                :' <span style="color:var(--amber)">与当前选择不同 —— 实际执行时以本选择为准</span>');
+      }
+    }
+    var gp=j.git_path||'git',pp=j.python_path||'python',ap=j.aria2c_path||'aria2c';
+    var pu=(j.pip_url||''),puHtml=pu?('（<code style="font-size:11px">'+esc(pu)+'</code>）'):'';
+    var notes=document.querySelectorAll('[data-mirror-note]');
+    for(var ni=0;ni<notes.length;ni++){
+      var nk=notes[ni].getAttribute('data-mirror-note'),nt='';
+      if(nk==='git'){nt='git 路径：<strong>'+esc(gp)+'</strong> ｜ GitHub 镜像：<strong>'+esc(gl)+'</strong>';}
+      else if(nk==='pip'){nt='pip 路径：<strong>'+esc(pp)+'</strong> ｜ pip 镜像源：<strong>'+esc(pl)+'</strong>'+puHtml+ambWarn;}
+      else if(nk==='pytorch'){nt='pip 路径：<strong>'+esc(pp)+'</strong>（PyTorch 安装源由命令自带的 --index-url 决定）';}
+      else if(nk==='aria2c'){nt='aria2c 路径：<strong>'+esc(ap)+'</strong>';}
+      else if(nk==='both'){nt='git：<strong>'+esc(gp)+'</strong> ｜ GitHub 镜像：<strong>'+esc(gl)+'</strong> ｜ pip：<strong>'+esc(pp)+'</strong> ｜ pip 镜像源：<strong>'+esc(pl)+'</strong>'+puHtml+ambWarn;}
+      notes[ni].innerHTML=nt;
+    }
+  }catch(e){
+    if(elG)elG.textContent='读取失败';
+    if(elP)elP.textContent='读取失败';
+    if(elH)elH.textContent='镜像信息读取失败：'+e.message;
+  }
+}
+
 var rCuiBranches=[];
 
 async function repairLoadComfyUIBranches(){
@@ -3182,7 +4434,7 @@ async function repairComfyUIUpdate(target){
   var label = target ? '切换到 '+target : '更新到最新版 (git pull)';
   log.textContent='正在 '+label+' ...\n';
   rlogIdx=0;document.getElementById('rstop_btn').disabled=false;
-  document.getElementById('rlog_status').textContent='运行中: '+label;
+  setRlogStatus('运行中: '+label);
   repairEnableBtns(false);
   try{
     var r=await fetch('/api/repair/comfyui_update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:target})});
@@ -3196,7 +4448,7 @@ async function repairComfyUIUpdate(target){
 async function repairCheckStatus(){
   try{var r=await fetch('/api/repair/status');var s=await r.json();
     if(!s.running)return;
-    document.getElementById('rlog_status').textContent='运行中: '+s.action;
+    setRlogStatus('运行中: '+s.action);
     document.getElementById('rstop_btn').disabled=false;
     repairEnableBtns(false);
     // reload logs
@@ -3211,6 +4463,11 @@ async function repairCheckStatus(){
 // ============================================================
 var wfState = { page: 1, pageSize: 20, totalPages: 1, curPath: '', sort: 'date_desc', search: '', editing: null };
 var wfAnaModels = [];
+var wfAnaPlugins = [];
+var wfAnaPluginsAll = [];   // 解析结果的完整插件表（含已装），下载按钮按它取数
+var _wfAnaPollTimer = null; // 下载进度轮询（保留：外部/测试会读）
+var _wfAnaPolling = false;  // 是否已有一次轮询在途（防止链条重复叠加）
+var _wfAnaPollGen = 0;      // 代际号：关窗 / 重新解析都 +1，作废所有在途结果
 
 // ============================================================
 // INIT
@@ -3351,7 +4608,33 @@ else{cuiCheckStatus()}
   });
   applyTheme(currentTheme());
 
-  // 3. 定时关机（读取全局设置 sdly）
+  // 3. 定时关机（延迟取自全局设置 sdly；0 = 立即关机）
+  function fabDelay(){
+    var el=document.getElementById('sdly');
+    var raw=(el&&el.value!=null)?String(el.value).trim():'';
+    if(raw==='')return 60;                 // 设置页没读到 → 用默认 60 秒
+    var n=Number(raw);
+    // 必须严格整数：parseInt('0.5') 会得到 0，被当成"立即关机"就危险了
+    if(!isFinite(n)||Math.round(n)!==n)return null;
+    return n;                              // 0 与负数原样返回，交给下面校验
+  }
+  function fabPlan(){
+    var delay=fabDelay();
+    if(delay===null){notify('关机延迟请填 0-3600 的整数秒（0 = 立即关机）');return}
+    if(delay<0){notify('关机延迟不能为负数，请到「全局设置」修改');return}
+    if(delay>3600){notify('关机延迟最多 3600 秒，请到「全局设置」修改');return}
+    var body=delay<=0
+      ? '确定立即关机吗？\n将立刻执行关机，没有取消窗口，请先保存好所有工作！'
+      : '确定 '+delay+' 秒后关机吗？\n倒计时期间可再次点击关机按钮取消。';
+    confirmDialog(body,{danger:true,title:delay<=0?'立即关机':'定时关机',okText:delay<=0?'立即关机':'确定'}).then(function(ok){
+      if(!ok)return;
+      fetch('/api/shutdown',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({delay:delay})})
+      .then(function(r){return r.json()}).then(function(j){
+        if(!j.ok){notify('关机指令失败: '+(j.msg||'未知原因'));return}
+        notify(delay<=0?'已发出立即关机指令，无法取消。':('已计划 '+delay+' 秒后关机，再次点击关机按钮可取消。'))
+      }).catch(function(err){notify('关机指令失败: '+err.message)});
+    });
+  }
   document.getElementById('fabBtnPower').addEventListener('click',function(){
     toggleFab(false);
     // 先查询是否已有计划中的关机任务，有则提示取消
@@ -3365,26 +4648,8 @@ else{cuiCheckStatus()}
         });
         return;
       }
-      var delay=60;
-      try{delay=parseInt(document.getElementById('sdly')?document.getElementById('sdly').value:'60',10)||60}catch(err){}
-      confirmDialog('确定 '+delay+' 秒后关机吗？\n点击“确定”后将无法撤销，请保存好所有工作！',{danger:true,title:'定时关机'}).then(function(ok){
-        if(!ok)return;
-        fetch('/api/shutdown',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({delay:delay})})
-        .then(function(r){return r.json()}).then(function(j){
-          if(j.ok){notify('已计划 '+delay+' 秒后关机。如需取消请再次点击关机按钮选择“取消关机”。')}
-          else{notify('关机指令失败: '+j.msg)}
-        }).catch(function(err){notify('关机指令失败: '+err.message)});
-      });
-    }).catch(function(){
-      // 状态查询失败时降级为直接计划关机
-      var delay=60;
-      try{delay=parseInt(document.getElementById('sdly')?document.getElementById('sdly').value:'60',10)||60}catch(err){}
-      confirmDialog('确定 '+delay+' 秒后关机吗？',{danger:true,title:'定时关机'}).then(function(ok){
-        if(!ok)return;
-        fetch('/api/shutdown',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({delay:delay})})
-        .then(function(r){return r.json()}).then(function(j){notify(j.ok?('已计划 '+delay+' 秒后关机'):('关机指令失败: '+j.msg))}).catch(function(err){notify('关机指令失败: '+err.message)});
-      });
-    });
+      fabPlan();
+    }).catch(fabPlan);   // 状态查询失败时降级为直接计划关机
   });
 })();
 
@@ -3720,7 +4985,7 @@ function wfRender(d, msg) {
     } else {
       opBtns += '<button class="btn btn6" onclick="wfDownload(\'' + escAttr(it.path) + '\')" title="下载" style="font-size:12px;padding:2px 8px"><i class="bi bi-download"></i></button>'
         + ' <button class="btn btn7" onclick="wfDelete(\'' + escAttr(it.path) + '\')" title="删除" style="font-size:12px;padding:2px 8px"><i class="bi bi-trash"></i></button>'
-        + (it.type === 'json' ? ' <button class="btn btn6" onclick="wfAnalyze(\'' + escAttr(it.path) + '\')" title="解析模型名" style="font-size:12px;padding:2px 8px"><i class="bi bi-search"></i></button>' : '');
+        + (it.type === 'json' ? ' <button class="btn btn6" onclick="wfAnalyze(\'' + escAttr(it.path) + '\')" title="解析所需模型与插件" style="font-size:12px;padding:2px 8px"><i class="bi bi-search"></i></button>' : '');
     }
     html += '<div class="wf-row" data-path="' + dpA + '" data-is-dir="' + isd + '">'
       + '<span class="wf-col-name" style="cursor:pointer" onclick="' + (it.is_dir ? 'wfGoto(\'' + escAttr(it.path) + '\')' : 'wfOpen(\'' + escAttr(it.path) + '\')') + '" title="' + escAttr(it.name) + '">' + icon + ' ' + escHtml(it.name) + '</span>'
@@ -3885,21 +5150,18 @@ function wfBackup() {
   }, true);
 })();
 
-// ---- 工作流右键菜单（复用全局 ctxMenu 与共享 ctx 函数）----
+// ---- 工作流右键菜单（复用全局 ctxMenu 与共享 ctx 函数，整页生效）----
 (function(){
-  var list = document.getElementById('wfList');
-  if(!list)return;
-  list.addEventListener('contextmenu', function(e){
+  var box = document.getElementById('page-workflows');
+  if(!box)return;
+  box.addEventListener('contextmenu', function(e){
+    if(!e.target.closest)return;
+    if(e.target.closest('input, select, textarea, button, a, label'))return;
+    e.preventDefault();
+    window._curPage = 'workflows';
     var el = e.target.closest('[data-path]');
-    if(el){
-      e.preventDefault();
-      window._curPage = 'workflows';
-      showCtxMenu(el, e.clientX, e.clientY, el.getAttribute('data-path'), el.getAttribute('data-is-dir'));
-    }else if(e.target.closest('#wfList') || e.target.closest('#page-workflows')){
-      e.preventDefault();
-      window._curPage = 'workflows';
-      showCtxMenu(null, e.clientX, e.clientY, '', false);
-    }
+    if(el)showCtxMenu(el, e.clientX, e.clientY, el.getAttribute('data-path'), el.getAttribute('data-is-dir'));
+    else showCtxMenu(null, e.clientX, e.clientY, '', false);
     var sendEl = document.getElementById('ctxSendToInput');
     if(sendEl) sendEl.style.display = 'none';
   });
@@ -3918,56 +5180,499 @@ async function wfDeleteSelected(){
 }
 
 
-function wfAnalyze(path) {
-  fetch('/api/workflows/analyze?path=' + encodeURIComponent(path))
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-      if (!d.ok) { notify(d.msg || '解析失败'); return; }
-      var nameEl = document.getElementById('wfAnaName');
-      var bodyEl = document.getElementById('wfAnaBody');
-      var cntEl = document.getElementById('wfAnaCount');
-      if (nameEl) nameEl.textContent = d.name || '';
-      if (cntEl) cntEl.textContent = '共提取 ' + (d.count || 0) + ' 个模型';
-      var models = d.models || [];
-      wfAnaModels = models;
-      var html;
-      if (!models.length) {
-        html = '<div style="text-align:center;color:var(--text3);padding:40px 0">未找到模型文件（safetensors/pth/ckpt 等）</div>';
-      } else {
-        html = '<table style="width:100%;border-collapse:collapse;font-size:13px">'
-          + '<thead><tr style="color:var(--text3);text-align:left">'
-          + '<th style="padding:8px 10px;border-bottom:1px solid var(--border)">#</th>'
-          + '<th style="padding:8px 10px;border-bottom:1px solid var(--border)">模型文件</th>'
-          + '<th style="padding:8px 10px;border-bottom:1px solid var(--border)">类型</th>'
-          + '<th style="padding:8px 10px;border-bottom:1px solid var(--border)">来源节点</th>'
-          + '</tr></thead><tbody>';
-        models.forEach(function (m, idx) {
-          html += '<tr>'
-            + '<td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text3)">' + (idx + 1) + '</td>'
-            + '<td style="padding:8px 10px;border-bottom:1px solid var(--border);word-break:break-all;font-family:JetBrains Mono,Consolas,monospace">' + escHtml(m.file) + '</td>'
-            + '<td style="padding:8px 10px;border-bottom:1px solid var(--border)">' + escHtml(m.ext || '') + '</td>'
-            + '<td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text3)">' + escHtml(m.node_type || '') + (m.node ? ' · ' + escHtml(m.node) : '') + '</td>'
-            + '</tr>';
-        });
-        html += '</tbody></table>';
-      }
-      if (bodyEl) bodyEl.innerHTML = html;
-      var m = document.getElementById('wfAnaModal');
-      if (m) m.style.display = 'flex';
-    })
-    .catch(function (e) { notify('请求失败: ' + e); });
+// ---- 工作流解析弹窗：模型 + 插件 ----
+// 插件缺失检测为项目内置实现：数据来自 models.db 的 node_map 表（node_map 表由「插件管理 → 更新插件库」维护），不依赖是否安装 ComfyUI-Manager。
+function _wfAnaChip(text, tone) {
+  var c = tone === 'warn' ? 'var(--amber)' : (tone === 'ok' ? 'var(--green)' : 'var(--text2)');
+  return '<span style="font-size:12px;padding:3px 10px;border-radius:20px;background:var(--card2);border:1px solid var(--border);color:' + c + '">' + text + '</span>';
 }
 
-function wfAnaCopy() {
-  var names = (wfAnaModels || []).map(function (m) { return m.file; });
-  if (!names.length) { notify('没有可复制的模型名称'); return; }
-  var text = names.join('\n');
-  function done() { notify('已复制 ' + names.length + ' 个模型名称到剪贴板'); }
+function _wfAnaSec(text, n, miss, extra) {
+  var h = '<div style="display:flex;align-items:center;gap:10px;margin:16px 2px 8px">'
+    + '<span style="font-size:13px;font-weight:600;color:var(--text)">' + text + '</span>'
+    + '<span style="font-size:11.5px;color:var(--text3)">共 ' + n + '</span>';
+  if (miss > 0) h += '<span style="font-size:11.5px;color:var(--amber)">缺失 ' + miss + '</span>';
+  else if (n > 0) h += '<span style="font-size:11.5px;color:var(--green)">已齐全</span>';
+  if (extra) h += '<span style="font-size:11.5px;color:var(--text3)">' + extra + '</span>';
+  h += '</div>';
+  return h;
+}
+
+function _wfAnaTh(t) {
+  return '<th style="padding:7px 10px;border-bottom:1px solid var(--border);font-weight:500;text-align:left;white-space:nowrap;color:var(--text3)">' + t + '</th>';
+}
+
+function _wfAnaTd(v, color) {
+  return '<td style="padding:7px 10px;border-bottom:1px solid var(--border);word-break:break-all;'
+    + (color ? 'color:' + color + ';' : '') + '">' + v + '</td>';
+}
+
+function _wfAnaCopyText(text, msg) {
+  function done() { notify(msg); }
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text, done); });
   } else {
     fallbackCopy(text, done);
   }
+}
+
+function wfAnalyze(path) {
+  var mt = document.getElementById('wfAnaModal');
+  var bodyEl = document.getElementById('wfAnaBody');
+  var nameEl = document.getElementById('wfAnaName');
+  var cntEl = document.getElementById('wfAnaCount');
+  if (nameEl) nameEl.textContent = '解析中…';
+  if (cntEl) cntEl.textContent = '';
+  if (bodyEl) bodyEl.innerHTML = '<div style="text-align:center;color:var(--text3);padding:44px 0">正在解析工作流…</div>';
+  if (mt) mt.style.display = 'flex';
+
+  fetch('/api/workflows/analyze?path=' + encodeURIComponent(path))
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d.ok) { wfAnaClose(); notify(d.msg || '解析失败'); return; }
+      if (nameEl) nameEl.textContent = d.name || '';
+      var online = !!d.comfyui_online;
+      var models = d.models || [];
+      var plugins = d.plugins || [];
+      wfAnaModels = models;
+      wfAnaPlugins = plugins.filter(function (p) { return p && !p.installed; });
+      // 每次解析都重置下载状态（上一次的进度不该带到这一次）
+      // _idx 必须与渲染时的 plugins 下标一致 —— 轮询靠它找 wfAnaSt{i}/wfAnaDl{i}
+      plugins.forEach(function (p, i) { p._dl = ''; p._idx = i; p._none = 0; p._partial = false; });
+      wfAnaPluginsAll = plugins;
+      // 上一轮的在途轮询必须作废，否则它的响应会往这张新表里写旧状态
+      _wfAnaPollGen++;
+      _wfAnaPolling = false;
+      if (_wfAnaPollTimer) { clearTimeout(_wfAnaPollTimer); _wfAnaPollTimer = null; }
+
+      var mm = d.missing_model_count || 0;
+      var mp = d.missing_plugin_count || 0;
+      if (cntEl) cntEl.textContent = '模型 ' + models.length + '（缺 ' + mm + '） · 插件 '
+        + plugins.length + '（缺 ' + mp + '）';
+
+      var html = '<div style="display:flex;gap:8px;flex-wrap:wrap;padding:2px 2px 6px">'
+        + _wfAnaChip('需要模型 <b style="color:var(--cyan)">' + models.length + '</b> 个', '')
+        + _wfAnaChip(mm > 0 ? '缺失模型 <b>' + mm + '</b> 个' : '模型已齐全', mm > 0 ? 'warn' : 'ok')
+        + _wfAnaChip('需要插件 <b style="color:var(--cyan)">' + plugins.length + '</b> 个', '')
+        + _wfAnaChip(mp > 0 ? '缺失插件 <b>' + mp + '</b> 个' : '插件已齐全', mp > 0 ? 'warn' : 'ok')
+        + (d.builtin_node_count ? _wfAnaChip('内置节点 ' + d.builtin_node_count + ' 个', '') : '')
+        + (online ? '' : _wfAnaChip('ComfyUI 未运行，无法判定插件是否已安装', 'warn'))
+        + (d.lib_nodes ? '' : _wfAnaChip('本地插件库为空，请到「插件管理」点「更新插件库」', 'warn'))
+        + '</div>';
+
+      // ---------- 需要的模型 ----------
+      html += _wfAnaSec('需要的模型', models.length, mm, '');
+      if (!models.length) {
+        html += '<div style="color:var(--text3);padding:14px 2px">未找到模型文件引用</div>';
+      } else {
+        html += '<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr>'
+          + _wfAnaTh('#') + _wfAnaTh('模型文件') + _wfAnaTh('类型') + _wfAnaTh('来源节点') + _wfAnaTh('状态')
+          + '</tr></thead><tbody>';
+        models.forEach(function (m, i) {
+          html += '<tr>'
+            + _wfAnaTd(i + 1, 'var(--text3)')
+            + _wfAnaTd('<span style="font-family:JetBrains Mono,Consolas,monospace">' + escHtml(m.file) + '</span>', '')
+            + _wfAnaTd(escHtml(m.ext || ''), 'var(--text2)')
+            + _wfAnaTd(escHtml(m.node_type || '') + (m.node ? ' · ' + escHtml(m.node) : ''), 'var(--text3)')
+            + _wfAnaTd(m.exists
+                ? '<span style="color:var(--green)">已安装</span>'
+                : '<span style="color:var(--amber)">未找到</span>', '')
+            + '</tr>';
+        });
+        html += '</tbody></table>';
+      }
+
+      // ---------- 需要的插件 ----------
+      html += _wfAnaSec('需要的插件', plugins.length, mp,
+        d.unknown_nodes && d.unknown_nodes.length ? '无法判定 ' + d.unknown_nodes.length + ' 个节点' : '');
+      if (!plugins.length) {
+        html += '<div style="color:var(--text3);padding:14px 2px">'
+          + (online ? '该工作流只用到 ComfyUI 内置节点，无需额外插件' : '未取到节点注册表，无法判定插件')
+          + '</div>';
+      } else {
+        html += '<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr>'
+          + _wfAnaTh('#') + _wfAnaTh('插件包') + _wfAnaTh('提供节点') + _wfAnaTh('仓库') + _wfAnaTh('状态') + _wfAnaTh('操作')
+          + '</tr></thead><tbody>';
+        plugins.forEach(function (p, i) {
+          var nodes = (p.nodes || []).join('、');
+          if ((p.nodes || []).length > 6) {
+            nodes = (p.nodes || []).slice(0, 6).join('、') + ' 等 ' + p.nodes.length + ' 个';
+          }
+          html += '<tr>'
+            + _wfAnaTd(i + 1, 'var(--text3)')
+            + _wfAnaTd('<span style="font-weight:600">' + escHtml(p.pack || '') + '</span>'
+                + (p.title && p.title !== p.pack ? '<div style="font-size:11.5px;color:var(--text3)">' + escHtml(p.title) + '</div>' : ''), '')
+            + _wfAnaTd(escHtml(nodes), 'var(--text2)')
+            + _wfAnaTd(p.repo
+                ? '<a href="' + escAttr(p.repo) + '" target="_blank" style="color:var(--cyan);word-break:break-all">' + escHtml(p.repo.replace(/^https?:\/\//, '')) + '</a>'
+                : '<span style="color:var(--text3)">—</span>', '')
+            + _wfAnaTd(p.installed
+                ? '<span style="color:var(--green)">已安装</span>'
+                : '<span id="wfAnaSt' + i + '" style="color:var(--amber)">未安装</span>', '')
+            + _wfAnaTd(p.installed
+                ? '<span style="color:var(--text3)">—</span>'
+                : '<button id="wfAnaDl' + i + '" class="btn btn-teal" style="font-size:11.5px;padding:2px 9px;white-space:nowrap" onclick="wfAnaDlClick(' + i + ',this)" title="按全局设置中的 GitHub 镜像克隆到 custom_nodes"><i class="bi bi-download"></i> 下载</button>', '')
+            + '</tr>';
+        });
+        html += '</tbody></table>';
+        html += '<div id="wfAnaDlNote" style="margin-top:8px;font-size:11.5px;color:var(--text3)"></div>';
+      }
+
+      if (d.unknown_nodes && d.unknown_nodes.length) {
+        html += '<div style="margin-top:12px;padding:8px 10px;border-radius:var(--radius-sm);background:var(--card2);border:1px solid var(--border);font-size:11.5px;color:var(--text3)">'
+          + '以下节点未能确定所属插件：' + escHtml(d.unknown_nodes.join('、'))
+          + (online ? '' : '<br>启动 ComfyUI 后重新解析可获得更准确的判定')
+          + (d.lib_nodes ? '' : '<br>本地插件库为空，请到「插件管理」页点「更新插件库」后再试')
+          + '</div>';
+      }
+
+      if (bodyEl) bodyEl.innerHTML = html;
+      var cm = document.getElementById('wfAnaCopyModelsBtn');
+      var cp = document.getElementById('wfAnaCopyPluginsBtn');
+      if (cm) cm.disabled = !models.length;
+      if (cp) cp.disabled = !wfAnaPlugins.length;
+      _wfAnaSyncDlAll();
+    })
+    .catch(function (e) { wfAnaClose(); notify('请求失败: ' + e); });
+}
+
+// ---- 插件下载（单个 / 批量）。镜像一律由后端按全局设置改写，前端不传 ----
+function _wfAnaDlBtn(btn, state, msg) {
+  if (!btn) return;
+  btn.title = '';
+  if (state === 'done') {
+    btn.className = 'btn btn4'; btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-check2"></i> 已下载';
+  } else if (state === 'cloning' || state === 'busy') {
+    // 克隆中 / 启动中：这个按钮变成「停止」，随时可以停掉慢的那一个
+    btn.className = 'btn btn3'; btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-stop-circle"></i> 停止';
+    btn.title = msg || '停止克隆（会一并删除已克隆到一半的文件夹）';
+  } else if (state === 'stopping') {
+    btn.className = 'btn btn6'; btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> 停止中…';
+  } else if (state === 'stopped') {
+    btn.className = 'btn btn6'; btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> 重新下载';
+    btn.title = msg || '重新克隆这个插件';
+  } else if (state === 'error') {
+    btn.className = 'btn btn3'; btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> 重试';
+    btn.title = msg || '';
+  } else {
+    btn.className = 'btn btn6'; btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> ' + (msg || '下载中');
+  }
+}
+async function _wfAnaStartClone(p) {
+  try {
+    var r;
+    if (p.id) {
+      r = await fetch('/api/plugins/clone/' + p.id, { method: 'POST' });
+    } else {
+      // 极少数仓库不在插件库列表里：后端会先补录条目拿到 id 再克隆
+      r = await fetch('/api/plugins/clone_url', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: p.repo || '', name: p.pack || p.title || '' }) });
+    }
+    return await r.json();
+  } catch (e) { return { ok: false, msg: '请求失败: ' + e }; }
+}
+// ---- 停止：单个 / 批量。停止后未完成的文件夹会被删掉，删不掉就提示手动删 ----
+function _wfAnaActiveCount(includeStopping) {
+  return (wfAnaPluginsAll || []).filter(function (p) {
+    if (!p) return false;
+    if (p._dl === 'cloning' || p._dl === 'busy') return true;
+    return !!includeStopping && p._dl === 'stopping';
+  }).length;
+}
+// 行内按钮两种角色：在跑就是「停止」，否则「下载」
+function wfAnaDlClick(i, btn) {
+  var p = wfAnaPluginsAll[i];
+  if (!p) return;
+  if (p._dl === 'cloning' || p._dl === 'busy' || p._dl === 'stopping') { wfAnaStop(i, btn); return; }
+  wfAnaDownload(i, btn);
+}
+// 批量按钮两种角色：有在跑的就停止，否则下载
+function wfAnaAllClick() {
+  if (_wfAnaActiveCount(true)) { wfAnaStopAll(); return; }
+  wfAnaDownloadAll();
+}
+async function _wfAnaStopOne(p) {
+  try {
+    var r = await fetch('/api/plugins/clone_cancel_cleanup', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id }) });
+    return await r.json();
+  } catch (e) { return { ok: false, msg: '请求失败: ' + e }; }
+}
+function _wfAnaSetSt(idx, text, color) {
+  var el = document.getElementById('wfAnaSt' + idx);
+  if (el) el.innerHTML = '<span style="color:' + (color || 'var(--text3)') + '">' + text + '</span>';
+}
+// 半成品目录没能自动删掉 —— 明确提示用户先删除再重新克隆
+function _wfAnaAskDelete(name, folder) {
+  confirmDialog('「' + (name || '插件') + '」已停止克隆，但它的文件夹被占用，没能自动删除。\n\n'
+    + (folder ? (folder + '\n\n') : '')
+    + '这个目录只克隆了一半，直接重新下载会残缺或失败。\n'
+    + '请先删除该插件文件夹，再点「重新下载」。',
+    { title: '需要手动删除未完成的文件夹', okText: '打开插件文件夹', cancelText: '我知道了',
+      icon: 'bi-exclamation-triangle-fill' })
+    .then(function (go) { if (go) openPluginDir(); });
+}
+async function wfAnaStop(i, btn) {
+  var p = wfAnaPluginsAll[i];
+  if (!p) return;
+  if (p._dl === 'stopping') return;
+  if (p._dl !== 'cloning' && p._dl !== 'busy') return;
+  var okd = await confirmDialog('停止克隆「' + (p.pack || p.title || '插件') + '」将执行两步操作：\n\n'
+    + '1. 立即结束它的克隆进程（排队中的会直接从队列移除）\n'
+    + '2. 删除它「克隆到一半」的文件夹\n'
+    + '   （已经克隆完成的插件不会被删除）\n\n'
+    + '若目录被占用删不掉，会提示你手动删除后再重新下载。是否继续？',
+    { title: '停止克隆', okText: '停止并清理', danger: true, icon: 'bi-stop-circle' });
+  if (!okd) return;
+  p._dl = 'stopping';
+  _wfAnaDlBtn(btn, 'stopping');
+  _wfAnaSetSt(p._idx, '停止中…', 'var(--text3)');
+  _wfAnaSyncDlAll();
+  var j = await _wfAnaStopOne(p);
+  p._none = 0;
+  p._dl = 'stopped';
+  p._partial = !!(j && j.partial);
+  if (j && j.partial) _wfAnaSetSt(p._idx, '已停止 · 有残留', 'var(--red)');
+  else if (j && j.removed) _wfAnaSetSt(p._idx, '已停止（已清理）', 'var(--text3)');
+  else _wfAnaSetSt(p._idx, '已停止', 'var(--text3)');
+  _wfAnaDlBtn(btn, 'stopped', '重新克隆');
+  if (j && j.partial) {
+    _wfAnaAskDelete(p.pack || p.title, j.folder);
+  } else if (j && j.ok) {
+    notify(j.removed ? '已停止克隆，并清理了未完成的文件夹' : j.msg);
+  } else {
+    notify((j && j.msg) || '停止失败');
+  }
+  _wfAnaSyncDlAll();
+  _wfAnaPoll();
+}
+async function wfAnaStopAll() {
+  var act = _wfAnaActiveCount(false);
+  if (!act) {
+    notify(_wfAnaActiveCount(true) ? '正在停止中，请稍候…' : '没有进行中的克隆任务');
+    return;
+  }
+  var okd = await confirmDialog('停止全部克隆将执行两步操作：\n\n'
+    + '1. 立即停止所有正在进行的克隆（含排队中的任务）\n'
+    + '2. 删除「克隆到一半」的插件文件夹\n'
+    + '   （已克隆完成的插件会保留，不会被删除）\n\n'
+    + '当前有 ' + act + ' 个任务在克隆/排队。\n'
+    + '若目录被占用删不掉，会提示你手动删除后再重新下载。是否继续？',
+    { title: '停止全部克隆', okText: '停止并清理', danger: true, icon: 'bi-stop-circle' });
+  if (!okd) return;
+  var busy = (wfAnaPluginsAll || []).filter(function (p) {
+    return p && (p._dl === 'cloning' || p._dl === 'busy');
+  });
+  busy.forEach(function (p) {
+    p._dl = 'stopping';
+    _wfAnaDlBtn(document.getElementById('wfAnaDl' + p._idx), 'stopping');
+    _wfAnaSetSt(p._idx, '停止中…', 'var(--text3)');
+  });
+  _wfAnaSyncDlAll();
+  var j = null;
+  try {
+    var r = await fetch('/api/plugins/clone_stop_all', { method: 'POST' });
+    j = await r.json();
+  } catch (e) { j = { ok: false, msg: '请求失败: ' + e }; }
+  if (!j || !j.ok) {
+    // 请求失败：状态还原成「可重新下载」，别把界面卡在「停止中」
+    busy.forEach(function (p) {
+      p._dl = 'stopped';
+      _wfAnaDlBtn(document.getElementById('wfAnaDl' + p._idx), 'stopped', '重新克隆');
+      _wfAnaSetSt(p._idx, '已停止', 'var(--text3)');
+    });
+    notify((j && j.msg) || '停止失败');
+    _wfAnaSyncDlAll();
+    _wfAnaPoll();
+    return;
+  }
+  // 后端按 id 精确回传：removed=目录已删 / kept=克隆已完成被保留 / partial=删不掉
+  var rset = {}, kset = {}, pset = {};
+  (j.removed_ids || []).forEach(function (x) { rset[x] = 1; });
+  (j.kept_ids || []).forEach(function (x) { kset[x] = 1; });
+  (j.partial_ids || []).forEach(function (x) { pset[x] = 1; });
+  var residue = [];
+  busy.forEach(function (p) {
+    var btn = document.getElementById('wfAnaDl' + p._idx);
+    p._none = 0;
+    if (kset[p.id]) {
+      p._dl = 'done'; p._partial = false;
+      _wfAnaSetSt(p._idx, '已下载', 'var(--green)');
+      _wfAnaDlBtn(btn, 'done');
+      return;
+    }
+    p._dl = 'stopped';
+    p._partial = !!pset[p.id];
+    if (p._partial) {
+      _wfAnaSetSt(p._idx, '已停止 · 有残留', 'var(--red)');
+      residue.push(p.pack || p.title || ('#' + p.id));
+    } else {
+      _wfAnaSetSt(p._idx, rset[p.id] ? '已停止（已清理）' : '已停止', 'var(--text3)');
+    }
+    _wfAnaDlBtn(btn, 'stopped', '重新克隆');
+  });
+  notify(j.msg);
+  if (residue.length) {
+    _wfAnaAskDelete(residue.join('、'), '');
+  }
+  _wfAnaSyncDlAll();
+  _wfAnaPoll();
+}
+async function wfAnaDownload(i, btn) {
+  var p = wfAnaPluginsAll[i];
+  if (!p) return;
+  if (p._dl === 'busy' || p._dl === 'cloning' || p._dl === 'stopping' || p._dl === 'done') return;
+  if (!p.repo && !p.id) { notify('这个插件没有仓库地址，无法下载'); return; }
+  if (p._partial) {
+    // 上次停止时目录被占用没删掉：先提醒删干净，否则这轮克隆会残缺
+    var go = await confirmDialog('「' + (p.pack || p.title || '插件') + '」上次克隆被停止，未完成的文件夹没能自动删除。\n\n请先删除该插件文件夹，再重新下载；否则这一轮克隆可能残缺。\n\n是否继续下载？',
+      { title: '请先删除未完成的文件夹', okText: '继续下载', cancelText: '我先去删除' });
+    if (!go) { openPluginDir(); return; }
+  }
+  p._dl = 'busy';
+  p._none = 0;
+  _wfAnaDlBtn(btn, 'busy');
+  var j = await _wfAnaStartClone(p);
+  if (!j || !j.ok) {
+    p._dl = 'error';
+    _wfAnaDlBtn(btn, 'error', j && j.msg);
+    notify((j && j.msg) || '下载失败');
+    _wfAnaSyncDlAll();
+    return;
+  }
+  if (j.id) p.id = j.id;
+  p._partial = false;
+  p._dl = 'cloning';
+  _wfAnaDlBtn(btn, 'cloning');
+  notify(j.msg || '已开始下载');
+  _wfAnaSyncDlAll();
+  _wfAnaPoll();
+}
+function _wfAnaSyncDlAll() {
+  var b = document.getElementById('wfAnaDownloadAllBtn');
+  if (!b) return;
+  var active = _wfAnaActiveCount(true);
+  if (active) {
+    // 有任务在跑 —— 这个按钮变成「停止全部克隆」，慢的时候用户随时能叫停
+    b.className = 'btn btn3';
+    b.disabled = false;
+    b.innerHTML = '<i class="bi bi-stop-circle"></i> 停止全部克隆 (' + active + ')';
+    b.title = '停止所有正在克隆/排队的插件，并删除克隆到一半的文件夹';
+    return;
+  }
+  b.className = 'btn btn-teal';
+  b.title = '按「全局设置 → GitHub 镜像」依次克隆所有缺失插件到 custom_nodes；并发上限取「最大同时克隆数」，超出的自动排队';
+  var miss = (wfAnaPluginsAll || []).filter(function (p) { return p && !p.installed; });
+  if (!miss.length) { b.disabled = true; b.innerHTML = '<i class="bi bi-download"></i> 下载缺失插件'; return; }
+  var pending = miss.filter(function (p) { return p._dl !== 'done'; });
+  b.disabled = !pending.length;
+  b.innerHTML = pending.length
+    ? '<i class="bi bi-download"></i> 下载缺失插件 (' + pending.length + ')'
+    : '<i class="bi bi-check2"></i> 缺失插件已全部下载';
+}
+function wfAnaDownloadAll() {
+  var todo = [];
+  wfAnaPluginsAll.forEach(function (p, i) {
+    if (p && !p.installed && p._dl !== 'done' && p._dl !== 'cloning' && p._dl !== 'busy' && p._dl !== 'stopping') todo.push(i);
+  });
+  if (!todo.length) { notify('没有需要下载的插件'); return; }
+  confirmDialog('将按「全局设置 → GitHub 镜像」依次下载 ' + todo.length + ' 个缺失插件到 custom_nodes。\n\n• 官方直连时直接用 GitHub 地址克隆\n• 选了加速镜像时，会把仓库地址拼接镜像前缀后再克隆\n• 超出「最大同时克隆数」的会自动排队\n\n插件下载后需要重启 ComfyUI 才会生效。是否继续？',
+    { title: '下载缺失插件', okText: '开始下载', icon: 'bi-download' }).then(function (ok) {
+    if (!ok) return;
+    (function next(k) {
+      if (k >= todo.length) return;
+      var i = todo[k];
+      wfAnaDownload(i, document.getElementById('wfAnaDl' + i)).then(function () { next(k + 1); });
+    })(0);
+  });
+}
+function _wfAnaPoll() {
+  if (_wfAnaPolling) return;                 // 已有一次在途，别叠加
+  var gen = _wfAnaPollGen;
+  var act = (wfAnaPluginsAll || []).filter(function (p) {
+    return p && (p._dl === 'cloning' || p._dl === 'busy') && p.id;
+  });
+  if (!act.length) { _wfAnaPolling = false; _wfAnaDone(); return; }
+  _wfAnaPolling = true;
+  Promise.all(act.map(function (p) {
+    return fetch('/api/plugins/clone_status/' + p.id).then(function (r) { return r.json(); })
+      .then(function (st) { return { p: p, st: st }; }).catch(function () { return null; });
+  })).then(function (rows) {
+    _wfAnaPolling = false;
+    if (gen !== _wfAnaPollGen) return;       // 期间关窗了 / 重新解析了 -> 整批丢掉，不再续期
+    rows.forEach(function (row) {
+      if (!row || !row.st) return;
+      var p = row.p, st = row.st;
+      if ((wfAnaPluginsAll || [])[p._idx] !== p) return;   // 结果属于上一轮渲染，丢掉
+      var el = document.getElementById('wfAnaSt' + p._idx);
+      var btn = document.getElementById('wfAnaDl' + p._idx);
+      if (st.status === 'complete') {
+        p._none = 0; p._dl = 'done';
+        if (el) el.innerHTML = '<span style="color:var(--green)">已下载</span>';
+        _wfAnaDlBtn(btn, 'done');
+      } else if (st.status === 'error') {
+        p._none = 0; p._dl = 'error';
+        if (el) el.innerHTML = '<span style="color:var(--red)">下载失败</span>';
+        _wfAnaDlBtn(btn, 'error', st.msg);
+      } else if (st.status === 'none') {
+        // 任务凭空消失 = 在别处被停掉了（插件页的「停止克隆」等）。
+        // 连续两次才认，避开 start_clone 到线程注册之间那个极短的窗口
+        p._none = (p._none || 0) + 1;
+        if (p._none >= 2) {
+          p._dl = 'stopped';
+          if (el) el.innerHTML = '<span style="color:var(--text3)">未安装（已停止）</span>';
+          _wfAnaDlBtn(btn, 'stopped', '重新克隆');
+        }
+      } else {
+        p._none = 0;
+        if (el) el.innerHTML = '<span style="color:var(--cyan)">' + escHtml(st.msg || '下载中') + '</span>';
+      }
+    });
+    _wfAnaSyncDlAll();
+    _wfAnaPollTimer = null;
+    _wfAnaPoll();
+  });
+}
+function _wfAnaDone() {
+  var miss = (wfAnaPluginsAll || []).filter(function (p) { return p && !p.installed; });
+  var done = miss.filter(function (p) { return p._dl === 'done'; });
+  var stopped = miss.filter(function (p) { return p._dl === 'stopped'; });
+  var residual = miss.filter(function (p) { return p._partial; });
+  var note = document.getElementById('wfAnaDlNote');
+  if (!note) return;
+  if (residual.length) {
+    note.innerHTML = '<i class="bi bi-exclamation-triangle"></i> <span style="color:var(--amber)">有 ' + residual.length + ' 个插件的未完成文件夹没能自动删除，请先删除该插件文件夹再重新下载</span>'
+      + (done.length ? '（已下载 ' + done.length + ' 个）' : '');
+    return;
+  }
+  if (done.length) {
+    note.innerHTML = '<i class="bi bi-info-circle"></i> 已下载 ' + done.length + ' 个插件，重启 ComfyUI 后才会加载生效（可到「插件管理」查看克隆日志）';
+    return;
+  }
+  if (stopped.length) {
+    note.innerHTML = '<i class="bi bi-info-circle"></i> 已停止 ' + stopped.length + ' 个插件的克隆，未完成的文件夹已清理，可直接重新下载';
+  }
+}
+
+function wfAnaCopyModels() {
+  var names = (wfAnaModels || []).map(function (m) { return m.file; });
+  if (!names.length) { notify('没有可复制的模型名称'); return; }
+  _wfAnaCopyText(names.join('\n'), '已复制 ' + names.length + ' 个模型名称到剪贴板');
+}
+
+function wfAnaCopyPlugins() {
+  var ps = wfAnaPlugins || [];
+  if (!ps.length) { notify('没有缺失的插件'); return; }
+  var lines = ps.map(function (p) {
+    return (p.pack || '') + (p.repo ? '  ' + p.repo : '') + (p.nodes && p.nodes.length ? '  (' + p.nodes.join(', ') + ')' : '');
+  });
+  _wfAnaCopyText(lines.join('\n'), '已复制 ' + ps.length + ' 个缺失插件到剪贴板');
 }
 
 function fallbackCopy(text, done) {
@@ -3991,6 +5696,10 @@ function fallbackCopy(text, done) {
 function wfAnaClose() {
   var m = document.getElementById('wfAnaModal');
   if (m) m.style.display = 'none';
+  // 关窗就把在途的轮询作废，否则请求回来还会接着续期（原本 _wfAnaPollTimer 从没赋过值）
+  _wfAnaPollGen++;
+  _wfAnaPolling = false;
+  if (_wfAnaPollTimer) { clearTimeout(_wfAnaPollTimer); _wfAnaPollTimer = null; }
 }
 
 function wfCloseEditor() {
@@ -4037,6 +5746,10 @@ document.addEventListener('keydown', function (e) {
 
 <!-- 右键菜单 -->
 <div id="ctxMenu" class="ctx-menu" style="display:none">
+  <div class="ctx-item" id="ctxNewFolder" onclick="ctxNewFolder()"><i class="bi bi-folder-plus"></i> 新建文件夹</div>
+  <div class="ctx-item" id="ctxUploadFile" onclick="ctxUploadFile()"><i class="bi bi-upload"></i> 上传文件</div>
+  <div class="ctx-item" id="ctxUploadFolder" onclick="ctxUploadFolder()"><i class="bi bi-folder-symlink"></i> 上传文件夹</div>
+  <div class="ctx-sep" id="ctxSep0"></div>
   <div class="ctx-item" id="ctxDownload" onclick="ctxDownload()"><i class="bi bi-download"></i> 下载</div>
   <div class="ctx-item" id="ctxCopy" onclick="ctxCopy()"><i class="bi bi-files"></i> 复制</div>
   <div class="ctx-item" id="ctxMove" onclick="ctxMove()"><i class="bi bi-scissors"></i> 移动</div>
@@ -4047,7 +5760,6 @@ document.addEventListener('keydown', function (e) {
   <div class="ctx-item" id="ctxRename" onclick="ctxRename()"><i class="bi bi-pencil-square"></i> 重命名</div>
   <div class="ctx-sep" id="ctxSep3"></div>
   <div class="ctx-item" id="ctxSendToInput" onclick="ctxSendToInput()" style="display:none"><i class="bi bi-box-arrow-right"></i> 发送到输入文件夹</div>
-  <div class="ctx-item" id="ctxNewFolder" onclick="ctxNewFolder()"><i class="bi bi-folder-plus"></i> 新建文件夹</div>
 </div>
 
 

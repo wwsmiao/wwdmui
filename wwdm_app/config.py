@@ -48,6 +48,8 @@ DEFAULT_SETTINGS = {
     "comfyui_extra_args": "",
     # pip 镜像
     "pip_mirror": "default",  # default/tsinghua/aliyun/tencent/douban/ustc
+    # GitHub 镜像（克隆 ComfyUI 插件 / 更新 ComfyUI 时使用）
+    "github_mirror": "official",  # official/gitclone/ur1/ghproxy/ghproxynet/homeboyc/akams
     # ComfyUI 环境变量预设（启动前注入）
     "comfyui_presets": [],  # [{"key":"TORCH_COMPILE_OFF","value":"1"},...]
     # 输出管理

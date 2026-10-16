@@ -1,8 +1,42 @@
-import os, subprocess, platform as _platform
+import os, time, threading, subprocess, platform as _platform
 from flask import request, jsonify, render_template, send_file
 from . import config
 from . import database as db
 from . import services as svc
+
+
+def _scope_arg(raw):
+    """本地浏览作用域：models（ComfyUI/models）/ plugins（ComfyUI/custom_nodes）"""
+    s = (raw or "").strip().lower()
+    return s if s in ("models", "plugins") else "models"
+
+
+# ---- 外部工具版本探测缓存 ----
+# git / python / aria2c 的 --version 每次都要 fork/exec 一个进程（Windows 上 50~300ms），
+# 而 checkGit()/detectPy() 在每次进插件页、每次点克隆前都会调一次，属纯重复劳动。
+# 命中缓存后这些接口从「几十~几百 ms」降到「<1ms」。失败结果只留 10s，便于装完工具后立刻生效。
+_tool_ver_cache = {}
+_tool_ver_lock = threading.Lock()
+
+
+def _tool_version_cached(key, argv, ttl=300.0):
+    """带 TTL 的命令版本探测；返回版本首行，失败返回 None"""
+    now = time.time()
+    with _tool_ver_lock:
+        c = _tool_ver_cache.get(key)
+        if c and now - c[0] < c[2]:
+            return c[1]
+    out = None
+    try:
+        r = subprocess.run(argv, capture_output=True, text=True,
+                           encoding="gbk", errors="replace", timeout=5)
+        if r.returncode == 0:
+            out = (r.stdout or r.stderr).split("\n")[0].strip() or None
+    except Exception:
+        out = None
+    with _tool_ver_lock:
+        _tool_ver_cache[key] = (now, out, ttl if out else 10.0)
+    return out
 
 
 def register(app):
@@ -102,6 +136,82 @@ def register(app):
         db.db_delete(rid)
         return jsonify({"ok": True})
 
+    # ========== 本地模型文件 API（直接操作 ComfyUI/models 目录） ==========
+    @app.route("/api/models/local/list", methods=["GET"])
+    def api_local_list():
+        return jsonify(svc.local_models_list(
+            request.args.get("rel", ""), request.args.get("sort", "name_asc"),
+            _scope_arg(request.args.get("scope")),
+            with_stats=request.args.get("stats") == "1"))
+
+    @app.route("/api/models/local/stats", methods=["GET"])
+    def api_local_stats():
+        """目录递归统计（较慢，前端异步补状态栏与文件夹卡片数字）"""
+        return jsonify(svc.local_dir_stats(request.args.get("rel", ""),
+                                           _scope_arg(request.args.get("scope"))))
+
+    @app.route("/api/models/local/search", methods=["GET"])
+    def api_local_search():
+        q = request.args.get("q", "").strip()
+        if not q:
+            return jsonify({"ok": False, "msg": "请输入搜索关键字"}), 400
+        sc = _scope_arg(request.args.get("scope"))
+        return jsonify(svc.local_models_search(
+            q, request.args.get("rel", ""), sort=request.args.get("sort", "size_desc"),
+            scope=sc, include_dirs=(sc == "plugins")))
+
+    @app.route("/api/models/local/delete", methods=["POST"])
+    def api_local_delete():
+        d = request.get_json(force=True, silent=True) or {}
+        rels = d.get("rels") or []
+        if not isinstance(rels, list) or not rels:
+            return jsonify({"ok": False, "msg": "未选择任何文件"}), 400
+        return jsonify(svc.local_models_delete(rels, bool(d.get("permanent")),
+                                               _scope_arg(d.get("scope"))))
+
+    @app.route("/api/models/local/rename", methods=["POST"])
+    def api_local_rename():
+        d = request.get_json(force=True, silent=True) or {}
+        return jsonify(svc.local_models_rename(d.get("rel", ""), d.get("new_name", ""),
+                                               _scope_arg(d.get("scope"))))
+
+    @app.route("/api/models/local/move", methods=["POST"])
+    def api_local_move():
+        d = request.get_json(force=True, silent=True) or {}
+        rels = d.get("rels") or []
+        if not isinstance(rels, list) or not rels:
+            return jsonify({"ok": False, "msg": "未选择任何文件"}), 400
+        return jsonify(svc.local_models_move(rels, d.get("dest", ""),
+                                             _scope_arg(d.get("scope"))))
+
+    @app.route("/api/models/local/move_targets", methods=["GET"])
+    def api_local_move_targets():
+        """返回根目录下所有文件夹，供「移动到」选择"""
+        return jsonify(svc.local_models_folder_tree(
+            scope=_scope_arg(request.args.get("scope"))))
+    @app.route("/api/models/local/open", methods=["GET"])
+    def api_local_open():
+        return jsonify(svc.local_models_open(request.args.get("rel", ""),
+                                             request.args.get("select", "0") == "1",
+                                             _scope_arg(request.args.get("scope"))))
+
+    @app.route("/api/models/local/upload", methods=["POST"])
+    def api_local_upload():
+        """上传单个或多个文件到本地模型 / 插件目录（multipart/form-data：files, dest, scope）"""
+        files = request.files.getlist("files")
+        if not files:
+            return jsonify({"ok": False, "msg": "未选择文件"}), 400
+        return jsonify(svc.local_models_upload((request.form.get("dest") or "").strip(),
+                                               files, _scope_arg(request.form.get("scope")),
+                                               request.form.getlist("paths")))
+
+    @app.route("/api/models/local/mkdir", methods=["POST"])
+    def api_local_mkdir():
+        """在本地模型 / 插件目录下新建文件夹（JSON：rel, name, scope）"""
+        d = request.get_json(silent=True) or {}
+        return jsonify(svc.local_models_mkdir(d.get("rel", ""), d.get("name", ""),
+                                              _scope_arg(d.get("scope"))))
+
     @app.route("/api/paths", methods=["GET"])
     def api_paths():
         return jsonify(db.db_get_paths())
@@ -133,13 +243,7 @@ def register(app):
                     found = True
             except Exception:
                 pass
-        ver = None
-        if found:
-            try:
-                rr = subprocess.run([path, "--version"], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
-                ver = rr.stdout.split("\n")[0] if rr.stdout else ""
-            except Exception:
-                pass
+        ver = _tool_version_cached("aria2:" + str(path), [path, "--version"]) if found else None
         return jsonify({"found": found, "path": path, "version": ver, "platform": _platform.system()})
 
     # ========== 下载 API ==========
@@ -199,23 +303,28 @@ def register(app):
         sort = request.args.get("sort", "id_asc")
         installed_only = request.args.get("installed", "") == "1"
         installed = db.plugin_get_names()
+        offset = (page - 1) * page_size
+        fnames = list(installed.keys()) if installed_only else None
 
-        if installed_only:
-            # 已安装过滤：全量取出再内存过滤分页，避免 DB 分页截断
+        if fnames is not None and len(fnames) <= 900:
+            # 「已安装」过滤下推到 SQL：一次带 WHERE name IN (...) 的查询 + COUNT，
+            # 不再把整表 5000+ 行拉进 Python 再过滤分页（SQLite 变量上限 999，留余量）
+            plist = db.plugin_search(kw, sort=sort, limit=page_size, offset=offset, names=fnames)
+            total = db.plugin_count(kw, names=fnames)
+        elif installed_only:
+            # 兜底：已安装项超过 900 个时退回内存过滤
             plist = db.plugin_search(kw, sort=sort, limit=99999, offset=0)
             for p in plist:
                 p["installed"] = p["name"] in installed
             plist = [p for p in plist if p["installed"]]
             total = len(plist)
-            # 内存分页
-            offset = (page - 1) * page_size
             plist = plist[offset:offset + page_size]
         else:
-            offset = (page - 1) * page_size
             plist = db.plugin_search(kw, sort=sort, limit=page_size, offset=offset)
-            for p in plist:
-                p["installed"] = p["name"] in installed
             total = db.plugin_count(kw)
+
+        for p in plist:
+            p["installed"] = p["name"] in installed
 
         for p in plist:
             if "repo_url" not in p:
@@ -260,11 +369,11 @@ def register(app):
         installed = db.plugin_get_names()
         if p["name"] not in installed:
             return jsonify({"ok": False, "error": "该插件未安装"}), 400
+        # 卸载只删除插件文件夹，保留插件数据库中的记录（便于重新克隆/查询）
         ok, msg = svc.plugin_uninstall(p["name"])
         if not ok:
             return jsonify({"ok": False, "error": msg}), 500
-        db.plugin_delete(pid)
-        return jsonify({"ok": True, "msg": msg})
+        return jsonify({"ok": True, "msg": msg + "（数据库记录已保留）"})
 
     @app.route("/api/plugins/installed", methods=["GET"])
     def api_plugin_installed():
@@ -285,8 +394,8 @@ def register(app):
     # ========== 插件克隆 API ==========
     @app.route("/api/plugins/clone/<int:pid>", methods=["POST"])
     def api_clone(pid):
-        d = request.get_json(silent=True) or {}
-        ok, msg = svc.start_clone(pid, use_mirror=bool(d.get("mirror")))
+        # 镜像一律取全局设置，页面不再传 mirror
+        ok, msg = svc.start_clone(pid)
         return jsonify({"ok": ok, "msg": msg})
 
     @app.route("/api/plugins/clone_batch", methods=["POST"])
@@ -295,7 +404,42 @@ def register(app):
         pids = d.get("ids", [])
         if not isinstance(pids, list) or not pids:
             return jsonify({"ok": False, "msg": "ids无效"}), 400
-        return jsonify({"ok": True, "results": svc.start_clone_batch(pids, bool(d.get("mirror")))})
+        return jsonify({"ok": True, "results": svc.start_clone_batch(pids)})
+    @app.route("/api/plugins/clone_url", methods=["POST"])
+    def api_clone_by_url():
+        """按仓库地址克隆插件（工作流解析弹窗的「下载」按钮）。
+
+        解析给出的仓库来自上游映射表，个别不在插件库列表里 ——
+        服务层会先补录条目拿到 id，再走既有的克隆流程。
+        """
+        d = request.get_json(silent=True) or {}
+        url = (d.get("url") or "").strip()
+        if not url:
+            return jsonify({"ok": False, "msg": "缺少仓库地址"}), 400
+        ok, msg, pid = svc.plugins_clone_by_url(url, d.get("name") or "")
+        return jsonify({"ok": ok, "msg": msg, "id": pid})
+
+    @app.route("/api/plugins/repair_db", methods=["POST"])
+    def api_plugin_repair_db():
+        ok, res = db.plugin_repair_db()
+        if not ok:
+            return jsonify({"ok": False, "msg": res.get("msg", "修复失败")}), 500
+        return jsonify({"ok": True, "result": res,
+                        "msg": "修复完成：%d → %d 条，去除重复 %d 个" % (
+                            res["total_before"], res["total_after"], res["removed_count"])})
+
+    @app.route("/api/plugins/update_library", methods=["POST"])
+    def api_plugin_update_library():
+        """从 ComfyUI-Manager 官方数据源拉取最新插件库，合并写入 models.db
+
+        写库规则：按规范化仓库地址合并 —— 已有的覆盖名称/描述，没有的新增，
+        绝不简单追加；同时重建「节点类名 → 插件仓库」映射表（工作流解析用）。
+        """
+        res = svc.plugins_update_library()
+        if not res.get("ok"):
+            return jsonify(res), 502
+        return jsonify(res)
+
 
     @app.route("/api/plugins/clone_status/<int:pid>", methods=["GET"])
     def api_clone_status(pid):
@@ -310,6 +454,26 @@ def register(app):
         ok, msg = svc.cancel_clone(pid)
         return jsonify({"ok": ok, "msg": msg})
 
+    @app.route("/api/plugins/clone_cancel_cleanup", methods=["POST"])
+    def api_clone_cancel_cleanup():
+        """停止单个克隆，并删掉它「克隆到一半」的文件夹（工作流解析弹窗的「停止」）。
+
+        半成品目录留着会让下次克隆残缺或失败，所以这里顺手清掉；
+        已克隆完成的插件目录不会被动（口径同「停止克隆」）。
+        """
+        d = request.get_json(silent=True) or {}
+        try:
+            pid = int(d.get("id") or 0)
+        except (TypeError, ValueError):
+            pid = 0
+        if not pid:
+            return jsonify({"ok": False, "msg": "缺少插件 id"}), 400
+        return jsonify(svc.cancel_clone_with_cleanup(pid))
+
+    @app.route("/api/plugins/clone_stop_all", methods=["POST"])
+    def api_plugin_clone_stop_all():
+        return jsonify(svc.stop_clone_and_cleanup())
+
     @app.route("/api/plugins/clone_cancel_queue/<int:pid>", methods=["POST"])
     def api_clone_cancel_queue(pid):
         with svc.clone_lock:
@@ -322,48 +486,34 @@ def register(app):
     @app.route("/api/git/detect", methods=["GET"])
     def api_git_detect():
         path = svc.get_git_path()
-        found = False
-        ver = None
-        try:
-            r = subprocess.run([path, "--version"], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
-            if r.returncode == 0:
-                found = True
-                ver = r.stdout.split("\n")[0] if r.stdout else ""
-        except Exception:
-            if not config.IS_WINDOWS and path == "git":
-                try:
-                    rr = subprocess.run(["which", "git"], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
-                    if rr.returncode == 0:
-                        path = rr.stdout.strip()
-                        found = True
-                        rv = subprocess.run([path, "--version"], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
-                        ver = rv.stdout.split("\n")[0] if rv.stdout else ""
-                except Exception:
-                    pass
+        ver = _tool_version_cached("git:" + str(path), [path, "--version"])
+        found = ver is not None
+        if not found and not config.IS_WINDOWS and path == "git":
+            try:
+                rr = subprocess.run(["which", "git"], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
+                if rr.returncode == 0:
+                    path = rr.stdout.strip()
+                    ver = _tool_version_cached("git:" + str(path), [path, "--version"])
+                    found = ver is not None
+            except Exception:
+                pass
         return jsonify({"found": found, "path": path, "version": ver, "platform": _platform.system()})
 
     @app.route("/api/python/detect", methods=["GET"])
     def api_python_detect():
         path = svc.get_python_path()
-        found = False
-        ver = None
-        try:
-            r = subprocess.run([path, "--version"], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
-            if r.returncode == 0:
-                found = True
-                ver = (r.stdout or r.stderr).split("\n")[0].strip()
-        except Exception:
-            pass
+        ver = _tool_version_cached("py:" + str(path), [path, "--version"])
+        found = ver is not None
         if not found and not config.IS_WINDOWS and path == "python3":
             for alt in ["python3", "python"]:
                 try:
                     rr = subprocess.run(["which", alt], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
                     if rr.returncode == 0:
                         path = rr.stdout.strip()
-                        rv = subprocess.run([path, "--version"], capture_output=True, text=True, encoding="gbk", errors="replace", timeout=5)
-                        ver = (rv.stdout or rv.stderr).split("\n")[0].strip()
-                        found = True
-                        break
+                        ver = _tool_version_cached("py:" + str(path), [path, "--version"])
+                        if ver is not None:
+                            found = True
+                            break
                 except Exception:
                     pass
         return jsonify({"found": found, "path": path, "version": ver, "platform": _platform.system()})
@@ -420,6 +570,9 @@ def register(app):
         except (ValueError, TypeError):
             d["wallpaper_blur"] = 0
         d["wallpaper_path"] = (d.get("wallpaper_path", "") or "").strip()
+        # GitHub 镜像：仅接受已知 key，非法值回退官方
+        _gm = str(d.get("github_mirror", config.settings.get("github_mirror", "official")) or "official").strip()
+        d["github_mirror"] = _gm if _gm in svc._GITHUB_MIRROR_MAP else "official"
         config.settings.update(d)
         config.save_settings(config.settings)
         return jsonify({"ok": True, "msg": "设置已保存，重启 aria2c 生效"})
@@ -437,6 +590,18 @@ def register(app):
         if not wp or not os.path.isfile(wp):
             return jsonify({"ok": False, "msg": "壁纸不存在"}), 404
         return send_file(wp)
+
+    # ========== GitHub 镜像 API ==========
+    @app.route("/api/github/mirrors")
+    def api_github_mirrors():
+        """返回可选的 GitHub 镜像列表与当前选择"""
+        return jsonify({"ok": True, "mirrors": svc.GITHUB_MIRRORS,
+                        "current": config.settings.get("github_mirror", "official")})
+
+    @app.route("/api/github/mirror_test")
+    def api_github_mirror_test():
+        """并发测试各 GitHub 镜像连通性（探测 git-upload-pack 端点）"""
+        return jsonify(svc.test_github_mirrors())
 
     # ========== ComfyUI 启动器 API ==========
     @app.route("/api/comfyui/start", methods=["POST"])
@@ -493,11 +658,11 @@ def register(app):
     def api_repair_clone():
         d = request.get_json(force=True) or {}
         git_path = config.settings.get("git_path", "git")
-        mirror = bool(d.get("mirror", False))
         target_dir = (d.get("target_dir") or "").strip()
         if not target_dir:
             return jsonify({"ok": False, "msg": "请指定安装目录"})
-        return jsonify(svc.repair_clone(git_path, mirror, target_dir))
+        # 镜像统一取自全局设置中的 GitHub 镜像
+        return jsonify(svc.repair_clone(git_path, target_dir))
 
     @app.route("/api/repair/clone_check")
     def api_repair_clone_check():
@@ -523,6 +688,11 @@ def register(app):
         python_path = config.settings.get("python_path", config.DEFAULT_SETTINGS["python_path"])
         comfyui_dir = config.settings.get("comfyui_dir", config.COMFYUI_DIR)
         return jsonify(svc.repair_requirements(python_path, comfyui_dir))
+
+    @app.route("/api/repair/mirror_info")
+    def api_repair_mirror_info():
+        """当前生效的 GitHub / pip 镜像信息（修复区域展示用）"""
+        return jsonify(svc.repair_mirror_info())
 
     @app.route("/api/repair/pytorch", methods=["POST"])
     def api_repair_pytorch():
@@ -558,16 +728,16 @@ def register(app):
         plugin_name = (d.get("plugin_name") or "").strip()
         if not plugin_name:
             return jsonify({"ok": False, "msg": "请填写插件名称"})
-        mirror = d.get("mirror") or None
-        return jsonify(svc.repair_single_plugin(git_path, python_path, comfyui_dir, plugin_name, mirror))
+        # 镜像统一取自全局设置（GitHub 镜像 + pip 镜像源）
+        return jsonify(svc.repair_single_plugin(git_path, python_path, comfyui_dir, plugin_name))
 
     @app.route("/api/repair/pip_install", methods=["POST"])
     def api_repair_pip_install():
         d = request.get_json(force=True) or {}
         python_path = config.settings.get("python_path", config.DEFAULT_SETTINGS["python_path"])
         packages = (d.get("packages") or "").strip()
-        mirror = (d.get("mirror") or "official").strip()
-        return jsonify(svc.repair_pip_install(python_path, packages, mirror))
+        # 镜像统一取自全局设置中的 pip 镜像源
+        return jsonify(svc.repair_pip_install(python_path, packages))
 
     @app.route("/api/repair/download", methods=["POST"])
     def api_repair_download():
@@ -575,7 +745,8 @@ def register(app):
         aria2c = config.settings.get("aria2c_path", config.DEFAULT_SETTINGS["aria2c_path"])
         url = (d.get("url") or "").strip()
         save_path = (d.get("save_path") or "").strip()
-        return jsonify(svc.repair_download_file(aria2c, url, save_path))
+        filename = (d.get("filename") or "").strip()
+        return jsonify(svc.repair_download_file(aria2c, url, save_path, filename))
 
     @app.route("/api/repair/all_plugins", methods=["POST"])
     def api_repair_all_plugins():
@@ -583,8 +754,8 @@ def register(app):
         git_path = config.settings.get("git_path", "git")
         python_path = config.settings.get("python_path", config.DEFAULT_SETTINGS["python_path"])
         comfyui_dir = config.settings.get("comfyui_dir", config.COMFYUI_DIR)
-        mirror = d.get("mirror") or None  # None=官方直连, str=镜像前缀
-        return jsonify(svc.repair_all_plugins(git_path, python_path, comfyui_dir, mirror))
+        # 镜像统一取自全局设置（GitHub 镜像 + pip 镜像源）
+        return jsonify(svc.repair_all_plugins(git_path, python_path, comfyui_dir))
 
     @app.route("/api/repair/kill_comfyui", methods=["POST"])
     def api_repair_kill_comfyui():
@@ -722,7 +893,8 @@ def register(app):
         files = request.files.getlist("files")
         if not files:
             return jsonify({"ok": False, "msg": "未选择文件"})
-        return jsonify(svc.upload_output_files(root, dest, files))
+        return jsonify(svc.upload_output_files(root, dest, files,
+                                               request.form.getlist("paths")))
 
 
 
@@ -904,7 +1076,8 @@ def register(app):
         files = request.files.getlist("files")
         if not files:
             return jsonify({"ok": False, "msg": "未选择文件"})
-        return jsonify(svc.upload_output_files(root, dest, files))
+        return jsonify(svc.upload_output_files(root, dest, files,
+                                               request.form.getlist("paths")))
 
     # ========== 工作流管理 API ==========
     def _get_workflow_dir():
@@ -996,6 +1169,17 @@ def register(app):
         if not path:
             return jsonify({"ok": False, "msg": "缺少路径"})
         return jsonify(svc.create_output_dir(root, path))
+
+    @app.route("/api/workflows/upload", methods=["POST"])
+    def api_workflows_upload():
+        """上传单个或多个文件/整个文件夹到工作流目录（multipart：files, dest, paths[]）"""
+        root = _get_workflow_dir()
+        dest = (request.form.get("dest") or "").strip()
+        files = request.files.getlist("files")
+        if not files:
+            return jsonify({"ok": False, "msg": "未选择文件"})
+        return jsonify(svc.upload_output_files(root, dest, files,
+                                               request.form.getlist("paths")))
 
     @app.route("/api/workflows/file")
     def api_workflows_file():
@@ -1107,10 +1291,9 @@ def register(app):
     @app.route("/api/shutdown", methods=["POST"])
     def api_shutdown():
         d = request.get_json(silent=True) or {}
-        try:
-            delay = int(d.get("delay", config.settings.get("shutdown_delay", 60)))
-        except (TypeError, ValueError):
-            delay = 60
+        # 延迟的取值与校验统一放在 services.schedule_shutdown 里，
+        # 避免这里再兜一层 int() 把非法值悄悄改成 60（会无视用户配置）。
+        delay = d.get("delay", config.settings.get("shutdown_delay", 60))
         return jsonify(svc.schedule_shutdown(delay))
 
     @app.route("/api/shutdown/cancel", methods=["POST"])

@@ -9,15 +9,20 @@ if is_win:
     # 按进程名杀
     for name in ("aria2c.exe", "aria2c"):
         try:
-            r = subprocess.run(
-                ["taskkill", "/F", "/IM", name, "/T"],
-                capture_output=True, text=True
+            # taskkill/tasklist 在中文 Windows 输出 GBK，必须显式指定编码，
+            # 否则 text=True 会按 UTF-8 解码而抛 UnicodeDecodeError。
+            # 也正因输出是中文，不能靠匹配 "SUCCESS" 计数 —— 改为「先查在位再杀」。
+            q = subprocess.run(
+                ["tasklist", "/FI", "IMAGENAME eq " + name, "/FO", "CSV", "/NH"],
+                capture_output=True, text=True, encoding="gbk", errors="replace"
             )
-            if r.returncode == 0:
-                # 统计 killed 行数
-                for line in r.stdout.splitlines():
-                    if "SUCCESS" in line:
-                        killed += 1
+            if name.lower() not in (q.stdout or "").lower():
+                continue  # 本来就没在跑
+            subprocess.run(
+                ["taskkill", "/F", "/IM", name, "/T"],
+                capture_output=True, text=True, encoding="gbk", errors="replace"
+            )
+            killed += 1
         except Exception:
             pass
 else:
