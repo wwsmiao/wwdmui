@@ -1281,46 +1281,229 @@ def repair_clone(git_path, target_dir, mirror=None):
                               header_lines=header)
 
 
-def get_comfyui_branches(git_path, comfyui_dir):
-    """获取 ComfyUI 仓库的分支和 tag 列表，返回 {branches:[], tags:[], current:str}"""
-    if not os.path.isdir(os.path.join(comfyui_dir, ".git")):
-        return {"ok": False, "msg": "ComfyUI 目录不是 Git 仓库: " + comfyui_dir}
-    cf = subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0
+# ---- ComfyUI 仓库分支 / tag（v4.1：本地查询同步出，git fetch 挪后台）----
+# 为什么改：git fetch --all --tags 在慢网络下要几十秒（timeout=45），原来是**在请求
+# 线程里**跑的 —— 用户一切到「修复安装」页就挂着一个转很久的下拉框，而且慢请求会一直
+# 占着连接。现在拆成两半：
+#   * 本地 ref（HEAD / branch -r / tag）照旧同步读，毫秒~1 秒级 → 下拉框立刻有内容
+#   * 远端刷新丢给后台线程；响应体带 refreshing=True，前端轮询到 False 再定稿
+# 对老前端零影响：ok / current / branches / tags 四个键语义不变，新增键纯附加。
+_branches_cache = {}                 # comfyui_dir -> 快照 dict
+_branches_fetching = set()           # 正在后台 fetch 的 comfyui_dir
+_branches_lock = threading.Lock()
+_repo_git_lock = threading.Lock()    # 同一仓库的 git 写操作串行
+BRANCHES_TTL = 600.0                 # 快照新鲜期（秒）：新鲜就直接返回，不惊动网络
+BRANCHES_RETRY_AFTER = 20.0          # 刷新失败后的重试间隔（秒），免得反复打网络
+BRANCHES_FETCH_TIMEOUT = 45          # 单次 git fetch 上限（秒）
+
+
+def _git_env():
     env = os.environ.copy()
     env["GIT_TERMINAL_PROMPT"] = "0"
     env["GCM_INTERACTIVE"] = "Never"
+    return env
 
-    def _run(cmd, cwd):
-        try:
-            p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
-                              encoding="gbk", errors="replace",
-                              creationflags=cf, env=env, timeout=45)
-            return p.stdout.strip(), p.returncode
-        except Exception as e:
-            return str(e), 1
 
-    # fetch latest
-    _run([git_path, "fetch", "--all", "--tags"], comfyui_dir)
+def _git_run(git_path, argv, cwd, timeout=45):
+    """跑一条 git 命令，返回 (stdout, returncode)。永不抛异常。"""
+    cf = subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0
+    try:
+        p = subprocess.run([git_path] + list(argv), cwd=cwd, capture_output=True,
+                           text=True, encoding="gbk", errors="replace",
+                           creationflags=cf, env=_git_env(), timeout=timeout)
+        return (p.stdout or "").strip(), p.returncode
+    except Exception as e:
+        return str(e), 1
 
-    # get current branch
-    cur_out, _ = _run([git_path, "rev-parse", "--abbrev-ref", "HEAD"], comfyui_dir)
+
+def _branches_snapshot(git_path, comfyui_dir):
+    """只读本地仓库（不联网）：当前分支 / 远端分支 / tag
+
+    远端分支与 tag 用**一次** ``for-each-ref`` 一起拿：原来 ``branch -r`` +
+    ``tag`` 是两条命令、两次 spawn，Windows 上每次 spawn 上百毫秒 —— 冷缓存首次
+    进「修复安装」页时这一段是同步跑的，能省一半就省一半。
+    ``--sort=-creatordate`` 保证 tag 仍是「最新在前」；分支另外按名字排序，与旧实现
+    ``git branch -r`` 的字母序输出保持一致（下拉框顺序不变）。
+    """
+    cur_out, _ = _git_run(git_path, ["rev-parse", "--abbrev-ref", "HEAD"],
+                          comfyui_dir, timeout=15)
     current = cur_out if cur_out else "unknown"
-
-    # remote branches (origin/* only, distinct names)
-    br_out, _ = _run([git_path, "branch", "-r"], comfyui_dir)
-    branches = []
-    for line in br_out.split("\n"):
-        b = line.strip().lstrip("* ").strip()
-        if b.startswith("origin/") and "HEAD" not in b:
-            name = b[len("origin/"):]
-            if name not in branches:
+    ref_out, _ = _git_run(git_path, ["for-each-ref", "--sort=-creatordate",
+                                     "--format=%(refname)",
+                                     "refs/remotes/origin", "refs/tags"],
+                          comfyui_dir, timeout=15)
+    branches, tags = [], []
+    for ref in ref_out.split("\n"):
+        ref = ref.strip()
+        if ref.startswith("refs/remotes/origin/"):
+            name = ref[len("refs/remotes/origin/"):]
+            if name and name != "HEAD" and name not in branches:
                 branches.append(name)
+        elif ref.startswith("refs/tags/"):
+            name = ref[len("refs/tags/"):]
+            if name and len(tags) < 50:
+                tags.append(name)
+    branches.sort()
+    return {"ok": True, "current": current, "branches": branches, "tags": tags,
+            "fetched_at": 0.0, "error": "", "retry_after": 0.0}
 
-    # tags (latest 50, sorted by version-ish)
-    tag_out, _ = _run([git_path, "tag", "--sort=-creatordate"], comfyui_dir)
-    tags = [t.strip() for t in tag_out.split("\n") if t.strip()][:50]
 
-    return {"ok": True, "current": current, "branches": branches, "tags": tags}
+def _repair_busy():
+    """修复流程（git pull / checkout）是否正在跑"""
+    try:
+        return repair_proc is not None and repair_proc.poll() is None
+    except Exception:
+        return False
+
+
+def _branches_fetch_worker(git_path, comfyui_dir):
+    """后台线程：git fetch --all --tags，完了重新读一遍本地 ref。
+
+    ⚠️ 这是裸线程，拿不到 Flask 上下文 —— 不要去碰 request / g / trace_id。
+    只做 subprocess + 模块级字典。
+    """
+    err = ""
+    try:
+        if _repair_busy():
+            # 修复流程正在 git pull / checkout，这时再 fetch 会两边抢 ref 锁
+            err = "修复任务正在运行，本次跳过远端刷新"
+        else:
+            with _repo_git_lock:
+                if _repair_busy():
+                    err = "修复任务正在运行，本次跳过远端刷新"
+                else:
+                    out, code = _git_run(git_path, ["fetch", "--all", "--tags"],
+                                         comfyui_dir, timeout=BRANCHES_FETCH_TIMEOUT)
+                    if code != 0:
+                        lines = [x for x in (out or "").splitlines() if x.strip()]
+                        err = (lines[-1] if lines else "git fetch 失败")[:300]
+    except Exception as e:
+        err = "%s: %s" % (type(e).__name__, e)
+
+    try:
+        snap = _branches_snapshot(git_path, comfyui_dir)
+    except Exception as e:
+        snap = None
+        err = err or ("读取本地 ref 失败: %s" % e)
+
+    with _branches_lock:
+        _branches_fetching.discard(comfyui_dir)
+        if snap is not None:
+            old = _branches_cache.get(comfyui_dir) or {}
+            if err:
+                # 没拉成：保留上次成功时间，排一个重试时间，别让前端无限催
+                snap["fetched_at"] = old.get("fetched_at", 0.0)
+                snap["retry_after"] = time.time() + BRANCHES_RETRY_AFTER
+            else:
+                snap["fetched_at"] = time.time()
+                snap["retry_after"] = 0.0
+            snap["error"] = err
+            _branches_cache[comfyui_dir] = snap
+    if err:
+        log.info("[分支] 远端刷新未完成(%s): %s", comfyui_dir, err)
+
+
+def _branches_payload(snap, key):
+    with _branches_lock:
+        refreshing = key in _branches_fetching
+    fetched = float((snap or {}).get("fetched_at") or 0.0)
+    return {
+        "ok": True,
+        "current": (snap or {}).get("current") or "unknown",
+        "branches": list((snap or {}).get("branches") or []),
+        "tags": list((snap or {}).get("tags") or []),
+        "refreshing": refreshing,
+        "cached": fetched > 0,
+        "fetched_at": fetched,
+        "stale": (time.time() - fetched) >= BRANCHES_TTL,
+        "error": (snap or {}).get("error") or "",
+    }
+
+
+def _branches_kick(git_path, comfyui_dir):
+    """起后台线程拉远端 ref；同一目录同时只允许一个"""
+    with _branches_lock:
+        if comfyui_dir in _branches_fetching:
+            return False
+        _branches_fetching.add(comfyui_dir)
+    try:
+        threading.Thread(target=_branches_fetch_worker, args=(git_path, comfyui_dir),
+                         name="wwdm-branches-fetch", daemon=True).start()
+    except Exception as e:
+        with _branches_lock:
+            _branches_fetching.discard(comfyui_dir)
+        log.warning("[分支] 后台刷新线程起不来: %s", e)
+        return False
+    return True
+
+
+def get_comfyui_branches(git_path, comfyui_dir, wait=0.0, force=False):
+    """获取 ComfyUI 仓库的分支 / tag。
+
+    **立即返回**：本地 ref 同步读一次（第一次调用时会建快照），远端刷新在后台跑。
+    响应体里 refreshing=True 表示后台还在拉，前端继续轮询同一个地址即可。
+
+    :param wait:  调用方愿意就地等后台刷新多少秒（默认 0 = 完全不等）
+    :param force: 忽略 TTL，强制提交一次远端刷新
+    """
+    if not os.path.isdir(os.path.join(comfyui_dir, ".git")):
+        return {"ok": False, "msg": "ComfyUI 目录不是 Git 仓库: " + comfyui_dir}
+    key = os.path.abspath(comfyui_dir)
+    now = time.time()
+
+    with _branches_lock:
+        snap = _branches_cache.get(key)
+        fetching = key in _branches_fetching
+    fetched = float((snap or {}).get("fetched_at") or 0.0)
+    fresh = fetched > 0 and (now - fetched) < BRANCHES_TTL
+
+    if snap is None:
+        # 第一次：先同步读一遍本地 ref，让下拉框立刻有东西，不用等网络
+        try:
+            snap = _branches_snapshot(git_path, key)
+        except Exception as e:
+            return {"ok": False, "msg": "读取分支失败: %s" % e}
+        with _branches_lock:
+            _branches_cache[key] = snap
+
+    retry_ok = now >= float((snap or {}).get("retry_after") or 0.0)
+    if (force or not fresh) and retry_ok and not fetching and not _repair_busy():
+        _branches_kick(git_path, key)
+        if wait:
+            deadline = time.time() + max(0.0, float(wait))
+            while time.time() < deadline:
+                with _branches_lock:
+                    if key not in _branches_fetching:
+                        break
+                    snap = _branches_cache.get(key) or snap
+                time.sleep(0.2)
+
+    with _branches_lock:
+        snap = _branches_cache.get(key) or snap
+    return _branches_payload(snap, key)
+
+
+def comfyui_git_idle(timeout=15.0):
+    """等后台的分支刷新整个收工（最多 timeout 秒）。
+
+    用户点「更新到最新版」前先调它：后台的 git fetch 与 git pull 会同时写 refs，
+    与其让用户在日志里看到 "cannot lock ref"，不如等几秒。
+
+    判据是 ``_branches_fetching`` 清空，而不是「拿到 _repo_git_lock」—— 后者只能
+    证明 fetch 那一段结束了，之后后台线程还要读一遍本地 ref 才会收尾；用前者才是
+    「这个仓库上已经没有任何后台 git 活动」。
+    返回 True = 已经空闲；False = 等到超时还在忙（调用方可照常继续，只是有极小的
+    抢锁概率，用户会从日志里看到 git 自己的报错）。
+    """
+    deadline = time.time() + max(0.0, float(timeout))
+    while True:
+        with _branches_lock:
+            busy = bool(_branches_fetching)
+        if not busy:
+            return True
+        if time.time() >= deadline:
+            return False
+        time.sleep(0.2)
 
 
 def repair_mirror_info():

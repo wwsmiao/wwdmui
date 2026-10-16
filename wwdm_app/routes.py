@@ -775,9 +775,16 @@ def register(app):
 
     @app.route("/api/repair/comfyui_branches")
     def api_repair_comfyui_branches():
+        """分支 / tag 列表。
+
+        ⚠️ 这里**不能**同步跑 git fetch —— 慢网络下几十秒，用户一切到本页就是个卡住的
+        下拉框。服务层现在立即返回本地 ref 快照，远端刷新在后台线程里跑；响应体
+        refreshing=True 时前端继续轮询本地址。?refresh=1 强制提交一次远端刷新。
+        """
         git_path = config.settings.get("git_path", "git")
         comfyui_dir = config.settings.get("comfyui_dir", config.COMFYUI_DIR)
-        return jsonify(svc.get_comfyui_branches(git_path, comfyui_dir))
+        force = request.args.get("refresh") in ("1", "true", "yes")
+        return jsonify(svc.get_comfyui_branches(git_path, comfyui_dir, force=force))
 
     @app.route("/api/repair/comfyui_update", methods=["POST"])
     def api_repair_comfyui_update():
@@ -785,6 +792,9 @@ def register(app):
         git_path = config.settings.get("git_path", "git")
         comfyui_dir = config.settings.get("comfyui_dir", config.COMFYUI_DIR)
         target = (d.get("target") or "").strip()
+        # 先等后台的分支刷新收工：git fetch 与 git pull 同时写 refs 会抢锁，
+        # 让用户在日志里看到 "cannot lock ref" 是很差的体验。最多等 12 秒。
+        svc.comfyui_git_idle()
         return jsonify(svc.repair_comfyui_update(git_path, comfyui_dir, target))
 
     @app.route("/api/repair/requirements", methods=["POST"])

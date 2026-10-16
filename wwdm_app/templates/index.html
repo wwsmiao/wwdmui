@@ -4610,30 +4610,50 @@ async function repairLoadMirrorInfo(){
 }
 
 var rCuiBranches=[];
+var _rcuiGen=0;            // 代际号：重新加载 / 切页时 +1，作废在途轮询
 
-async function repairLoadComfyUIBranches(){
-  var sel=document.getElementById('rcui_branch');
-  sel.innerHTML='<option value="">加载中...</option>';
-  try{
-    var r=await fetch('/api/repair/comfyui_branches');
-    var j=await r.json();
-    if(!j.ok){sel.innerHTML='<option value="">'+j.msg+'</option>';return}
-    rCuiBranches=j;
-    var html='<option value="">— 当前: '+j.current+' —</option>';
-    if(j.branches.length>0){
-      html+='<optgroup label="远程分支">';
-      j.branches.forEach(function(b){html+='<option value="'+b+'">'+b+'</option>'});
-      html+='</optgroup>';
-    }
-    if(j.tags.length>0){
-      html+='<optgroup label="标签 (tag)">';
-      j.tags.forEach(function(t){html+='<option value="'+t+'">'+t+'</option>'});
-      html+='</optgroup>';
-    }
-    sel.innerHTML=html;
-  }catch(e){sel.innerHTML='<option value="">加载失败</option>'}
+// 把快照填进下拉框。busy=true 表示后台还在拉远端 ref，末尾加一条占位提示。
+function _rcuiFill(sel,j,busy){
+  var keep=sel.value;      // 轮询重绘时别打断用户已经选中的分支
+  var html='<option value="">— 当前: '+esc(j.current||'unknown')+' —</option>';
+  if(j.branches&&j.branches.length>0){
+    html+='<optgroup label="远程分支">';
+    j.branches.forEach(function(b){html+='<option value="'+esc(b)+'">'+esc(b)+'</option>'});
+    html+='</optgroup>';
+  }
+  if(j.tags&&j.tags.length>0){
+    html+='<optgroup label="标签 (tag)">';
+    j.tags.forEach(function(t){html+='<option value="'+esc(t)+'">'+esc(t)+'</option>'});
+    html+='</optgroup>';
+  }
+  if(busy) html+='<option value="" disabled>（正在后台拉取远端分支…）</option>';
+  else if(j.error) html+='<option value="" disabled>（远端刷新未完成：'+esc(j.error)+'）</option>';
+  sel.innerHTML=html;
+  if(keep&&Array.prototype.some.call(sel.options,function(o){return o.value===keep})) sel.value=keep;
 }
 
+// 分支 / tag 列表：接口立刻返回本地 ref 快照，远端 git fetch 在后台线程里跑，
+// 这里轮询到 refreshing=false 再定稿 —— 所以切到本页不会再出现「转很久的下拉框」。
+async function repairLoadComfyUIBranches(){
+  var sel=document.getElementById('rcui_branch');
+  var gen=++_rcuiGen;
+  if(!rCuiBranches.branches) sel.innerHTML='<option value="">加载中...</option>';
+  try{
+    var j=null;
+    for(var i=0;i<30;i++){
+      var r=await fetch('/api/repair/comfyui_branches');
+      j=await r.json();
+      if(gen!==_rcuiGen) return;
+      if(!j.ok){sel.innerHTML='<option value="">'+esc(j.msg)+'</option>';return}
+      if(!j.refreshing) break;
+      rCuiBranches=j; _rcuiFill(sel,j,true);      // 先用本地快照顶上，不是空白等待
+      await new Promise(function(g){setTimeout(g,1500)});
+      if(gen!==_rcuiGen) return;
+    }
+    if(!j||!j.ok) return;
+    rCuiBranches=j; _rcuiFill(sel,j,false);
+  }catch(e){sel.innerHTML='<option value="">加载失败</option>'}
+}
 function repairCuiBranchChange(){
   var v=document.getElementById('rcui_branch').value;
   document.getElementById('rcui_tag_btn').disabled = (v==='');
