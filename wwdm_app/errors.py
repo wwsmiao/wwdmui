@@ -123,6 +123,21 @@ def register(app):
                 resp.headers["X-Trace-Id"] = tid
             except Exception:
                 pass
+        # 路由里手写的 ``return jsonify({...}), 4xx`` 不经过错误处理器，错误体会漏掉
+        # trace_id。这里统一补齐，保证「/api/* 错误体一律带 trace_id」这条约定
+        # 不会被新写的路由绕开（比挨个改几十处 return 更可靠）。
+        try:
+            if (tid and resp.status_code >= 400
+                    and not getattr(resp, "direct_passthrough", False)
+                    and (request.path or "").startswith("/api/")
+                    and (resp.mimetype or "").startswith("application/json")):
+                body = resp.get_json(silent=True)
+                if isinstance(body, dict) and "trace_id" not in body:
+                    body["trace_id"] = tid
+                    resp.set_data(jsonify(body).get_data())
+                    resp.headers["Content-Type"] = "application/json"
+        except Exception:
+            pass
         return resp
 
     def _fail(code, msg, already_logged=False):

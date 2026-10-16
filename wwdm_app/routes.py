@@ -1,9 +1,19 @@
 import os, time, threading, subprocess, platform as _platform
-from flask import request, jsonify, render_template, send_file
+from flask import request, jsonify, render_template, send_file, Response
 from . import config
 from . import database as db
 from . import services as svc
 from . import security as sec
+
+
+def _zip_response(gen, name):
+    """流式 zip 响应：边压缩边分块发送，不再先把整包读进内存。
+
+    注意这里**不能用 stream_with_context**：生成器内部不碰 request/g，
+    只用到模块级的 settings 与日志，所以请求上下文结束也能继续迭代。
+    """
+    return Response(gen, mimetype="application/zip",
+                    headers={"Content-Disposition": 'attachment; filename="%s"' % name})
 
 
 def _scope_arg(raw):
@@ -891,14 +901,15 @@ def register(app):
         # 单个文件：直接附件下载
         if len(rel_paths) == 1:
             fp = svc.serve_output_file(root, rel_paths[0])
-            if not fp or not os.path.isfile(fp):
-                return jsonify({"ok": False, "msg": "文件不存在或路径无效"}), 404
-            return send_file(fp, as_attachment=True, download_name=os.path.basename(fp))
+            # ⚠️ 一个路径不一定是文件 —— 右键单个文件夹点「下载」时同样只发 1 个路径，
+            # 而 serve_*_file() 对目录返回 None。只有确认是文件才直下，否则落到打包分支。
+            if fp and os.path.isfile(fp):
+                return send_file(fp, as_attachment=True, download_name=os.path.basename(fp))
         # 多选/文件夹：打包 zip
-        buf = svc.zip_files(root, rel_paths, "output.zip")
-        if not buf:
+        items, gen = svc.zip_files_stream(root, rel_paths, "output.zip")
+        if not items:
             return jsonify({"ok": False, "msg": "无有效文件可下载"}), 404
-        return send_file(buf, as_attachment=True, download_name="output.zip", mimetype="application/zip")
+        return _zip_response(gen, "output.zip")
 
     @app.route("/api/output/open_dir")
     def api_output_open_dir():
@@ -1088,13 +1099,14 @@ def register(app):
             return jsonify({"ok": False, "msg": "未指定路径"}), 400
         if len(rel_paths) == 1:
             fp = svc.serve_output_file(root, rel_paths[0])
-            if not fp or not os.path.isfile(fp):
-                return jsonify({"ok": False, "msg": "文件不存在或路径无效"}), 404
-            return send_file(fp, as_attachment=True, download_name=os.path.basename(fp))
-        buf = svc.zip_files(root, rel_paths, "input.zip")
-        if not buf:
+            # ⚠️ 一个路径不一定是文件 —— 右键单个文件夹点「下载」时同样只发 1 个路径，
+            # 而 serve_*_file() 对目录返回 None。只有确认是文件才直下，否则落到打包分支。
+            if fp and os.path.isfile(fp):
+                return send_file(fp, as_attachment=True, download_name=os.path.basename(fp))
+        items, gen = svc.zip_files_stream(root, rel_paths, "input.zip")
+        if not items:
             return jsonify({"ok": False, "msg": "无有效文件可下载"}), 404
-        return send_file(buf, as_attachment=True, download_name="input.zip", mimetype="application/zip")
+        return _zip_response(gen, "input.zip")
 
     @app.route("/api/input/open_dir")
     def api_input_open_dir():
@@ -1288,13 +1300,14 @@ def register(app):
             return jsonify({"ok": False, "msg": "未指定路径"}), 400
         if len(rel_paths) == 1:
             fp = svc.serve_workflow_file(root, rel_paths[0])
-            if not fp or not os.path.isfile(fp):
-                return jsonify({"ok": False, "msg": "文件不存在或路径无效"}), 404
-            return send_file(fp, as_attachment=True, download_name=os.path.basename(fp))
-        buf = svc.zip_files(root, rel_paths, "workflows.zip")
-        if not buf:
+            # ⚠️ 一个路径不一定是文件 —— 右键单个文件夹点「下载」时同样只发 1 个路径，
+            # 而 serve_*_file() 对目录返回 None。只有确认是文件才直下，否则落到打包分支。
+            if fp and os.path.isfile(fp):
+                return send_file(fp, as_attachment=True, download_name=os.path.basename(fp))
+        items, gen = svc.zip_files_stream(root, rel_paths, "workflows.zip")
+        if not items:
             return jsonify({"ok": False, "msg": "无有效文件可下载"}), 404
-        return send_file(buf, as_attachment=True, download_name="workflows.zip", mimetype="application/zip")
+        return _zip_response(gen, "workflows.zip")
 
     @app.route("/api/workflows/backup", methods=["POST"])
     def api_workflows_backup():

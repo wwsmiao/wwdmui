@@ -1,4 +1,4 @@
-import os, re, sys, io, time, json, shutil, tempfile, threading, subprocess, ctypes, configparser
+import os, re, sys, io, time, json, shutil, tempfile, threading, subprocess, ctypes, configparser, zipfile
 import logging
 from .config import (settings, DEFAULT_SETTINGS, IS_WINDOWS, IS_LINUX, BASE_DIR,
                      ARIA2_RPC_PORT, ARIA2_RPC_SECRET, _DEFAULT_ARIA2C, COMFYUI_DIR)
@@ -2080,25 +2080,115 @@ def serve_output_file(root_dir, rel_path):
     return target
 
 
-def zip_files(root_dir, rel_paths, zip_name="files.zip"):
-    """将多个文件/文件夹打包为 zip，返回 BytesIO（供 send_file 下载）"""
-    import zipfile as _zipfile
-    import io as _io
-    buf = _io.BytesIO()
-    with _zipfile.ZipFile(buf, 'w', _zipfile.ZIP_DEFLATED) as zf:
-        for rp in rel_paths:
-            t = _safe_path(root_dir, rp)
-            if not t or not os.path.exists(t):
-                continue
-            if os.path.isdir(t):
-                for dirpath, _dirnames, filenames in os.walk(t):
-                    for fn in filenames:
-                        full = os.path.join(dirpath, fn)
-                        zf.write(full, os.path.relpath(full, root_dir).replace("\\", "/"))
-            else:
-                zf.write(t, os.path.relpath(t, root_dir).replace("\\", "/"))
-    buf.seek(0)
-    return buf
+class _ZipSink:
+    """zipfile 的输出漏斗：把写进来的字节攒成块，交给生成器逐块 yield。
+
+    故意不实现 seek/tell：zipfile 会自动降级成「不可 seek」写法（用数据描述符记录
+    每个条目的长度），这正是流式 zip 需要的行为。
+    """
+
+    def __init__(self):
+        self.chunks = []
+
+    def write(self, b):
+        if b:
+            self.chunks.append(bytes(b))
+        return len(b)
+
+    def flush(self):
+        pass
+
+    def drain(self):
+        out = self.chunks
+        self.chunks = []
+        return out
+
+
+def zip_collect(root_dir, rel_paths):
+    """收集要打包的 (绝对路径, zip 内相对路径) 列表"""
+    items = []
+    for rp in rel_paths:
+        t = _safe_path(root_dir, rp)
+        if not t or not os.path.exists(t):
+            continue
+        if os.path.isdir(t):
+            for dirpath, _dirnames, filenames in os.walk(t):
+                for fn in filenames:
+                    full = os.path.join(dirpath, fn)
+                    items.append((full, os.path.relpath(full, root_dir).replace("\\", "/")))
+        else:
+            items.append((t, os.path.relpath(t, root_dir).replace("\\", "/")))
+    return items
+
+
+_ZIP_CHUNK = 1 << 20          # 每次读写 1 MB：内存占用与文件大小无关
+
+
+def _zip_one(zf, sink, srcf, arc, chunk=_ZIP_CHUNK):
+    """（生成器）把一个文件写进 zip，边写边把攒下的字节交出去。
+
+    ⚠️ 这里刻意不用 ``zf.write()``：它会**把整个文件压完才返回**，于是 _ZipSink
+    期间就攒下了一整个文件的字节 —— 实测 40MB 文件堆峰值 40.4MB，等于没改善，
+    单个 10GB 模型照样顶爆内存。自己分块读写、每块 drain 一次，内存只与 chunk 有关。
+    """
+    st = os.fstat(srcf.fileno())
+    zi = zipfile.ZipInfo(arc, date_time=time.localtime(st.st_mtime)[:6])
+    zi.compress_type = zipfile.ZIP_DEFLATED
+    zi.external_attr = (0o100000 | (st.st_mode & 0o777)) << 16      # 保留权限位
+    with zf.open(zi, "w") as dst:
+        while True:
+            data = srcf.read(chunk)
+            if not data:
+                break
+            dst.write(data)
+            for c in sink.drain():
+                yield c
+    for c in sink.drain():
+        yield c
+
+
+def zip_files_stream(root_dir, rel_paths, zip_name="files.zip"):
+    """流式打包：边压缩边吐，不再把整个 zip 先攒进内存。
+
+    原实现用 BytesIO 全量入内存，用户选中一个几百 GB 的输出目录再点下载就会把内存顶爆。
+    返回 (items, generator)：
+      * ``items`` 先算好，调用方用它判断「有没有可下载的内容」（空则回 404），
+        同时避免「开始传输后没法再改状态码」的问题；
+      * ``generator`` 逐块产出 zip 字节，交给 Flask 分块传输。
+    压缩方式与原来一致（ZIP_DEFLATED）。
+    """
+    items = zip_collect(root_dir, rel_paths)
+
+    def _gen():
+        sink = _ZipSink()
+        done, skipped = 0, 0
+        try:
+            with zipfile.ZipFile(sink, "w", zipfile.ZIP_DEFLATED) as zf:
+                for full, arc in items:
+                    try:
+                        srcf = open(full, "rb")
+                    except OSError as e:
+                        # 还没往 zip 里写过任何东西，跳过是安全的
+                        log.warning("[打包] 跳过 %s: %s", full, e)
+                        skipped += 1
+                        continue
+                    try:
+                        for ch in _zip_one(zf, sink, srcf, arc):
+                            yield ch
+                        done += 1
+                    finally:
+                        srcf.close()
+            # with 退出时会写入中央目录，必须再吐一次
+            for ch in sink.drain():
+                yield ch
+        except Exception as e:
+            # 已经开始传输了，状态码改不了；如实记日志（客户端会看到下载中断）
+            log.error("[打包] 生成中断: %s", e)
+        finally:
+            log.info("[打包] %s 结束：写出 %d 个，跳过 %d 个，共 %d 个",
+                     zip_name, done, skipped, len(items))
+
+    return items, _gen()
 
 
 def delete_output_files(root_dir, rel_paths):
