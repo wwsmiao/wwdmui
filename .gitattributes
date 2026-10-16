@@ -10,11 +10,12 @@
 # ---- 以下 5 个文件必须 CRLF ----
 # ⚠️ 路径写错/漏改 = 该文件退回 LF，所有补丁脚本的锚点与 diff 都会变形。
 # v5.0 拆 core/ 时 config.py 迁到 core/，这里必须同步改（否则默认规则会给 LF）。
-wwdm_app/core/config.py         text eol=crlf
-wwdm_app/routes.py              text eol=crlf
-wwdm_app/services.py            text eol=crlf
-wwdm_app/templates/index.html   text eol=crlf
-wwdm_app/static/style.css       text eol=crlf
+# v5.0 第 6 步 services.py 包化为 services/__init__.py，同样要同步改路径。
+wwdm_app/core/config.py            text eol=crlf
+wwdm_app/routes.py                 text eol=crlf
+wwdm_app/services/__init__.py      text eol=crlf
+wwdm_app/templates/index.html      text eol=crlf
+wwdm_app/static/style.css          text eol=crlf
 
 # ---- 其余（run.py / README.md / database.py / __init__.py / kill_aria2.py 等）保持 LF ----
 

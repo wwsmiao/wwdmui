@@ -1,10 +1,10 @@
 import os, re, sys, io, time, json, shutil, tempfile, threading, subprocess, ctypes, configparser, zipfile
 import logging
-from .config import (settings, DEFAULT_SETTINGS, IS_WINDOWS, IS_LINUX, BASE_DIR,
+from ..config import (settings, DEFAULT_SETTINGS, IS_WINDOWS, IS_LINUX, BASE_DIR,
                      ARIA2_RPC_PORT, ARIA2_RPC_SECRET, _DEFAULT_ARIA2C, COMFYUI_DIR,
                      get_comfyui_dir, get_git_path)   # 访问器实现在 core/config.py
-from .database import db_get, db_get_many, plugin_get, plugin_get_many
-from .core import tasks as task_bus        # 任务总线：后台活儿统一上报
+from ..database import db_get, db_get_many, plugin_get, plugin_get_many
+from ..core import tasks as task_bus        # 任务总线：后台活儿统一上报
 
 # ---- 日志 ----
 # 里程碑（开始 / 完成 / 失败 / 清理）走 logging：控制台和 logs/wwdm.log 都能看到；
@@ -942,7 +942,7 @@ VRAM_MODES = {
 
 def build_comfyui_cmd(python_path, comfyui_dir):
     """根据全局设置构建 ComfyUI 启动命令 (不含环境变量预设前缀)"""
-    from . import config
+    from .. import config
     s = config.settings
     main_py = os.path.join(comfyui_dir, "main.py")
     cmd = [python_path, main_py]
@@ -2868,7 +2868,7 @@ def _wf_url_key(u):
     """仓库 URL 归一化。统一走 database._norm_plugin_url ——
     它会顺带剥掉 gh-proxy / gitclone 这类加速前缀，而 .git/config 里的 origin
     经常带前缀，两边各写一套归一化必然对不上。"""
-    from . import database as _db
+    from .. import database as _db
     return _db._norm_plugin_url(u)
 
 def _wf_object_info(ttl=30.0):
@@ -2914,7 +2914,7 @@ def _wf_pack_map(ttl=300.0):
         c = _wf_packmap_cache
         if c["rev"] is not None and now - c["ts"] < ttl:
             return c["rev"], c["titles"], c["byurl"]
-    from . import database as _db
+    from .. import database as _db
     try:
         rev, byurl = _db.node_map_load()
         titles = _db.plugin_url_titles()
@@ -3194,7 +3194,7 @@ def plugins_update_library(budget=100.0):
                 if isinstance(n, str) and n:
                     pairs.append((n, rurl))
 
-    from . import database as _db
+    from .. import database as _db
     res = {"ok": True, "source": src1 or src2,
            "node_list_source": src1, "node_map_source": src2,
            "fetched": {"plugins": len(items), "node_pairs": len(pairs)},
@@ -3219,7 +3219,7 @@ def plugins_ensure_row(url, name=""):
     工作流解析给出的仓库来自上游映射表，有极少数（约 0.3%）不在插件库列表里。
     用户真要装它时再补录即可，避免为了这点覆盖率去膨胀整个插件库。
     """
-    from . import database as _db
+    from .. import database as _db
     url = (url or "").strip()
     if not url:
         return 0
@@ -3272,7 +3272,7 @@ def _wf_bind_model_lib(found):
 
     JSON 工作流与非 JSON 兜底（.txt/.md/.png）都走这里，两条路径口径一致。
     """
-    from . import database as _db
+    from .. import database as _db
 
     midx = _wf_model_index()
     missing = 0
@@ -3413,7 +3413,7 @@ def workflows_analyze(root_dir, rel_path):
     missing_models, missing_model_in_lib = _wf_bind_model_lib(found)
 
     # ---- 插件：节点类名差集 + 映射表反查 ----
-    from . import database as _db
+    from .. import database as _db
 
     info, online = _wf_object_info()
     rev, titles, byurl = _wf_pack_map()
