@@ -16,8 +16,19 @@ from wwdm_app.services import aria2_start, cleanup_all
 _log = logging.getLogger("wwdm.run")
 
 
+_exited = False
+
+
 def _on_exit():
-    """退出时强制清理所有子进程"""
+    """退出时强制清理所有子进程。
+
+    ⚠️ 必须幂等：atexit 与 ``finally`` 都会调它，否则每次退出都会清理两遍、
+    控制台也会把「管理器已退出」打两遍。
+    """
+    global _exited
+    if _exited:
+        return
+    _exited = True
     print("\n[v4.0] 正在清理子进程...")
     cleanup_all()
     _log.info("管理器已退出")
