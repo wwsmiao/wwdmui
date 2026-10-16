@@ -1,4 +1,4 @@
-import os, json, platform as _platform
+import os, json, secrets, platform as _platform
 
 # ---- 平台 ----
 IS_WINDOWS = _platform.system() == "Windows"
@@ -67,8 +67,31 @@ DEFAULT_SETTINGS = {
     "douyin_format": "png",      # 图片格式: png / jpg
     "douyin_name_template": "{index:02d}.{ext}",  # 命名模板
     # 关机功能
-    "shutdown_delay": 60  # 默认关机延迟秒数
+    "shutdown_delay": 60,  # 默认关机延迟秒数
+    # ---- 管理器访问 ----
+    # web_host / web_port 重启后生效；access_token / token_required 立即生效
+    "web_host": "0.0.0.0",    # 0.0.0.0=局域网可访问 / 127.0.0.1=仅本机
+    "web_port": 7860,         # 管理器监听端口，1024-65535
+    "access_token": "",       # 空值 = 首次启动自动生成
+    "token_required": True,   # 非回环地址访问是否必须携带访问令牌
+    "max_upload_gb": 8        # 单次上传体积上限（GB）
 }
+
+
+# ---- 运行态信息：由 run.py 在启动时写入「本进程真实监听」的值 ----
+# 设置页靠它和 settings 里的值对比，才能显示「有改动待重启生效」。
+RUNTIME_INFO = {
+    "host": "",
+    "port": 0,
+    "lan_ips": [],
+    "started_at": 0.0,
+    "token_enabled": False,
+}
+
+
+def new_access_token():
+    """生成一条 32 字符的访问令牌"""
+    return secrets.token_urlsafe(24)
 
 
 def load_settings():
@@ -100,6 +123,31 @@ def load_settings():
                 merged["python_path"] = c
                 repaired = True
                 break
+    # ---- 管理器访问设置归一化 ----
+    wh = str(merged.get("web_host") or "").strip()
+    if wh not in ("0.0.0.0", "127.0.0.1"):
+        wh = "0.0.0.0"
+        repaired = True
+    merged["web_host"] = wh
+    try:
+        wp = int(merged.get("web_port") or 7860)
+    except (ValueError, TypeError):
+        wp = 7860
+    if not (1024 <= wp <= 65535):
+        wp = 7860
+    if merged.get("web_port") != wp:
+        merged["web_port"] = wp
+        repaired = True
+    merged["token_required"] = bool(merged.get("token_required", True))
+    # 访问令牌：首次启动（或重置后）自动生成一条，外部访问的凭据
+    if not str(merged.get("access_token") or "").strip():
+        merged["access_token"] = new_access_token()
+        repaired = True
+    try:
+        mu = float(merged.get("max_upload_gb", 8) or 8)
+    except (ValueError, TypeError):
+        mu = 8.0
+    merged["max_upload_gb"] = max(0.1, min(64.0, mu))
     if repaired:
         _save_settings(merged)
     return merged

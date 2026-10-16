@@ -734,6 +734,41 @@
   <div class="center-wrap">
     <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-gear"></i></span>全局设置</h1>
     <div class="card scard">
+      <div class="sg sg-wide"><div class="sg-title">管理器访问 <span id="accBadge" class="acc-badge" style="display:none"><i class="bi bi-exclamation-triangle"></i> 有改动待重启生效</span></div>
+        <div class="srow srow-full">
+          <div class="slabel-block"><div class="slabel">监听地址</div><div class="shint">决定这台电脑之外能不能打开本管理器。<b>修改后需要重启管理器才生效</b></div></div>
+          <select id="swh" class="sinput-wide" onchange="accStatus()">
+            <option value="0.0.0.0">局域网可访问（0.0.0.0）— 手机 / 另一台电脑也能打开，需要访问令牌</option>
+            <option value="127.0.0.1">仅本机访问（127.0.0.1）— 最安全，其它设备打不开</option>
+          </select>
+        </div>
+        <div class="srow srow-full">
+          <div class="slabel-block"><div class="slabel">端口</div><div class="shint">默认 7860，范围 1024–65535。<b>修改后需要重启管理器才生效</b></div></div>
+          <input type="text" id="swp" class="sinput" style="width:200px" placeholder="留空=7860" oninput="accStatus()">
+        </div>
+        <div class="srow srow-full">
+          <div class="slabel-block"><div class="slabel">访问令牌</div><div class="shint">从本机（127.0.0.1）打开时免校验；从其它设备打开需要这个令牌。改动立即生效</div></div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <input type="text" id="stok" class="acc-mono" style="flex:1 1 auto;min-width:220px;width:auto" readonly>
+            <button class="btn btn6" onclick="accCopy()"><i class="bi bi-clipboard"></i> 复制</button>
+            <button class="btn btn6" onclick="accCopyLink()"><i class="bi bi-link-45deg"></i> 复制直链</button>
+            <button class="btn btn6" onclick="accRegen()"><i class="bi bi-arrow-repeat"></i> 重新生成</button>
+          </div>
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">要求非本机访问携带令牌</div><div class="shint">推荐开启。关闭后同一局域网内任何人都能直接进入本管理器</div></div>
+          <input type="checkbox" id="stokreq" onchange="accStatus()">
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">上传大小上限（GB）</div><div class="shint">单次上传模型的总体积上限，范围 0.1–64。防止一个超大请求把内存和磁盘打满</div></div>
+          <input type="text" id="smu" class="sinput" style="width:140px" placeholder="8">
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">当前状态</div></div>
+          <div id="accStatus" class="shint" style="line-height:1.9"></div>
+        </div>
+      </div>
+
       <div class="sg sg-wide"><div class="sg-title">路径配置</div>
         <div class="srow srow-full">
           <div class="slabel-block"><div class="slabel">ComfyUI 根目录</div><div class="shint">模型下载到此目录下的对应子目录</div></div>
@@ -884,8 +919,13 @@
         <input type="number" id="sdly" class="sinput" style="width:140px" min="0" max="3600" placeholder="60">
       </div>
 
+      <div class="srow srow-full" style="border-top:1px dashed var(--border);padding-top:14px">
+        <div class="slabel-block"><div class="slabel">退出管理器</div><div class="shint">只关闭管理器本身，不影响 ComfyUI。改过监听地址/端口后，需要退出再重新双击启动器才会生效 —— 本工具不做「一键重启」，因为 Windows 下新旧进程会同时占用同一端口</div></div>
+        <div><button class="btn btn6" onclick="accQuit()"><i class="bi bi-power"></i> 退出管理器</button></div>
+      </div>
+
       <div class="sacts"><button class="btn btn6" onclick="resetS()"><i class="bi bi-arrow-counterclockwise"></i> 恢复默认</button><button class="btn btn1" onclick="saveS()"><i class="bi bi-save"></i> 保存设置</button><button class="btn btn5" onclick="saveSRestart()"><i class="bi bi-arrow-repeat"></i> 保存并重启 aria2c</button></div>
-      <div class="snote">设置保存后需重启 aria2c 生效</div>
+      <div class="snote">设置保存后需重启 aria2c 生效；监听地址 / 端口改动需要重启管理器才生效</div>
     </div>
   </div>
 </div>
@@ -3983,6 +4023,7 @@ async function loadSF(){
     setVal('swallo',s.wallpaper_blur==null?0:s.wallpaper_blur);
     setVal('dyCookieFile',s.douyin_cookie_file);setVal('dySaveDirSet',s.douyin_save_dir);
     setVal('sdly',s.shutdown_delay==null?60:s.shutdown_delay);
+    accLoad(s);
     cuiCmdPreview();applyWallpaper()
   }catch(e){}
 }
@@ -4024,14 +4065,90 @@ async function saveS(){
     comfyui_presets:collectPresets(),
     input_dir:gv('sind'),output_dir:gv('soutd'),workflow_backup_dir:gv('swfbd'),
     wallpaper_path:gv('swall'),wallpaper_blur:gvi('swallo',0),
-    pip_mirror:gv('spm')||'default',github_mirror:gv('sghm')||'official',douyin_cookie_file:gv('dyCookieFile'),douyin_save_dir:gv('dySaveDirSet'),shutdown_delay:gviClamp('sdly',60,0,3600)};
+    pip_mirror:gv('spm')||'default',github_mirror:gv('sghm')||'official',douyin_cookie_file:gv('dyCookieFile'),douyin_save_dir:gv('dySaveDirSet'),shutdown_delay:gviClamp('sdly',60,0,3600),web_host:_accV('swh')||'0.0.0.0',web_port:_accI('swp',7860),access_token:_accV('stok'),token_required:!!(document.getElementById('stokreq')||{}).checked,max_upload_gb:gvf('smu',8)};
   try{var r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});var j=await r.json();
-    if(j.ok){document.getElementById('mcd').textContent=d.max_concurrent_downloads;document.getElementById('cld').textContent=d.max_concurrent_clones;cuiCmdPreview();applyWallpaper();repairLoadMirrorInfo();notify(j.msg)}else{notify('保存失败: '+j.msg)}}catch(e){notify('保存失败: '+e.message)}
+    if(j.ok){document.getElementById('mcd').textContent=d.max_concurrent_downloads;document.getElementById('cld').textContent=d.max_concurrent_clones;cuiCmdPreview();applyWallpaper();repairLoadMirrorInfo();accStatus();notify(j.msg)}else{notify('保存失败: '+j.msg)}}catch(e){notify('保存失败: '+e.message)}
 }
 function gv(id){return document.getElementById(id).value.trim()}
 function gvi(id,d){return parseInt(document.getElementById(id).value)||d}
 function gviClamp(id,d,lo,hi){var v=parseInt(document.getElementById(id).value,10);if(isNaN(v))return d;return Math.max(lo,Math.min(hi,v))}
 function gvf(id,d){var v=parseFloat(document.getElementById(id).value);return isNaN(v)?d:v}
+// ================= 管理器访问（监听地址 / 端口 / 访问令牌） =================
+var _accEff={},_accCli={};
+function _accEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function _accV(id){var e=document.getElementById(id);return e?(e.value||'').trim():''}
+function _accI(id,d){var v=parseInt(_accV(id),10);return isNaN(v)?d:v}
+function accLoad(s){
+  s=s||{};_accEff=s._effective||{};_accCli=s._client||{};
+  setVal('swh',s.web_host||'0.0.0.0');
+  setVal('swp',s.web_port==null?7860:s.web_port);
+  setVal('stok',s.access_token||'');
+  setVal('smu',s.max_upload_gb==null?8:s.max_upload_gb);
+  var cb=document.getElementById('stokreq');if(cb)cb.checked=s.token_required!==false;
+  accStatus();
+}
+function accStatus(){
+  var box=document.getElementById('accStatus');if(!box)return;
+  var eff=_accEff||{},cli=_accCli||{},rows=[],badge=document.getElementById('accBadge');
+  var cb=document.getElementById('stokreq');
+  if(eff.running){rows.push('当前实际监听：<b>'+_accEsc(eff.host)+':'+_accEsc(eff.port)+'</b>')}
+  else{rows.push('<span style="color:var(--text3)">当前实际监听：未知（本次不是由 run.py 启动的）</span>')}
+  rows.push('令牌校验：'+(cb&&cb.checked?'<b>已开启</b>':'<span style="color:var(--amber2)">已关闭</span>'));
+  rows.push(cli.local?'你这次是从 <b>本机</b> 访问的，不需要令牌':'你这次是从 <b>'+_accEsc(cli.ip||'?')+'</b> 访问的，需要令牌');
+  var pending=false;
+  if(eff.running){
+    var wH=_accV('swh')||'0.0.0.0',wP=_accI('swp',7860);
+    pending=(String(wH)!==String(eff.host)||Number(wP)!==Number(eff.port));
+  }
+  if(pending){rows.push('<span style="color:var(--amber2)">监听地址 / 端口有改动，保存后需要「退出管理器」再重新启动才生效</span>')}
+  if(badge)badge.style.display=pending?'inline-flex':'none';
+  box.innerHTML=rows.join('<br>');
+}
+function _accCopyText(t,okMsg){
+  if(!t){notify('没有可复制的内容');return}
+  var done=function(){notify(okMsg)};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(done,function(){_accCopyFallback(t,okMsg)});
+  }else{_accCopyFallback(t,okMsg)}
+}
+function _accCopyFallback(t,okMsg){
+  var ta=document.createElement('textarea');ta.value=t;
+  ta.style.position='fixed';ta.style.top='-1000px';document.body.appendChild(ta);
+  ta.select();
+  try{document.execCommand('copy');notify(okMsg)}catch(e){notify('复制失败，请手动选中后复制')}
+  document.body.removeChild(ta);
+}
+function accCopy(){_accCopyText(_accV('stok'),'访问令牌已复制')}
+function accCopyLink(){
+  var t=_accV('stok');if(!t){notify('没有可复制的令牌');return}
+  var p=_accI('swp',7860),h=_accV('swh')||'0.0.0.0',ips=[];
+  if(h==='0.0.0.0'){
+    ips=((_accEff&&_accEff.lan_ips)||[]).slice();
+    if(!ips.length){var hn=location.hostname;if(hn&&hn!=='127.0.0.1'&&hn!=='localhost')ips.push(hn)}
+  }
+  var wan=(h==='0.0.0.0'&&ips.length>0);
+  var link=wan?('http://'+ips[0]+':'+p+'/?t='+encodeURIComponent(t)):('http://127.0.0.1:'+p+'/');
+  _accCopyText(link,wan?'直链已复制，发给另一台设备即可直接打开':'直链已复制（仅本机可打开，本机免令牌）');
+}
+async function accRegen(){
+  if(!(await confirmDialog('确认重新生成访问令牌？\n\n旧令牌会立即失效，已经打开本管理器的其它设备需要重新输入新令牌。',{title:'重新生成访问令牌',okText:'重新生成',danger:true})))return;
+  try{
+    var r=await fetch('/api/settings/regenerate_token',{method:'POST'});
+    var j=await r.json();
+    if(j.ok){setVal('stok',j.access_token||'');accStatus();notify(j.msg||'已重新生成访问令牌')}
+    else{notify('失败：'+(j.msg||''))}
+  }catch(e){notify('失败：'+e.message)}
+}
+async function accQuit(){
+  if(!(await confirmDialog('确认退出管理器？\n\n这个页面会断开连接。想重新使用时，请到管理器所在电脑上双击启动器。\n（只关闭管理器，ComfyUI 本体不受影响）',{title:'退出管理器',okText:'退出',danger:true})))return;
+  try{await fetch('/api/system/quit',{method:'POST'})}catch(e){}
+  notify('管理器正在退出…');
+  setTimeout(function(){
+    document.body.innerHTML='<div style="padding:80px 20px;text-align:center;'
+      +'font:15px/2 -apple-system,\'Segoe UI\',\'Microsoft YaHei\',sans-serif;color:#6b7280">'
+      +'管理器已退出，可以关闭这个页面了。</div>';
+  },900);
+}
 // ---- GitHub 镜像连通性测试 ----
 var _ghmResults=[];
 function ghMirrorPick(k){

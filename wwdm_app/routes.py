@@ -3,6 +3,7 @@ from flask import request, jsonify, render_template, send_file
 from . import config
 from . import database as db
 from . import services as svc
+from . import security as sec
 
 
 def _scope_arg(raw):
@@ -521,7 +522,29 @@ def register(app):
     # ========== 设置 API ==========
     @app.route("/api/settings", methods=["GET"])
     def api_get_settings():
-        return jsonify(config.settings)
+        data = dict(config.settings)
+        rt = dict(getattr(config, "RUNTIME_INFO", None) or {})
+        eff_host = str(rt.get("host") or "").strip()
+        try:
+            eff_port = int(rt.get("port") or 0)
+        except (ValueError, TypeError):
+            eff_port = 0
+        # _effective = 「本进程启动时真实监听」的值（不是 settings 里的值）。
+        # 前端拿它和表单里的值比，才知道是否有改动待重启。
+        data["_effective"] = {
+            "host": eff_host,
+            "port": eff_port,
+            "started_at": rt.get("started_at") or 0,
+            "token_enabled": bool(rt.get("token_enabled")),
+            "lan_ips": list(rt.get("lan_ips") or []),
+            "running": bool(eff_host and eff_port),
+        }
+        data["_client"] = {
+            "ip": request.remote_addr or "",
+            "host": request.host or "",
+            "local": sec.is_loopback(request.remote_addr),
+        }
+        return jsonify(data)
 
     @app.route("/api/settings", methods=["POST"])
     def api_save_settings():
@@ -573,15 +596,78 @@ def register(app):
         # GitHub 镜像：仅接受已知 key，非法值回退官方
         _gm = str(d.get("github_mirror", config.settings.get("github_mirror", "official")) or "official").strip()
         d["github_mirror"] = _gm if _gm in svc._GITHUB_MIRROR_MAP else "official"
+        # ---- 管理器访问 ----
+        _wh = str(d.get("web_host", config.settings.get("web_host", "0.0.0.0")) or "").strip()
+        d["web_host"] = _wh if _wh in ("0.0.0.0", "127.0.0.1") else "0.0.0.0"
+        try:
+            _wp = int(d.get("web_port", config.settings.get("web_port", 7860)) or 7860)
+        except (ValueError, TypeError):
+            _wp = 7860
+        d["web_port"] = _wp if 1024 <= _wp <= 65535 else 7860
+        d["token_required"] = bool(d.get("token_required", True))
+        try:
+            _mu = float(d.get("max_upload_gb", config.settings.get("max_upload_gb", 8)) or 8)
+        except (ValueError, TypeError):
+            _mu = 8.0
+        d["max_upload_gb"] = max(0.1, min(64.0, _mu))
+        # 令牌有专门的「重新生成」入口，这里只做兜底：前端没带就沿用旧值，绝不允许被清空
+        _tk = str(d.get("access_token", "") or "").strip()
+        d["access_token"] = _tk or (config.settings.get("access_token") or "")
+        if not d["access_token"]:
+            d["access_token"] = config.new_access_token()
         config.settings.update(d)
         config.save_settings(config.settings)
-        return jsonify({"ok": True, "msg": "设置已保存，重启 aria2c 生效"})
+        rt = getattr(config, "RUNTIME_INFO", None) or {}
+        _cur_host = str(rt.get("host") or "").strip()
+        try:
+            _cur_port = int(rt.get("port") or 0)
+        except (ValueError, TypeError):
+            _cur_port = 0
+        need_restart = bool(_cur_port) and (d["web_host"] != _cur_host
+                                           or int(d["web_port"]) != _cur_port)
+        msg = "设置已保存"
+        if need_restart:
+            msg += "；监听地址/端口有改动，需要重启管理器才生效"
+        else:
+            msg += "，重启 aria2c 生效"
+        return jsonify({"ok": True, "msg": msg, "need_restart": need_restart})
 
     @app.route("/api/settings/reset", methods=["POST"])
     def api_reset_settings():
+        # 访问令牌要保留：重置设置不应该把已经开启的访问保护「悄悄关掉」
+        keep_tok = str(config.settings.get("access_token") or "").strip()
         config.settings = dict(config.DEFAULT_SETTINGS)
+        config.settings["access_token"] = keep_tok or config.new_access_token()
         config.save_settings(config.settings)
-        return jsonify({"ok": True, "msg": "已恢复默认设置"})
+        return jsonify({"ok": True, "msg": "已恢复默认设置（访问令牌已保留）"})
+
+    @app.route("/api/settings/regenerate_token", methods=["POST"])
+    def api_regenerate_token():
+        """重新生成访问令牌，立即生效（旧令牌与其 Cookie 立刻失效）"""
+        tok = config.new_access_token()
+        config.settings["access_token"] = tok
+        config.save_settings(config.settings)
+        try:
+            sec._LOG.warning("访问令牌已重新生成")
+        except Exception:
+            pass
+        return jsonify({"ok": True, "access_token": tok,
+                        "msg": "已生成新的访问令牌并立即生效，已登录的其它设备需要重新输入"})
+
+    @app.route("/api/system/quit", methods=["POST"])
+    def api_system_quit():
+        """退出管理器（只退出，不自动拉起新进程）。
+        说明：Windows 下 Werkzeug 开了 SO_REUSEADDR，新进程会和旧进程同时 LISTEN 同一端口，
+        先绑定者吃流量 —— 所以这里不做「一键重启」，只做干净退出，由用户重新双击启动器。"""
+        def _die():
+            time.sleep(0.8)
+            try:
+                svc.cleanup_all()
+            except Exception:
+                pass
+            os._exit(0)
+        threading.Thread(target=_die, daemon=True).start()
+        return jsonify({"ok": True, "msg": "管理器正在退出，请重新双击启动器打开"})
 
     @app.route("/api/wallpaper")
     def api_wallpaper():
