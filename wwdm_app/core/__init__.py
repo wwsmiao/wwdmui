@@ -3,9 +3,15 @@
 
 这里只放「与具体业务无关、整个应用共享」的东西：
 
+    config.py     路径常量 + DEFAULT_SETTINGS + settings 读写（save_settings）
+    db.py         models / plugins / node_map / notes 四张表的全部数据访问
     logging.py    日志初始化（控制台 + logs/wwdm.log + trace_id 过滤器）
     errors.py     trace_id 分配 + 统一错误体 + 全局错误处理器
     security.py   访问令牌 / 同源校验 / 上传上限
+
+⚠️ ``config.py`` 是靠 ``__file__`` 反推 PACKAGE_DIR 的：它在 core/ 下，所以
+必须 `dirname` 两次才是 wwdm_app。**任何新搬进 core/ 的模块，只要用 __file__
+算路径，都要先想清楚这一层。**
 
 约定
 ----

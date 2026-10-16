@@ -1,7 +1,8 @@
 import os, re, sys, io, time, json, shutil, tempfile, threading, subprocess, ctypes, configparser, zipfile
 import logging
 from .config import (settings, DEFAULT_SETTINGS, IS_WINDOWS, IS_LINUX, BASE_DIR,
-                     ARIA2_RPC_PORT, ARIA2_RPC_SECRET, _DEFAULT_ARIA2C, COMFYUI_DIR)
+                     ARIA2_RPC_PORT, ARIA2_RPC_SECRET, _DEFAULT_ARIA2C, COMFYUI_DIR,
+                     get_comfyui_dir, get_git_path)   # 访问器实现在 core/config.py
 from .database import db_get, db_get_many, plugin_get, plugin_get_many
 
 # ---- 日志 ----
@@ -72,12 +73,8 @@ def get_aria2c_path():
     return settings.get("aria2c_path", _DEFAULT_ARIA2C)
 
 
-def get_comfyui_dir():
-    return settings.get("comfyui_dir", COMFYUI_DIR)
-
-
-def get_git_path():
-    return settings.get("git_path", "git")
+# get_comfyui_dir() / get_git_path() 已上移到 core/config.py（单一实现，
+# 见文件顶部 import）；sqlite 层 core/db.py 也要用，而 core 不能反向依赖 services。
 
 
 # ---- 插件卸载 ----

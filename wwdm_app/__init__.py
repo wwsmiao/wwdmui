@@ -15,7 +15,7 @@ def create_app():
     """建立并配置一个 Flask 应用；每次调用返回**独立**实例。"""
     app = Flask(__name__)
 
-    from . import config                      # 加载设置 (settings)
+    from .core import config                  # 加载设置 (settings)
     from .core import errors                  # 请求追踪号 trace_id + 统一错误体
     from .core import logging as wwdm_logging
     from .core import security                # 访问令牌 / 同源校验 / 上传上限
@@ -23,7 +23,7 @@ def create_app():
     wwdm_logging.setup()   # 日志：控制台 + logs/wwdm.log（Werkzeug 噪音也在里面降级）
 
     from . import services                    # aria2c / git clone 服务
-    from . import database                    # 数据库操作
+    from .core import db                      # 数据库操作
     from . import routes                      # 注册所有路由
 
     routes.register(app)

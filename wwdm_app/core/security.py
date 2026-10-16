@@ -25,7 +25,7 @@ from urllib.parse import urlencode, urlsplit
 
 from flask import after_this_request, jsonify, make_response, redirect, request
 
-from .. import config
+from . import config
 from .errors import error_payload, wants_json
 
 _LOG = logging.getLogger("wwdm.security")

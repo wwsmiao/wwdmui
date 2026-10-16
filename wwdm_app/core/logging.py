@@ -17,7 +17,7 @@ import logging
 import logging.handlers
 import os
 
-from .. import config
+from . import config
 
 LOG_DIR = os.path.join(config.BASE_DIR, "logs")
 LOG_FILE = os.path.join(LOG_DIR, "wwdm.log")
