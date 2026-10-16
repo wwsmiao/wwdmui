@@ -692,3 +692,152 @@ body.has-wallpaper .lgmodal-log{background:transparent;border:none}
 .mldest i{color:#e0a83c;flex-shrink:0}
 .mldest:hover{background:rgba(74,111,165,0.13)}
 .mldest-empty{padding:18px;text-align:center;color:var(--text3);font-size:12.5px}
+/* ============================================================
+   夜间主题补全（v4.1）
+   ------------------------------------------------------------
+   上面那些规则里有三类「按浅色底配的颜色」，落进 #171a21 就会失效。
+   统一在这里的 dark 分支覆盖，**不改动上面的规则**（零回归）。
+     1) 渐变标题文字以 #4a6fa5（暗蓝）打头 —— 深底上那一段几乎融进背景，
+        「关于」页的大标题整个看不清
+     2) 蓝色调半透明叠加 rgba(74,111,165,0.0x) —— 悬停底/选中底/分隔线/描边
+        全是浅底配方；扁平化又把卡片边框设成了 transparent，于是卡片边界
+        一起消失（笔记卡片只剩一条左边色条）
+     3) 中灰遮罩 rgba(58,62,70,0.4~0.5) —— 深底上不是压暗而是「提亮」，
+        弹窗打开时整页蒙上层灰雾
+   换算口径：浅底的 rgba(74,111,165,a) → 深底的 rgba(143,179,224,a 的 1.5~2 倍)
+   ============================================================ */
+
+/* ---- 1. 渐变标题：暗蓝端换成亮蓝 ----
+   ⚠️ 必须**同时**重写 background-clip:text。`background` 是简写属性，会把
+   background-clip 一并重置为初始值 border-box；本规则特异性又高于上面的原规则，
+   于是 -webkit-background-clip:text 被顶掉 —— 文字只剩一条实心渐变色块。
+   （-webkit-text-fill-color 不在 background 简写范围内，原规则里设的 transparent 还在。） */
+:root[data-theme="dark"] #sidebar-hd span,
+:root[data-theme="dark"] .ptitle,
+:root[data-theme="dark"] .modal h3,
+:root[data-theme="dark"] .cdlg-hd h3,
+:root[data-theme="dark"] .lgmodal-hd h3{background:linear-gradient(135deg,#8fb3e0,#d8a3aa);-webkit-background-clip:text;background-clip:text}
+:root[data-theme="dark"] .oname{background:linear-gradient(135deg,#8fb3e0,#d8a3aa,#e0b98f);-webkit-background-clip:text;background-clip:text}
+
+/* ---- 2. 卡片/面板补回边界：极淡白描边 + 黑阴影 ----
+   ⚠️ 必须排除壁纸模式 —— 那条规则要求所有表面全透明、边框失效（见上方
+   body.has-wallpaper 段落），用 body:not(.has-wallpaper) 限定才不会把它顶掉。 */
+:root[data-theme="dark"] body:not(.has-wallpaper) .pitem,
+:root[data-theme="dark"] body:not(.has-wallpaper) .out-item,
+:root[data-theme="dark"] body:not(.has-wallpaper) .note-item,
+:root[data-theme="dark"] body:not(.has-wallpaper) .wf-list,
+:root[data-theme="dark"] body:not(.has-wallpaper) .bbar,
+:root[data-theme="dark"] body:not(.has-wallpaper) .olink,
+:root[data-theme="dark"] body:not(.has-wallpaper) .modesw,
+:root[data-theme="dark"] body:not(.has-wallpaper) .mlcrumbs,
+:root[data-theme="dark"] body:not(.has-wallpaper) .lgmodal-status{
+  border-color:rgba(255,255,255,0.075);
+  box-shadow:0 1px 10px rgba(0,0,0,0.30);
+}
+/* .card 本身没有 border-style（原规则只有 padding/margin），要写全；它也没有底色，
+   深底下和页面底几乎同色，所以补一层极淡亮面 */
+:root[data-theme="dark"] body:not(.has-wallpaper) .card{
+  border:1px solid rgba(255,255,255,0.06);
+  background:rgba(255,255,255,0.022);
+  box-shadow:0 1px 10px rgba(0,0,0,0.28);
+}
+/* 弹层阴影：原本是蓝色调，深底下完全看不见 */
+:root[data-theme="dark"] .modal,
+:root[data-theme="dark"] .cdlg,
+:root[data-theme="dark"] .ctx-menu,
+:root[data-theme="dark"] .ntf,
+:root[data-theme="dark"] .lgmodal,
+:root[data-theme="dark"] .wf-modal,
+:root[data-theme="dark"] .out-modal{box-shadow:0 10px 36px rgba(0,0,0,0.50)}
+
+/* ---- 3. 分隔线：浅蓝 → 淡白（深底上白线才自然） ---- */
+:root[data-theme="dark"] th,
+:root[data-theme="dark"] td,
+:root[data-theme="dark"] .wf-row,
+:root[data-theme="dark"] .srow,
+:root[data-theme="dark"] #sidebar-hd,
+:root[data-theme="dark"] #sidebar-ft,
+:root[data-theme="dark"] .notes-list-pane,
+:root[data-theme="dark"] .notes-pane-hd,
+:root[data-theme="dark"] .notes-editor-hd,
+:root[data-theme="dark"] .notes-toolbar,
+:root[data-theme="dark"] .wf-modal-hd,
+:root[data-theme="dark"] .notes-editor-ft,
+:root[data-theme="dark"] .sacts,
+:root[data-theme="dark"] .over{border-color:rgba(255,255,255,0.055)}
+
+/* ---- 4. 悬停 / 选中 / 内嵌底色：浅蓝 → 亮蓝 ---- */
+:root[data-theme="dark"] #sidebar-btn:hover,
+:root[data-theme="dark"] .mi:hover,
+:root[data-theme="dark"] tr:hover td,
+:root[data-theme="dark"] .out-thumb,
+:root[data-theme="dark"] .ctx-item:hover,
+:root[data-theme="dark"] .olink:hover,
+:root[data-theme="dark"] .notes-tag,
+:root[data-theme="dark"] .note-item .ni-tag,
+:root[data-theme="dark"] .ntb:hover,
+:root[data-theme="dark"] .notes-preview code,
+:root[data-theme="dark"] table code,
+:root[data-theme="dark"] .fab-top:hover,
+:root[data-theme="dark"] .modesw .ms-btn:hover,
+:root[data-theme="dark"] .mlcrumbs .cbc:hover,
+:root[data-theme="dark"] .mldest:hover,
+:root[data-theme="dark"] .mldestlist,
+:root[data-theme="dark"] .lgmodal-status{background:rgba(143,179,224,0.12)}
+
+/* 选中态：原规则带 !important，覆盖时也要带 */
+:root[data-theme="dark"] .out-item.selected,
+:root[data-theme="dark"] .wf-row.selected{background:rgba(143,179,224,0.14)!important}
+:root[data-theme="dark"] .mi.active{
+  background:linear-gradient(135deg,rgba(143,179,224,0.16),rgba(216,163,170,0.13));
+  border-color:rgba(143,179,224,0.30);
+}
+:root[data-theme="dark"] .note-item.active{background:linear-gradient(135deg,var(--card),rgba(143,179,224,0.11))}
+:root[data-theme="dark"] .notes-tag.active{background:rgba(143,179,224,0.18)}
+:root[data-theme="dark"] .wf-row:hover{background:rgba(143,179,224,0.09)}
+:root[data-theme="dark"] .bbar{background:rgba(143,179,224,0.07)}
+:root[data-theme="dark"] .qitem{background:rgba(224,185,143,0.09)}
+:root[data-theme="dark"] .mltag-other{background:rgba(255,255,255,0.07)}
+:root[data-theme="dark"] .bg-off{background:rgba(255,255,255,0.05)}
+
+/* ---- 5. 遮罩：深底上要压暗，不能「提亮」 ---- */
+:root[data-theme="dark"] .modal-bg{background:rgba(6,8,12,0.62)}
+:root[data-theme="dark"] .wf-modal-mask{background:rgba(6,8,12,0.62)}
+:root[data-theme="dark"] .lgmodal-mask{background:rgba(6,8,12,0.58)}
+:root[data-theme="dark"] .cdlg-mask{background:rgba(6,8,12,0.55)}
+
+/* ---- 6. 滚动条 ---- */
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb{background:rgba(143,179,224,0.28)}
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover{background:rgba(143,179,224,0.48)}
+:root[data-theme="dark"] #rlog::-webkit-scrollbar-thumb{background:rgba(143,179,224,0.25)}
+:root[data-theme="dark"] .gscroll{scrollbar-color:rgba(216,163,170,0.55) transparent}
+:root[data-theme="dark"] .gscroll::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(216,163,170,0.62),rgba(200,150,158,0.46));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.10)}
+
+/* ---- 7. 输入控件：边框看得见、聚焦环提亮、内阴影改黑 ---- */
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea,
+:root[data-theme="dark"] .cdlg-input{
+  border-color:rgba(255,255,255,0.13);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,0.25);
+}
+:root[data-theme="dark"] input:focus,
+:root[data-theme="dark"] select:focus,
+:root[data-theme="dark"] .cdlg-input:focus{
+  border-color:rgba(143,179,224,0.55);
+  box-shadow:0 0 0 3px rgba(143,179,224,0.16);
+}
+
+/* ---- 8. 零碎：几处写死的浅底配色 ---- */
+:root[data-theme="dark"] .pname{color:var(--text)}
+:root[data-theme="dark"] .bg-wait{color:var(--text2)}
+:root[data-theme="dark"] .note-item .ni-del:hover{color:#1b2029}
+:root[data-theme="dark"] .fab-power:hover{background:rgba(216,163,170,0.18);color:var(--purple);border-color:rgba(216,163,170,0.45)}
+:root[data-theme="dark"] .mlctx .ctx-item.danger:hover{background:rgba(232,138,138,0.18)}
+:root[data-theme="dark"] .sg-title::before{background:linear-gradient(180deg,#8fb3e0,#d8a3aa)}
+:root[data-theme="dark"] .banner{background:linear-gradient(90deg,var(--panel),rgba(143,179,224,0.10),var(--panel))}
+/* ---- 关于页作者名（v4.1）----
+   原来是内联渐变 linear-gradient(#c38d94,#4a6fa5)：暗蓝那一端落在深底上几乎融进
+   背景（内联样式优先级最高，CSS 覆盖不到），所以抽成 class 再分主题给色。 */
+.about-name{font-size:28px;font-weight:800;margin-bottom:6px;background:linear-gradient(135deg,#c38d94,#4a6fa5);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+:root[data-theme="dark"] .about-name{background:linear-gradient(135deg,#d8a3aa,#8fb3e0);-webkit-background-clip:text;background-clip:text}
