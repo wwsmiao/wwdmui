@@ -472,6 +472,7 @@
       <button class="btn btn2" id="wfAnaCopyModelsBtn" onclick="wfAnaCopyModels()" title="复制全部模型文件名" style="font-size:12px;padding:4px 10px"><i class="bi bi-clipboard"></i> 模型名</button>
       <button class="btn btn2" id="wfAnaCopyPluginsBtn" onclick="wfAnaCopyPlugins()" title="复制缺失插件及其仓库地址" style="font-size:12px;padding:4px 10px;margin-left:6px"><i class="bi bi-clipboard"></i> 缺失插件</button>
       <button class="btn btn-teal" id="wfAnaDownloadAllBtn" onclick="wfAnaAllClick()" title="按「全局设置 → GitHub 镜像」依次克隆所有缺失插件到 custom_nodes；并发上限取「最大同时克隆数」，超出的自动排队" style="font-size:12px;padding:4px 10px;margin-left:6px" disabled><i class="bi bi-download"></i> 下载缺失插件</button>
+      <button class="btn btn-teal" id="wfAnaModelDlAllBtn" onclick="wfAnaMdlAllClick()" title="按模型库里的下载地址，用 aria2 依次下载所有缺失模型；并发上限取「最大同时下载数」，超出的自动排队" style="font-size:12px;padding:4px 10px;margin-left:6px" disabled><i class="bi bi-download"></i> 下载缺失模型</button>
       <button class="btn btn7" onclick="wfAnaClose()" style="font-size:12px;padding:4px 10px"><i class="bi bi-x-lg"></i> 关闭</button>
     </div>
     <div id="wfAnaBody" class="gscroll" style="flex:1;overflow:auto;padding:6px 4px"></div>
@@ -5352,6 +5353,10 @@ function wfAnalyze(path) {
       var models = d.models || [];
       var plugins = d.plugins || [];
       wfAnaModels = models;
+      // 模型下载状态属于上一轮解析：清空 + 作废在途轮询，别让旧响应写进新表
+      _wfAnaMdlStates = {};
+      _wfAnaMdlGen++;
+      if (_wfAnaMdlTimer) { clearTimeout(_wfAnaMdlTimer); _wfAnaMdlTimer = null; }
       wfAnaPlugins = plugins.filter(function (p) { return p && !p.installed; });
       // 每次解析都重置下载状态（上一次的进度不该带到这一次）
       // _idx 必须与渲染时的 plugins 下标一致 —— 轮询靠它找 wfAnaSt{i}/wfAnaDl{i}
@@ -5383,7 +5388,7 @@ function wfAnalyze(path) {
         html += '<div style="color:var(--text3);padding:14px 2px">未找到模型文件引用</div>';
       } else {
         html += '<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr>'
-          + _wfAnaTh('#') + _wfAnaTh('模型文件') + _wfAnaTh('类型') + _wfAnaTh('来源节点') + _wfAnaTh('状态')
+          + _wfAnaTh('#') + _wfAnaTh('模型文件') + _wfAnaTh('类型') + _wfAnaTh('来源节点') + _wfAnaTh('状态') + _wfAnaTh('操作')
           + '</tr></thead><tbody>';
         models.forEach(function (m, i) {
           html += '<tr>'
@@ -5393,10 +5398,18 @@ function wfAnalyze(path) {
             + _wfAnaTd(escHtml(m.node_type || '') + (m.node ? ' · ' + escHtml(m.node) : ''), 'var(--text3)')
             + _wfAnaTd(m.exists
                 ? '<span style="color:var(--green)">已安装</span>'
-                : '<span style="color:var(--amber)">未找到</span>', '')
+                : '<span id="wfAnaMSt' + i + '" style="color:var(--amber)">未找到</span>', '')
+            + _wfAnaTd(m.exists
+                ? '<span style="color:var(--text3)">—</span>'
+                : (m.id
+                    ? '<button id="wfAnaMDl' + i + '" class="btn btn-teal" style="font-size:11.5px;padding:2px 9px;white-space:nowrap" onclick="wfAnaMdlDl(' + i + ',this)" title="按「模型管理」里这条记录的下载地址，用 aria2 下载（可暂停/恢复/取消）"><i class="bi bi-download"></i> 下载</button>'
+                    : '<span style="color:var(--text3)" title="模型库里没有这条记录（可到「模型管理」页导入，或手动补上下载地址）">库中无</span>'), '')
             + '</tr>';
         });
         html += '</tbody></table>';
+        html += '<div id="wfAnaMdlNote" style="margin-top:8px;font-size:11.5px;color:var(--text3)">'
+          + '「库中无」= 模型库里查不到这条记录，没有下载地址；可到「模型管理」页导入或补地址。'
+          + '下载中的暂停 / 恢复 / 取消请到「模型管理」页操作。</div>';
       }
 
       // ---------- 需要的插件 ----------
@@ -5449,6 +5462,7 @@ function wfAnalyze(path) {
       if (cm) cm.disabled = !models.length;
       if (cp) cp.disabled = !wfAnaPlugins.length;
       _wfAnaSyncDlAll();
+      _wfAnaMdlSyncBtn();
     })
     .catch(function (e) { wfAnaClose(); notify('请求失败: ' + e); });
 }
@@ -5810,6 +5824,164 @@ function fallbackCopy(text, done) {
   document.body.removeChild(ta);
 }
 
+// ============================================================
+// 解析结果：缺失模型一键下载
+// 与「下载缺失插件」对称 —— 能单独下、也能一键下全部，进度直接显示在行内。
+// 复用「模型管理」页那套 aria2 流程（/api/download/start|batch + all_status），
+// 所以只有「模型库里查得到记录（有下载地址）」的缺失模型才给按钮，其余显示「库中无」。
+// ============================================================
+var _wfAnaMdlTimer = null, _wfAnaMdlGen = 0, _wfAnaMdlStates = {};
+var _WFANA_MDL_END = { complete: 1, error: 1, removed: 1 };
+
+function _wfAnaMdlTargets() {
+  return (wfAnaModels || []).filter(function (m) { return m && !m.exists && m.id; });
+}
+function _wfAnaMdlSet(i, html) {
+  var el = document.getElementById('wfAnaMSt' + i);
+  if (el) el.innerHTML = html;
+}
+function _wfAnaMdlPending() {
+  return _wfAnaMdlTargets().filter(function (m) {
+    var s = _wfAnaMdlStates[m.id];
+    return !s || !_WFANA_MDL_END[s.status];
+  });
+}
+function _wfAnaMdlRender() {
+  (wfAnaModels || []).forEach(function (m, i) {
+    if (!m || m.exists || !m.id) return;
+    var s = _wfAnaMdlStates[m.id];
+    if (!s) { _wfAnaMdlSet(i, '<span style="color:var(--amber)">未找到</span>'); return; }
+    var head = s.status === 'complete'
+      ? '<span style="color:var(--green)">已完成</span>'
+      : dlBadge(s.status);
+    var pct = s.progress || 0;
+    _wfAnaMdlSet(i, head + (pct > 0 ? ' ' + renderMiniBar(pct) : ''));
+    var b = document.getElementById('wfAnaMDl' + i);
+    if (!b) return;
+    if (s.status === 'error' || s.status === 'removed') {
+      b.style.display = ''; b.disabled = false;
+      b.innerHTML = '<i class="bi bi-arrow-clockwise"></i> 重试';
+    } else {
+      b.style.display = 'none';   // 已交给后台，暂停/恢复/取消去「模型管理」页
+    }
+  });
+  _wfAnaMdlSyncBtn();
+}
+function _wfAnaMdlSyncBtn() {
+  var b = document.getElementById('wfAnaModelDlAllBtn');
+  if (!b) return;
+  var all = _wfAnaMdlTargets();
+  if (!all.length) {
+    b.disabled = true;
+    b.innerHTML = '<i class="bi bi-download"></i> 下载缺失模型';
+    b.title = '模型库里没有可下载的缺失模型记录（可到「模型管理」页导入，或手动补下载地址）';
+    return;
+  }
+  b.title = '按模型库里的下载地址，用 aria2 依次下载所有缺失模型；并发上限取「最大同时下载数」，超出的自动排队';
+  var pending = _wfAnaMdlPending();
+  b.disabled = !pending.length;
+  b.innerHTML = pending.length
+    ? '<i class="bi bi-download"></i> 下载缺失模型 (' + pending.length + ')'
+    : '<i class="bi bi-check2"></i> 缺失模型已全部下载';
+}
+async function wfAnaMdlDl(i, btn) {
+  var m = (wfAnaModels || [])[i];
+  if (!m || !m.id) return;
+  if (!await checkA2()) { notify('请先启动 aria2c'); return; }
+  if (btn) btn.disabled = true;
+  try {
+    var r = await fetch('/api/download/start/' + m.id, { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mirror: false }) });
+    var j = await r.json();
+    if (!j.ok) { notify(j.msg || '下载失败'); if (btn) btn.disabled = false; return; }
+    var queued = String(j.msg || '').indexOf('队列') >= 0;
+    _wfAnaMdlStates[m.id] = { status: queued ? 'queue' : 'waiting', progress: 0 };
+    if (btn) btn.style.display = 'none';
+    _wfAnaMdlRender();
+    _wfAnaMdlPoll();
+  } catch (e) {
+    notify('下载失败: ' + e.message);
+    if (btn) btn.disabled = false;
+  }
+}
+function wfAnaMdlAllClick() {
+  var todo = _wfAnaMdlPending();
+  if (!todo.length) { notify('没有需要下载的缺失模型'); return; }
+  confirmDialog('将用 aria2 下载 ' + todo.length + ' 个缺失模型到模型库记录里的保存路径。\n\n'
+    + '• 地址取自「模型管理」页里该模型的下载地址\n'
+    + '• 超出「最大同时下载数」的会自动排队\n'
+    + '• 进度可在本窗口行内查看，暂停 / 恢复 / 取消到「模型管理」页操作\n\n'
+    + '是否继续？', { title: '下载缺失模型', okText: '开始下载', icon: 'bi-download' })
+    .then(function (ok) { if (ok) wfAnaMdlAll(); });
+}
+async function wfAnaMdlAll() {
+  if (!await checkA2()) { notify('请先启动 aria2c'); return; }
+  var ids = _wfAnaMdlPending().map(function (m) { return m.id; });
+  if (!ids.length) { notify('没有可下载的缺失模型'); return; }
+  try {
+    var r = await fetch('/api/download/batch', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: ids, mirror: false }) });
+    var j = await r.json();
+    if (!j.ok) { notify('批量下载失败'); return; }
+    var started = 0, queued = 0, bad = 0;
+    (j.results || []).forEach(function (x) {
+      if (!x.ok) bad++;
+      else if (String(x.msg || '').indexOf('队列') >= 0) queued++;
+      else started++;
+    });
+    (wfAnaModels || []).forEach(function (m) {
+      if (!m || m.exists || !m.id || ids.indexOf(m.id) < 0) return;
+      _wfAnaMdlStates[m.id] = { status: 'queue', progress: 0 };
+    });
+    _wfAnaMdlRender();
+    notify('缺失模型：开始 ' + started + ' 个，排队 ' + queued + ' 个' + (bad ? '，失败 ' + bad + ' 个' : ''));
+    _wfAnaMdlPoll();
+  } catch (e) { notify('批量下载失败: ' + e.message); }
+}
+function _wfAnaMdlPoll() {
+  if (_wfAnaMdlTimer) return;                 // 已有一次在途，别叠加
+  _wfAnaMdlTick(++_wfAnaMdlGen);
+}
+async function _wfAnaMdlTick(gen) {
+  if (gen !== _wfAnaMdlGen) return;
+  try {
+    var r = await fetch('/api/download/all_status');
+    var d = await r.json();
+    var seen = {};
+    (d.active || []).forEach(function (x) {
+      if (!(x.id in _wfAnaMdlStates)) return;   // 只跟踪本弹窗发起的，避免误改别的任务
+      seen[x.id] = 1;
+      _wfAnaMdlStates[x.id] = { status: x.status || 'active', progress: x.progress || 0 };
+    });
+    (d.queue || []).forEach(function (x) {
+      var cur = _wfAnaMdlStates[x.id];
+      if (!cur || _WFANA_MDL_END[cur.status]) return;
+      seen[x.id] = 1;
+      _wfAnaMdlStates[x.id] = { status: 'queue', progress: 0 };
+    });
+    // 曾发给它、现在既不在 active 也不在 queue -> 视为结束（与「模型管理」页的判定一致）
+    Object.keys(_wfAnaMdlStates).forEach(function (k) {
+      var s = _wfAnaMdlStates[k];
+      if (s && !_WFANA_MDL_END[s.status] && !seen[k]) {
+        _wfAnaMdlStates[k] = { status: 'complete', progress: 100 };
+      }
+    });
+    _wfAnaMdlRender();
+  } catch (e) { /* 网络抖动：下一轮再取 */ }
+  if (gen !== _wfAnaMdlGen) return;
+  var alive = (wfAnaModels || []).some(function (m) {
+    var s = m && _wfAnaMdlStates[m.id];
+    return !!(s && !_WFANA_MDL_END[s.status]);
+  });
+  var box = document.getElementById('wfAnaModal');
+  var open = box && box.style.display !== 'none';
+  if (gen === _wfAnaMdlGen && alive && open) {
+    _wfAnaMdlTimer = setTimeout(function () { _wfAnaMdlTick(gen); }, 2000);
+  } else {
+    _wfAnaMdlTimer = null;
+  }
+}
+
 function wfAnaClose() {
   var m = document.getElementById('wfAnaModal');
   if (m) m.style.display = 'none';
@@ -5817,6 +5989,9 @@ function wfAnaClose() {
   _wfAnaPollGen++;
   _wfAnaPolling = false;
   if (_wfAnaPollTimer) { clearTimeout(_wfAnaPollTimer); _wfAnaPollTimer = null; }
+  // 模型下载的轮询同理作废
+  _wfAnaMdlGen++;
+  if (_wfAnaMdlTimer) { clearTimeout(_wfAnaMdlTimer); _wfAnaMdlTimer = null; }
 }
 
 function wfCloseEditor() {

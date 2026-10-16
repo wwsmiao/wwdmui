@@ -540,6 +540,33 @@ def plugin_ids_by_url():
         conn.close()
 
 
+def model_ids_by_file():
+    """{规范化文件名: (id, name, download_url)} —— 给工作流解析里的「缺失模型」绑下载入口。
+
+    工作流引用的是 checkpoints/xxx.safetensors，而库里 name 可能只写 xxx.safetensors、
+    完整落盘路径写在 save_path —— 所以键同时收两者的 basename（都小写）。
+    只收录带 download_url 的行：没有地址的条目给了下载按钮也下不动。
+    同名多行按 id 升序取第一条（与库表展示顺序一致）。
+    """
+    conn = get_db()
+    try:
+        out = {}
+        rows = conn.execute(
+            "SELECT id, name, save_path, download_url FROM models "
+            "WHERE download_url IS NOT NULL AND download_url <> '' ORDER BY id")
+        for rid, name, save_path, url in rows:
+            for cand in (name or "", save_path or ""):
+                c = cand.replace("\\", "/").strip().lower()
+                if not c:
+                    continue
+                base = c.split("/")[-1]
+                if base and base not in out:
+                    out[base] = (rid, (name or "").strip() or base, url or "")
+        return out
+    finally:
+        conn.close()
+
+
 def plugin_upsert_bulk(items):
     """按【规范化仓库地址】合并写入 nodes 表（用户指定的写库规则）：
          · 地址已存在 → 原地覆盖 name / description（保持原 id 与 created_at）

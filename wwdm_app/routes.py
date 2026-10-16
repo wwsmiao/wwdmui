@@ -646,8 +646,16 @@ def register(app):
     def api_reset_settings():
         # 访问令牌要保留：重置设置不应该把已经开启的访问保护「悄悄关掉」
         keep_tok = str(config.settings.get("access_token") or "").strip()
-        config.settings = dict(config.DEFAULT_SETTINGS)
-        config.settings["access_token"] = keep_tok or config.new_access_token()
+        # ⚠️ 必须【原地】清空再填充，不能写成 config.settings = dict(DEFAULT_SETTINGS)：
+        # services.py 是 `from .config import settings`（import 时就绑定的同一个 dict 对象），
+        # 重新赋值只换掉 config 这边的引用，services 仍然指向旧字典 —— 于是
+        # 「恢复默认设置」在界面上看着生效了，后端却还在用旧的 comfyui_dir / python_path /
+        # 镜像 / 并发，直到重启。实测：重新赋值后 services.get_comfyui_dir() 仍是旧值。
+        # （单用户管理动作，这里不做并发保护；读取方都是 .get(k, 默认)，短窗口不会崩。）
+        fresh = dict(config.DEFAULT_SETTINGS)
+        fresh["access_token"] = keep_tok or config.new_access_token()
+        config.settings.clear()
+        config.settings.update(fresh)
         config.save_settings(config.settings)
         return jsonify({"ok": True, "msg": "已恢复默认设置（访问令牌已保留）"})
 

@@ -2982,6 +2982,48 @@ def plugins_clone_by_url(url, name=""):
     # 连 id 一起回给前端：解析结果里没有 id 的那 0.3% 也要能轮询进度
     return ok, msg, pid
 
+def _wf_bind_model_lib(found):
+    """给解析出的模型补 exists / at / id 三个字段。
+
+    返回 (缺失数, 其中模型库里查得到下载地址的数量)。
+
+    * exists / at —— 来自本机 models 目录的文件名索引；
+    * id —— 来自 models.db（只收录带 download_url 的记录），界面上的「下载」按钮
+      复用它走既有的按 id 下载流程（队列、并发上限、镜像改写、进度都现成）。
+
+    JSON 工作流与非 JSON 兜底（.txt/.md/.png）都走这里，两条路径口径一致。
+    """
+    from . import database as _db
+
+    midx = _wf_model_index()
+    missing = 0
+    for m in found:
+        norm = (m.get("file") or "").replace("\\", "/").strip().lower()
+        base = norm.split("/")[-1]
+        at = midx.get(norm) or midx.get(base) or ""
+        m["exists"] = bool(at)
+        m["at"] = at
+        m["id"] = 0          # 0 = 模型库里没有 -> 前端不给下载按钮，显示「库中无」
+        if not at:
+            missing += 1
+
+    try:
+        idmap = _db.model_ids_by_file()
+    except Exception as e:
+        log.warning("[解析] 读取模型库索引失败: %s", e)
+        idmap = {}
+    in_lib = 0
+    for m in found:
+        if m.get("exists"):
+            continue
+        key = (m.get("file") or "").replace("\\", "/").strip().lower().split("/")[-1]
+        hit = idmap.get(key)
+        if hit:
+            m["id"] = hit[0]
+            in_lib += 1
+    return missing, in_lib
+
+
 def workflows_analyze(root_dir, rel_path):
     """解析工作流：列出所需【模型】与所需【插件】，并判断本机是否已有。
 
@@ -3004,9 +3046,13 @@ def workflows_analyze(root_dir, rel_path):
     except Exception:
         # 非 JSON 文件（.txt/.md/.png）：只能正则兜底捞模型名
         res = _workflows_analyze_text(content, rel_path)
+        # 非 JSON 也要判存在性、也要能一键下载（模型库里有地址就行），
+        # 否则前端会把每个模型都显示成「未找到」、徽章还会说「模型已齐全」。
+        _mm, _mml = _wf_bind_model_lib(res.get("models") or [])
         res.update({"plugins": [], "plugin_count": 0, "missing_plugin_count": 0,
-                    "missing_model_count": 0, "builtin_node_count": 0,
-                    "unknown_nodes": [], "comfyui_online": False, "source": "text"})
+                    "missing_model_count": _mm, "missing_model_in_lib": _mml,
+                    "builtin_node_count": 0, "unknown_nodes": [],
+                    "comfyui_online": False, "source": "text"})
         return res
 
     nodes = data.get("nodes") if isinstance(data, dict) else None
@@ -3084,17 +3130,8 @@ def workflows_analyze(root_dir, rel_path):
             if inp.get("value") and isinstance(inp["value"], str):
                 add_model(inp["value"], nname, ntype)
 
-    # ---- 模型：对照本机 models 目录，标出缺失 ----
-    midx = _wf_model_index()
-    missing_models = 0
-    for m in found:
-        norm = m["file"].replace("\\", "/").strip().lower()
-        base = norm.split("/")[-1]
-        at = midx.get(norm) or midx.get(base) or ""
-        m["exists"] = bool(at)
-        m["at"] = at
-        if not at:
-            missing_models += 1
+    # ---- 模型：对照本机 models 目录标出缺失，并绑上模型库里的下载入口 ----
+    missing_models, missing_model_in_lib = _wf_bind_model_lib(found)
 
     # ---- 插件：节点类名差集 + 映射表反查 ----
     from . import database as _db
@@ -3158,6 +3195,7 @@ def workflows_analyze(root_dir, rel_path):
         "count": len(found),
         "model_count": len(found),
         "missing_model_count": missing_models,
+        "missing_model_in_lib": missing_model_in_lib,   # 其中能在模型库里找到下载地址的
         "plugins": plugins,
         "plugin_count": len(plugins),
         "missing_plugin_count": len(miss_map),
