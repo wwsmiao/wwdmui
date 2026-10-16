@@ -28,6 +28,9 @@ def create_app():
     from . import routes                      # 注册所有路由
 
     routes.register(app)
+
+    from .blueprints import douyin as bp_douyin   # v5.0 第 6 步：域 1/10
+    app.register_blueprint(bp_douyin.bp)
     errors.register(app)    # 必须早于 security：先分配 trace_id，security 的日志才带号
     security.register(app)
     tasks.register(app)     # 只读的 GET /api/tasks；不参与鉴权闸，放最后
