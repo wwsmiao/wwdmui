@@ -1,7 +1,13 @@
 import os, re, sys, io, time, json, shutil, tempfile, threading, subprocess, ctypes, configparser
+import logging
 from .config import (settings, DEFAULT_SETTINGS, IS_WINDOWS, IS_LINUX, BASE_DIR,
                      ARIA2_RPC_PORT, ARIA2_RPC_SECRET, _DEFAULT_ARIA2C, COMFYUI_DIR)
 from .database import db_get, db_get_many, plugin_get, plugin_get_many
+
+# ---- 日志 ----
+# 里程碑（开始 / 完成 / 失败 / 清理）走 logging：控制台和 logs/wwdm.log 都能看到；
+# 每秒刷一次的下载进度条走 _cli()：只打控制台，免得把日志文件刷爆。
+log = logging.getLogger("wwdm.services")
 
 # ---- 状态变量 ----
 aria2_proc = None
@@ -23,6 +29,14 @@ clone_session_done = set()      # 已克隆完成的 pid（停止克隆时保留
 clone_cleanup_lock = threading.Lock()
 
 BAR_WIDTH = 28
+
+
+def _cli(msg="", end="\n", flush=False):
+    """只往控制台输出（进度条这类高频内容不进日志文件）"""
+    try:
+        print(msg, end=end, flush=flush)
+    except Exception:
+        pass
 
 
 def fmt_size(n):
@@ -277,7 +291,7 @@ def aria2_start():
         if aria2_proc.poll() is None:
             ver, _ = aria2_rpc("aria2.getVersion")
             vstr = ver.get("version", "?") if ver else "?"
-            print("[aria2c] 启动 PID=" + str(aria2_proc.pid) + " v" + vstr)
+            log.info("[aria2c] 已启动 PID=%s v%s", aria2_proc.pid, vstr)
             return True, "aria2c 启动成功 (v" + vstr + ")"
         return False, "aria2c 启动后退出，检查路径"
     except Exception as e:
@@ -306,7 +320,7 @@ def _do_start(rid, m, use_mirror):
     url = convert_to_mirror(m["download_url"]) if use_mirror else m["download_url"]
     r, e = aria2_rpc("aria2.addUri", [[url], {"dir": d, "out": m["name"], "continue": "true"}])
     if e:
-        print("[FAIL] " + m["name"] + ": " + e)
+        log.error("[下载失败] %s: %s", m["name"], e)
         return False, e
     download_gids[rid] = r
     download_mirrors[rid] = use_mirror
@@ -314,7 +328,7 @@ def _do_start(rid, m, use_mirror):
     console_threads[rid] = t
     t.start()
     tag = " [镜像]" if use_mirror else ""
-    print("\n[下载" + tag + "] " + m["name"] + " gid=" + str(r))
+    log.info("[下载%s] %s gid=%s", tag, m["name"], r)
     return True, r
 
 
@@ -327,7 +341,7 @@ def _console_progress_monitor(rid, gid, name):
         if e:
             errs += 1
             if errs > 30:
-                print("\n  [ABORT] " + name + " RPC 连续错误")
+                log.error("[下载中断] %s：aria2 RPC 连续出错", name)
                 break
             time.sleep(2)
             continue
@@ -338,15 +352,15 @@ def _console_progress_monitor(rid, gid, name):
         sp = int(r.get("downloadSpeed", 0))
         pct = (c / t * 100) if t > 0 else 0
         msg = "\r  " + _console_bar(pct) + " " + ("%.1f%%" % pct).rjust(6) + " " + fmt_size(c) + "/" + fmt_size(t) + " " + fmt_speed(sp) + " " + sn[:18]
-        print(msg, end="", flush=True)
+        _cli(msg, end="", flush=True)
         if s in ("complete", "error", "removed"):
-            print()
+            _cli("")
             if s == "complete":
-                print("  [DONE] " + name + " (" + fmt_size(t) + ")")
+                log.info("[下载完成] %s (%s)", name, fmt_size(t))
             elif s == "error":
-                print("  [ERROR] " + name)
+                log.error("[下载出错] %s", name)
             elif s == "removed":
-                print("  [CANCEL] " + name)
+                log.warning("[下载已取消] %s", name)
             last_status = s
             break
         time.sleep(3 if s == "paused" else 1)
@@ -397,7 +411,7 @@ def start_download(rid, use_mirror=False):
     with queue_lock:
         download_queue.append(rid)
     pos = len(download_queue)
-    print("[队列] " + m["name"] + " (位置" + str(pos) + ")")
+    log.info("[下载排队] %s (位置%d)", m["name"], pos)
     return True, "加入队列: " + m["name"] + " (位置" + str(pos) + ")"
 
 
@@ -530,8 +544,8 @@ def _git_clone_thread(pid, repo_url, name, target_dir, use_mirror=None):
     clone_infos[pid] = {"status": "cloning", "progress": 0, "phase": "remote", "msg": "",
                         "mirror_label": mlabel, "mirror_prefix": mprefix, "actual_url": actual_url}
     tag = (" [GitHub镜像: " + mlabel + "]") if mprefix else " [GitHub: 官方直连]"
-    print("\n[Git Clone" + tag + "] " + name)
-    print("  " + actual_url)
+    log.info("[克隆%s] %s", tag, name)
+    log.info("  仓库地址: %s", actual_url)
     with clone_cleanup_lock:
         clone_session_started.add(pid)
         clone_session_done.discard(pid)   # 重新克隆 => 视为未完成，直到本次成功
@@ -569,10 +583,10 @@ def _git_clone_thread(pid, repo_url, name, target_dir, use_mirror=None):
         clone_infos[pid] = {"status": "complete", "progress": 100, "phase": "done", "msg": "克隆完成"}
         with clone_cleanup_lock:
             clone_session_done.add(pid)   # 克隆完成 → 停止克隆时不再删除
-        print("\n  [DONE] " + name + " -> " + full_path)
+        log.info("[克隆完成] %s -> %s", name, full_path)
     else:
         clone_infos[pid] = {"status": "error", "progress": last_pct, "phase": "failed", "msg": "退出码: " + str(proc.returncode)}
-        print("\n  [ERROR] " + name + " 退出码: " + str(proc.returncode))
+        log.error("[克隆失败] %s 退出码=%s", name, proc.returncode)
     clone_procs.pop(pid, None)
     time.sleep(10)
     clone_infos.pop(pid, None)
@@ -738,7 +752,7 @@ def stop_clone_and_cleanup():
             # 已克隆完成的插件：保留，不删除
             kept.append(nm)
             kept_ids.append(pid)
-            print("[克隆清理] 保留（已克隆完成）: " + nm)
+            log.info("[克隆清理] 保留（已克隆完成）: %s", nm)
             continue
         if not folder or not os.path.isdir(folder):
             skipped.append(nm)
@@ -746,7 +760,7 @@ def stop_clone_and_cleanup():
         if _rmtree_force(folder):
             removed.append(nm)
             removed_ids.append(pid)
-            print("[克隆清理] 已删除目录: " + folder)
+            log.info("[克隆清理] 已删除目录: %s", folder)
         else:
             skipped.append(nm + "(删除失败)")
             partial.append(nm + "(删除失败)")
@@ -3384,7 +3398,7 @@ def douyin_download_images(urls: list, save_dir: str, name_template: str = "{ind
             opts["header"] = header
         r, e = aria2_rpc("aria2.addUri", [[url], opts])
         if e:
-            print(f"  [WARN] image {idx}/{total} aria2 addUri failed: {e}")
+            log.warning("[抖音] 第 %s/%s 张加入 aria2 失败: %s", idx, total, e)
             continue
         gids.append({"idx": idx, "url": url, "gid": r, "out": out_file})
     return {"ok": True, "gids": gids, "total": total, "added": len(gids), "save_dir": save_dir}

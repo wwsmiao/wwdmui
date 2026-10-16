@@ -26,6 +26,7 @@ from urllib.parse import urlencode, urlsplit
 from flask import after_this_request, jsonify, make_response, redirect, request
 
 from . import config
+from .errors import error_payload, wants_json
 
 _LOG = logging.getLogger("wwdm.security")
 
@@ -82,21 +83,18 @@ def _same_origin_ok():
     return True
 
 
-def _wants_json():
-    """这个请求期望 JSON 响应吗（决定拒绝时返回 JSON 还是 HTML 页）"""
-    if (request.path or "").startswith("/api/"):
-        return True
-    if request.is_json:
-        return True
-    accept = request.headers.get("Accept", "")
-    return ("application/json" in accept) and ("text/html" not in accept)
-
-
 def _clean_url():
     """去掉 query 里的 t=，让令牌不留在浏览器历史里"""
     args = [(k, v) for k, v in request.args.items(multi=True) if k != "t"]
     q = urlencode(args)
     return (request.path or "/") + ("?" + q if q else "")
+
+
+def _html_msg(msg, code):
+    """极简 HTML 错误页（页面请求用；/api/* 一律走 errors.py 的统一错误体）"""
+    return ("<meta charset='utf-8'>"
+            "<div style=\"font:14px/1.8 -apple-system,'Microsoft YaHei',sans-serif;"
+            "padding:32px;color:#3a3a3a\">%s</div>" % msg), code
 
 
 # ============================================================
@@ -159,17 +157,7 @@ def register(app):
     gb = max(0.1, min(64.0, gb))
     app.config["MAX_CONTENT_LENGTH"] = int(gb * 1024 * 1024 * 1024)
 
-    @app.errorhandler(413)
-    def _payload_too_large(e):                # noqa: ARG001
-        limit_gb = app.config.get("MAX_CONTENT_LENGTH", 0) / 1024.0 / 1024.0 / 1024.0
-        msg = ("上传内容超过上限（当前 %.1f GB）。可在「设置 → 管理器访问」里调整上限，"
-               "或分批上传。" % limit_gb)
-        _LOG.warning("拒绝超大请求: %s %s (%s)", request.method, request.path, request.remote_addr)
-        if _wants_json():
-            return jsonify({"ok": False, "msg": msg}), 413
-        return ("<meta charset='utf-8'>"
-                "<div style=\"font:14px/1.8 -apple-system,'Microsoft YaHei',sans-serif;"
-                "padding:32px;color:#3a3a3a\">%s</div>" % msg), 413
+    # 413 的统一处理在 errors.py（那里才有 trace_id 与统一错误体），此处只负责挂上限
 
     @app.before_request
     def _gate():
@@ -182,11 +170,9 @@ def register(app):
                              request.headers.get("Referer"),
                              request.remote_addr)
                 msg = "请求来源校验失败（跨站请求已被拒绝），请从管理器页面内操作。"
-                if _wants_json():
-                    return jsonify({"ok": False, "msg": msg}), 403
-                return ("<meta charset='utf-8'>"
-                        "<div style=\"font:14px/1.8 -apple-system,'Microsoft YaHei',sans-serif;"
-                        "padding:32px;color:#3a3a3a\">%s</div>" % msg), 403
+                if wants_json():
+                    return jsonify(error_payload(msg)), 403
+                return _html_msg(msg, 403)
 
         # ② 回环地址免校验
         if is_loopback(request.remote_addr):
@@ -199,7 +185,7 @@ def register(app):
         given = str(_given_token() or "")
         if given and hmac.compare_digest(given, want):
             if request.args.get("t"):
-                if _wants_json():
+                if wants_json():
                     # API 请求不能 302（fetch/XHR 会自己追随重定向，语义会乱）。
                     # 直接放行，顺手把 Cookie 挂到响应上，后续请求就不必再带 ?t=。
                     @after_this_request
@@ -216,8 +202,7 @@ def register(app):
             return None
 
         _LOG.warning("未授权访问被拒: %s %s ip=%s", request.method, request.path, request.remote_addr)
-        if _wants_json():
-            return jsonify({"ok": False, "need_token": True,
-                            "msg": "未授权：需要访问令牌"}), 401
+        if wants_json():
+            return jsonify(error_payload("未授权：需要访问令牌", {"need_token": True})), 401
         return _login_response(bad=bool(request.args.get("t") or
                                         request.cookies.get(COOKIE_NAME)))

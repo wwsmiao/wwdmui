@@ -4,7 +4,7 @@ ComfyUI 模型管理器 v4.0 — 入口脚本
 用法: python run.py
 """
 
-import sys, os, atexit, signal, platform, webbrowser, threading, time
+import sys, os, atexit, signal, logging, platform, webbrowser, threading, time
 
 # 确保项目根在 sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -13,11 +13,14 @@ from wwdm_app import app
 from wwdm_app.config import settings, BASE_DIR, DB_PATH, RUNTIME_INFO
 from wwdm_app.services import aria2_start, cleanup_all
 
+_log = logging.getLogger("wwdm.run")
+
 
 def _on_exit():
     """退出时强制清理所有子进程"""
     print("\n[v4.0] 正在清理子进程...")
     cleanup_all()
+    _log.info("管理器已退出")
     print("[v4.0] 已退出")
 
 
@@ -80,6 +83,7 @@ if __name__ == "__main__":
         print("  已设为仅本机访问（可到管理器「设置 → 管理器访问」改成局域网可访问）")
     if token_on:
         print("  访问令牌: " + token)
+    _log.info("管理器启动 host=%s port=%s token_required=%s", host, port, token_on)
     print("  提示: 改监听地址/端口需要重启管理器；访问令牌改动立即生效\n")
 
     # 自动打开浏览器（延迟 1.5s 等待 Flask 就绪）
