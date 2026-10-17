@@ -120,9 +120,37 @@ def _stub_dangerous():
             # Python 的**闭包晚绑定** —— 所有桩捕获的都是同一个 n，最后全指向
             # 循环最后一个名字。桩看着生效，标记却全错，极易埋雷。
             setattr(svc, n, (lambda *a, _n=n, **k: ("stubbed", _n)))
+
+    # ---- save_settings 通用打桩 ----
+    # 上面只打了 ``config.save_settings``，但「模块内直接名字引用」拿不到它 ——
+    # 2026-10-18 真出过事：services/mirror.py 顶层
+    # ``from ..config import save_settings``，pick_fastest_mirror() 于是把整份
+    # 被 conftest 改过的内存 settings（output_dir/input_dir/workflow_dir 指向
+    # 临时目录 + github_mirror=ghproxy）连名写进**真** settings.json，
+    # 指纹 adb3d977d573 -> 2877f2d99722，被 _fingerprint_guard 当场抓出。
+    # 这里遍历所有已导入的 wwdm_app 模块，把各自的 save_settings 一并打桩，
+    # 无论新代码用哪种导入写法都逃不掉。
+    import sys as _sys
+    _saved_save = {}
+    for _mname, _mod in list(_sys.modules.items()):
+        if not _mname.startswith("wwdm_app") or _mod is None:
+            continue
+        if hasattr(_mod, "save_settings"):
+            _saved_save[_mname] = _mod.save_settings
+            try:
+                _mod.save_settings = lambda *a, **k: None
+            except Exception:
+                pass
     yield
     for n, fn in saved.items():
         setattr(svc, n, fn)
+    for _mname, _fn in _saved_save.items():
+        _mod = _sys.modules.get(_mname)
+        if _mod is not None:
+            try:
+                _mod.save_settings = _fn
+            except Exception:
+                pass
 
 
 @pytest.fixture(scope="session")

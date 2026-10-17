@@ -86,107 +86,8 @@ def plugin_uninstall(plugin_name):
     except Exception as e:
         return False, str(e)
 
-def convert_to_mirror(url):
-    return url.replace("huggingface.co", "hf-mirror.com") if "huggingface.co" in url else url
-
-
-# ---- GitHub 镜像（全局设置） ----
-# group: 官方 / 镜像仓库(替换 github.com 域名) / 加速网站(前缀加速)
-# prefix: 用于替换 "https://github.com/" 的字符串，空串 = 官方直连
-GITHUB_MIRRORS = [
-    {"key": "official",   "label": "GitHub 官方",         "group": "官方",     "prefix": ""},
-    {"key": "gitclone",   "label": "gitclone.com",        "group": "镜像仓库", "prefix": "https://gitclone.com/github.com/"},
-    {"key": "ur1",        "label": "github.ur1.fun",      "group": "镜像仓库", "prefix": "https://github.ur1.fun/"},
-    {"key": "ghproxy",    "label": "gh-proxy.com",        "group": "加速网站", "prefix": "https://gh-proxy.com/https://github.com/"},
-    {"key": "ghproxynet", "label": "ghproxy.net",         "group": "加速网站", "prefix": "https://ghproxy.net/https://github.com/"},
-    {"key": "homeboyc",   "label": "ghproxy.homeboyc.cn", "group": "加速网站", "prefix": "https://ghproxy.homeboyc.cn/https://github.com/"},
-    {"key": "akams",      "label": "github.akams.cn",     "group": "加速网站", "prefix": "https://github.akams.cn/https://github.com/"},
-]
-_GITHUB_MIRROR_MAP = {m["key"]: m for m in GITHUB_MIRRORS}
-# 连通性探测目标：极小仓库的 git smart-http 端点（等价于 git clone 的第一步）
-GITHUB_PROBE_URL = "https://github.com/octocat/Hello-World.git/info/refs?service=git-upload-pack"
-
-
-def github_mirror_prefix(key=None):
-    """当前 GitHub 镜像用于替换 "https://github.com/" 的前缀；官方/未知返回空串"""
-    if key is None:
-        key = settings.get("github_mirror", "official")
-    m = _GITHUB_MIRROR_MAP.get(key)
-    return (m or {}).get("prefix", "") or ""
-
-
-def github_mirror_label(key=None):
-    if key is None:
-        key = settings.get("github_mirror", "official")
-    m = _GITHUB_MIRROR_MAP.get(key)
-    return m["label"] if m else "GitHub 官方"
-
-
-def apply_github_mirror(url, key=None):
-    """按 GitHub 镜像设置改写单个 URL（仅处理 github.com 链接）"""
-    p = github_mirror_prefix(key)
-    if not p or "https://github.com/" not in url:
-        return url
-    return url.replace("https://github.com/", p, 1)
-
-
-def convert_git_mirror(url):
-    """插件克隆用：按全局 GitHub 镜像设置转换仓库地址"""
-    if "github.com" not in url:
-        return url
-    url = url.rstrip("/")
-    if not url.endswith(".git"):
-        url += ".git"
-    return apply_github_mirror(url)
-
-
-def test_github_mirrors(timeout=8):
-    """并发探测各 GitHub 镜像的 git 可用性（git-upload-pack 端点），返回连通性与延迟"""
-    import requests
-    from concurrent.futures import ThreadPoolExecutor
-    try:
-        requests.packages.urllib3.disable_warnings()
-    except Exception:
-        pass
-
-    def probe(m):
-        url = apply_github_mirror(GITHUB_PROBE_URL, m["key"])
-        t0 = time.time()
-        item = {"key": m["key"], "label": m["label"], "group": m["group"],
-                "prefix": m["prefix"], "url": url, "ms": 0,
-                "http": 0, "status": "fail", "msg": ""}
-        try:
-            # 诊断用途的只读探测：部分镜像站点证书不规范，故不做证书校验
-            r = requests.get(url, timeout=(4, timeout), allow_redirects=True,
-                             verify=False, headers={"User-Agent": "git/2.43.0"})
-            item["ms"] = int((time.time() - t0) * 1000)
-            item["http"] = r.status_code
-            if r.status_code == 200 and b"git-upload-pack" in r.content[:600]:
-                if item["ms"] <= 3000:
-                    item["status"], item["msg"] = "ok", "可用"
-                else:
-                    item["status"], item["msg"] = "slow", "可用（较慢）"
-            else:
-                item["msg"] = "HTTP %d" % r.status_code
-        except requests.exceptions.Timeout:
-            item["ms"] = int((time.time() - t0) * 1000)
-            item["msg"] = "连接超时"
-        except requests.exceptions.SSLError:
-            item["ms"] = int((time.time() - t0) * 1000)
-            item["msg"] = "SSL 证书错误"
-        except Exception as e:
-            item["ms"] = int((time.time() - t0) * 1000)
-            item["msg"] = ("连接失败: " + str(e))[:90]
-        return item
-
-    try:
-        with ThreadPoolExecutor(max_workers=len(GITHUB_MIRRORS)) as ex:
-            results = list(ex.map(probe, GITHUB_MIRRORS))
-    except Exception as e:
-        return {"ok": False, "msg": "测试失败: " + str(e), "results": []}
-    return {"ok": True, "current": settings.get("github_mirror", "official"),
-            "results": results}
-
+# ---- 镜像域（GitHub 镜像 + HuggingFace 渠道）已拆到 services/mirror.py（v5.1）
+#     本文件末尾统一再导出，保持 `services.X` 旧路径可用 ----
 
 # ---- 下载状态缓存（RPC 失败时返回最后已知状态） ----
 _dl_cache = {}       # rid → {status, progress, total, completed, speed}
@@ -1827,4 +1728,15 @@ from .output import (                                               # noqa: E402
     delete_output_files, rename_output_file, move_output_files, copy_output_files,
     send_to_input_dir, create_output_dir,
     _safe_upload_rel, _save_upload_batch, upload_output_files,
+)
+
+# ---- 域 9/11：mirror（GitHub 镜像 + HuggingFace 渠道，v5.1 从包内拆出）----
+# 说明：本域是 v5.0 之后第一个新拆的子域。GitHub 侧函数体逐字未改，
+# HuggingFace 侧把原来写死 hf-mirror 的 convert_to_mirror() 改成可切换渠道。
+from .mirror import (                                               # noqa: E402,F401
+    GITHUB_MIRRORS, GITHUB_PROBE_URL,
+    github_mirror_prefix, github_mirror_label, apply_github_mirror,
+    convert_git_mirror, test_github_mirrors, pick_fastest_mirror,
+    HF_CHANNELS, HF_ENV_KEY, hf_channel, hf_endpoint, hf_preset_entry,
+    convert_to_mirror,
 )

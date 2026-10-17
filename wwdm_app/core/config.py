@@ -52,7 +52,10 @@ DEFAULT_SETTINGS = {
     # pip 镜像
     "pip_mirror": "default",  # default/tsinghua/aliyun/tencent/douban/ustc
     # GitHub 镜像（克隆 ComfyUI 插件 / 更新 ComfyUI 时使用）
-    "github_mirror": "official",  # official/gitclone/ur1/ghproxy/ghproxynet/homeboyc/akams
+    "github_mirror": "official",  # official/ghproxy/yuntao/ghproxycn/ghproxynet/gitclone/ur1/homeboyc/akams
+    # HuggingFace 渠道（模型下载 URL 改写 + 注入给 ComfyUI 的 HF_ENDPOINT）
+    # hf-mirror=国内公益镜像（默认，保持既有体验）/ official=官方直连
+    "hf_channel": "hf-mirror",    # hf-mirror/official
     # ComfyUI 环境变量预设（启动前注入）
     "comfyui_presets": [],  # [{"key":"TORCH_COMPILE_OFF","value":"1"},...]
     # 输出管理

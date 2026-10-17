@@ -118,7 +118,7 @@ class TestDependencyDirection:
         不然域内 append 了包上看不见，打桩也打不中。
         """
         import wwdm_app.services as svc
-        from wwdm_app.services import (clone, files, output, plugins,
+        from wwdm_app.services import (clone, files, mirror, output, plugins,
                                        shutdown, workflows)
 
         shared = {
@@ -130,6 +130,13 @@ class TestDependencyDirection:
             shutdown: ["_SHUTDOWN_STATE", "_shutdown_lock"],
             plugins: ["_PLUGIN_LIB_BASES"],
             output: ["_safe_path", "_safe_rel", "_is_inside", "recursive_search"],
+            # v5.1 新拆的镜像域：GitHub 镜像表 + HF 渠道切换
+            mirror: ["GITHUB_MIRRORS", "GITHUB_PROBE_URL", "HF_CHANNELS",
+                     "HF_ENV_KEY", "convert_to_mirror", "apply_github_mirror",
+                     "convert_git_mirror", "github_mirror_prefix",
+                     "github_mirror_label", "test_github_mirrors",
+                     "pick_fastest_mirror", "hf_channel", "hf_endpoint",
+                     "hf_preset_entry"],
         }
         checked = 0
         for mod, names in shared.items():
