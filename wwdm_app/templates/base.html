@@ -102,9 +102,20 @@
     <button class="tc-x" id="tcClose" title="收起"><i class="bi bi-x-lg"></i></button>
   </div>
   <div class="tc-list gscroll" id="tcList"></div>
+
+  <!-- 手动清理（v5.0 第 11 步补）：后端 DELETE /api/tasks 只清**终态**，
+       正在跑的任务背后有真线程在干活，清掉它下次心跳又会重建，所以不提供。 -->
+  <div class="tc-actions" id="tcActions" style="display:none">
+    <span style="flex:1"></span>
+    <button type="button" class="tc-act danger" id="tcClearFailed" data-act="clear-failed"
+            title="只清除失败的记录，正在跑的不受影响"></button>
+    <button type="button" class="tc-act" id="tcClearFinished" data-act="clear-finished"
+            title="清除全部已结束的记录，正在跑的不受影响"></button>
+  </div>
+
   <div class="tc-foot">
     <i class="bi bi-arrow-repeat"></i>
-    <span>每 1.5 秒自动刷新；已完成的任务保留 6 小时后自动清理</span>
+    <span>每 1.5 秒自动刷新；已结束的可手动清除，否则 6 小时后自动清理</span>
   </div>
 </div>
 

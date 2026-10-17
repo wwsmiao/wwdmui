@@ -208,6 +208,65 @@ def remove(task_id):
         return gone is not None
 
 
+def _scope_status(scope):
+    """把 scope 参数翻译成一组允许清的 status。"""
+    s = str(scope or "").strip().lower()
+    if s in ("failed", "fail", "error"):
+        return {FAILED}
+    if s in ("canceled", "cancelled"):
+        return {CANCELED}
+    if s in ("done", "success", "finished_ok"):
+        return {DONE}
+    # finished / all / 没传 / 不认识 —— 一律按「全部终态」，宁可少删不许多删
+    return set(FINISHED)
+
+
+def clear(ids=None, scope="finished"):
+    """手动清理**终态**任务，返回 ``{"removed": n, "skipped": n}``。
+
+    ⚠️ 设计上只允许删终态，这是刻意的：
+
+    正在跑的任务背后有真实线程在干活，删掉注册表条目**并不会让线程停下**，
+    而下一次心跳上报又把条目原样重建出来 —— 用户刚清完它就冒回来，比不清
+    更让人困惑。真要中止请用各自的业务端点（下载 pause、克隆 cancel、
+    修复 stop），那条才是真正会让线程退出的路。
+
+    ``skipped`` 的口径是「**用户点名要删、却因为在跑被拒绝**的条数」，
+    不是「遍历到但没删」—— 按 scope 清失败时，剩下的成功/进行中条目本来
+    就不在用户意图里，把它们报成 skipped 是噪音。所以只有显式传 ids 时才
+    计 skipped；范围筛选模式下恒为 0。
+
+    :param ids:   精确 id 列表（与 scope 取交集；None = 不限 id）
+    :param scope: failed / canceled / done / finished(=全部终态) / all(=finished)
+    """
+    global _seq
+    by_id = bool(ids)
+    want_ids = None
+    if by_id:
+        want_ids = set(str(i) for i in ids if str(i))
+        if not want_ids:
+            return {"removed": 0, "skipped": 0}
+    want = _scope_status(scope)
+
+    removed = skipped = 0
+    with _lock:
+        for tid in list(_tasks.keys()):
+            t = _tasks.get(tid)
+            if t is None:
+                continue
+            if want_ids is not None and tid not in want_ids:
+                continue
+            if t["status"] not in want:
+                if by_id:
+                    skipped += 1          # 点名了却删不掉，这才需要回告
+                continue
+            _tasks.pop(tid, None)
+            removed += 1
+        if removed:
+            _seq += 1
+    return {"removed": removed, "skipped": skipped}
+
+
 def reset():
     """清空（测试用）。"""
     global _seq
@@ -277,11 +336,14 @@ def snapshot(kinds=None, active_only=False, limit=0):
 # HTTP 注册（只读）
 # ============================================================
 def register(app):
-    """挂 ``GET /api/tasks``。
+    """挂 ``GET /api/tasks``（读）与 ``DELETE /api/tasks``（清理）。
 
-    只有读接口：任务的「开始 / 暂停 / 取消」各自有自己的业务端点（下载有
-    aria2 的暂停恢复、克隆有 cancel、修复有 stop），总线不抢它们的职责。
-    鉴权走全局 security 闸（回环免令牌、非回环要令牌），与其它 /api/* 一致。
+    任务的「开始 / 暂停 / 取消」各自有自己的业务端点（下载有 aria2 的暂停恢复、
+    克隆有 cancel、修复有 stop），总线不抢它们的职责 —— DELETE 只清**已经结束**
+    的记录，不提供「取消任务」，那是业务端点的事。
+
+    鉴权走全局 security 闸（回环免令牌、非回环要令牌；写请求过同源校验），
+    与其它 /api/* 一致。
     """
     from flask import jsonify, request
 
@@ -295,3 +357,37 @@ def register(app):
         except (TypeError, ValueError):
             limit = 0
         return jsonify(snapshot(kinds=kinds, active_only=active_only, limit=limit))
+
+    @app.route("/api/tasks", methods=["DELETE"])
+    def api_tasks_clear():
+        """清理已结束的任务记录。
+
+        参数（query 或 JSON body 都认，query 优先）：
+            id=a,b,c    精确删这几条
+            scope=failed|done|canceled|finished|all   按状态批量删（默认 finished）
+
+        只删终态；撞上「还在跑」的计入 skipped，前端据此提示用户。
+        """
+        body = request.get_json(silent=True) or {}
+        if not isinstance(body, dict):
+            body = {}
+
+        raw_ids = request.args.get("id") or request.args.get("ids") or ""
+        ids = [x.strip() for x in str(raw_ids).split(",") if x.strip()]
+        if not ids:
+            v = body.get("ids")
+            if isinstance(v, (list, tuple)):
+                ids = [str(x).strip() for x in v if str(x).strip()]
+            elif v:
+                ids = [str(v).strip()]
+
+        scope = request.args.get("scope") or body.get("scope") or "finished"
+        r = clear(ids=ids or None, scope=scope)
+        return jsonify({
+            "ok": True,
+            "removed": r["removed"],
+            "skipped": r["skipped"],
+            # 还剩多少在跑。前端据此说「还剩 N 项在进行中」——即便这次清的不是它们，
+            # 这个数字也能解释「为什么列表没变空」。
+            "running": active_count(),
+        })

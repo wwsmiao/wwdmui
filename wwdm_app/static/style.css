@@ -899,6 +899,19 @@ body.has-wallpaper .lgmodal-log{background:transparent;border:none}
 @keyframes tcFlow{from{background-position:100% 0}to{background-position:-100% 0}}
 .tc-meta{display:flex;justify-content:space-between;gap:8px;margin-top:5px;
   font-size:10.5px;color:var(--text3)}
+/* 手动清理（第 11 步补）：单条 × 默认压得很淡，hover 才显形 ——
+   免得每条任务右上角都挂个扎眼的叉抢占注意力 */
+.tc-del{width:20px;height:20px;flex-shrink:0;border:0;border-radius:6px;cursor:pointer;
+  background:transparent;color:var(--text3);opacity:.4;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;font-size:11px;padding:0}
+.tc-del:hover{opacity:1;background:rgba(217,108,108,0.14);color:var(--red)}
+.tc-actions{flex-shrink:0;border-top:1px solid var(--border);padding:8px 12px;
+  display:flex;align-items:center;gap:8px}
+.tc-act{font-size:11.5px;padding:4px 10px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--border);background:transparent;color:var(--text2);
+  transition:all .2s;white-space:nowrap}
+.tc-act:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(74,111,165,0.10)}
+.tc-act.danger:hover{border-color:var(--red);color:var(--red);background:rgba(217,108,108,0.10)}
 .tc-foot{flex-shrink:0;border-top:1px solid var(--border);padding:9px 14px;
   font-size:11px;color:var(--text3);display:flex;align-items:center;gap:8px}
 .tc-foot i{font-size:12px}

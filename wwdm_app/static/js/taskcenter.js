@@ -54,16 +54,48 @@
     var right = active
       ? (p < 0 ? '进行中' : p.toFixed(0) + '%')
       : _fmtAgo(t.finished_at || t.updated_at);
-    return '<div class="' + cls + '" data-kind="' + esc(t.kind) + '">'
+    // 只有**终态**才给删除按钮。在跑的任务删掉也没用：后台线程不会因此停下，
+    // 下一个心跳上报又把条目原样重建出来，用户只会觉得「清了又冒出来」。
+    var del = active ? '' :
+      '<button type="button" class="tc-del" data-act="del" data-id="' + esc(t.id) + '"'
+      + ' title="移除这条记录"><i class="bi bi-x-lg"></i></button>';
+    return '<div class="' + cls + '" data-kind="' + esc(t.kind) + '" data-id="' + esc(t.id) + '">'
       + '<div class="tc-row">'
       + '<span class="tc-ico"><i class="bi ' + icon + '"></i></span>'
       + '<span class="tc-name" title="' + esc(t.title || t.kind) + '">' + esc(t.title || t.id) + '</span>'
       + '<span class="tc-st ' + esc(t.status) + '">' + (STATUS_TEXT[t.status] || t.status) + '</span>'
+      + del
       + '</div>'
       + (t.message ? '<div class="tc-msg">' + esc(t.message) + '</div>' : '')
       + bar
       + '<div class="tc-meta"><span>' + esc(t.id) + '</span><span>' + esc(right) + '</span></div>'
       + '</div>';
+  }
+
+  // ---- 手动清理区：有已结束的记录才出现，空抽屉底部不挂无用按钮 ----
+  function _renderActions(tasks) {
+    var box = document.getElementById('tcActions');
+    if (!box) return;
+    var failedN = 0, finishN = 0;
+    for (var k = 0; k < tasks.length; k++) {
+      if (!FINISHED[tasks[k].status]) continue;
+      finishN++;
+      if (tasks[k].status === 'failed') failedN++;
+    }
+    if (!finishN) { box.style.display = 'none'; return; }
+    box.style.display = '';
+
+    var bf = document.getElementById('tcClearFailed');
+    var bn = document.getElementById('tcClearFinished');
+    if (bf) {
+      bf.style.display = failedN ? '' : 'none';
+      bf.textContent = '清除失败 ' + failedN;
+      bf.setAttribute('data-n', failedN);
+    }
+    if (bn) {
+      bn.textContent = '清除已结束 ' + finishN;
+      bn.setAttribute('data-n', finishN);
+    }
   }
 
   function _render(snap) {
@@ -82,15 +114,54 @@
       cnt.className = 'tc-count' + (snap.active > 0 ? ' busy' : '');
     }
 
-    if (!snap.tasks || !snap.tasks.length) {
+    var tasks = snap.tasks || [];
+    _renderActions(tasks);
+
+    if (!tasks.length) {
       list.innerHTML = '<div class="tc-empty"><i class="bi bi-inbox"></i>'
         + '现在没有后台任务<div style="font-size:11.5px;opacity:.8">'
         + '下载模型、克隆插件、修复依赖时会自动出现在这里</div></div>';
       return;
     }
     var h = [];
-    for (var i = 0; i < snap.tasks.length; i++) h.push(_itemHTML(snap.tasks[i]));
+    for (var i = 0; i < tasks.length; i++) h.push(_itemHTML(tasks[i]));
     list.innerHTML = h.join('');
+  }
+
+  // ---------------- 手动清理 ----------------
+  // 后端 DELETE /api/tasks 只清终态，撞上「还在跑」的会计入 skipped 返回，
+  // 这里据此明确告诉用户「有 N 项没动」，避免他以为清失败了。
+  async function _clear(opt) {
+    opt = opt || {};
+    var ids = (opt.ids && opt.ids.length) ? opt.ids : null;
+    var url = '/api/tasks?' + (ids
+      ? ('id=' + encodeURIComponent(ids.join(',')))
+      : ('scope=' + encodeURIComponent(opt.scope || 'finished')));
+    try {
+      var r = await api(url, { method: 'DELETE' });
+      var done = (r && r.removed) || 0;
+      var skip = (r && r.skipped) || 0;      // 点名要删却在跑、被拒绝的
+      var left = (r && r.running) || 0;      // 还剩多少在跑
+      if (!opt.quiet) {
+        if (!done && !skip) notify('没有可清除的记录', 'info');
+        else if (left) notify('已清除 ' + done + ' 条；还有 ' + left + ' 项在进行中，已保留', 'info');
+        else notify('已清除 ' + done + ' 条记录', 'success');
+        if (skip) notify(skip + ' 项还在进行中，清不掉 —— 要中止请到对应页面操作', 'info');
+      }
+    } catch (e) {
+      notify('清除失败：' + ((e && e.message) || e), 'error');
+    }
+    _refresh();
+  }
+
+  function _askClear(btn, scope, what) {
+    if (!btn) return;
+    var n = parseInt(btn.getAttribute('data-n'), 10) || 0;
+    confirmDialog(
+      '确定清除 ' + n + ' 条' + what + '吗？\n这只是把记录从列表里移除，不会影响正在跑的任务。',
+      { title: '清除' + what, okText: '清除', danger: true }
+    ).then(function (yes) { if (yes) return _clear({ scope: scope }); })
+      .catch(function (e) { try { console.warn('[taskcenter] 清除异常', e); } catch (_) { } });
   }
 
   async function _refresh() {
@@ -122,7 +193,8 @@
     open: function () { _open(true); },
     close: function () { _open(false); },
     toggle: _toggle,
-    refresh: _refresh
+    refresh: _refresh,
+    clear: _clear
   };
   window.TaskCenter = TaskCenter;
 
@@ -138,10 +210,19 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') _open(false);
     });
-    // 点一行跳到对应页面
+    // 点一行跳到对应页面；点行尾的 × 则是删掉这条记录
     if (list) {
       list.addEventListener('click', function (e) {
-        var row = e.target.closest ? e.target.closest('.tc-item') : null;
+        if (!e.target.closest) return;
+        var delBtn = e.target.closest('.tc-del');
+        if (delBtn) {
+          e.stopPropagation();
+          var tid = delBtn.getAttribute('data-id');
+          // 单条删除不弹提示：条目当下就消失了，再飘一条通知是多余的噪音
+          if (tid) _clear({ ids: [tid], quiet: true });
+          return;
+        }
+        var row = e.target.closest('.tc-item');
         if (!row) return;
         var page = KIND_PAGE[row.getAttribute('data-kind')];
         if (!page) return;
@@ -151,6 +232,11 @@
         }
       });
     }
+    // 底部批量清理
+    var cf = document.getElementById('tcClearFailed');
+    var cn = document.getElementById('tcClearFinished');
+    if (cf) cf.addEventListener('click', function () { _askClear(cf, 'failed', '失败任务'); });
+    if (cn) cn.addEventListener('click', function () { _askClear(cn, 'finished', '已结束任务'); });
     // 注册轮询：1.5s。角标要实时，所以抽屉关着也刷（页面在后台时 Poll 会自动停）
     if (window.Poll) Poll.register('taskcenter', _refresh, 1500);
     else _refresh();
