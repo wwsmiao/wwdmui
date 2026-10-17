@@ -169,6 +169,24 @@
         <div class="srow"><div class="slabel-block"><div class="slabel">启动时自动运行aria2c</div></div><input type="checkbox" id="sas" checked></div>
       </div>
 
+      <div class="sg sg-wide"><div class="sg-title">外观主题</div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">配色预设</div><div class="shint">与日间/夜间正交：这里只换强调色（按钮、标题、悬停、描边、发光），明暗基底用右下角「主题」按钮切换。点一下立即预览，保存后固定</div></div>
+          <div class="preset-row" id="presetRow">
+            <button type="button" class="preset-chip" data-p="watercolor" onclick="pickPreset(this)"><span class="pc-dot" style="background:#4a6fa5"></span><span class="pc-dot" style="background:#c38d94"></span>水彩</button>
+            <button type="button" class="preset-chip" data-p="forest" onclick="pickPreset(this)"><span class="pc-dot" style="background:#2f8f6b"></span><span class="pc-dot" style="background:#c98a5e"></span>森林</button>
+            <button type="button" class="preset-chip" data-p="sunset" onclick="pickPreset(this)"><span class="pc-dot" style="background:#c2703f"></span><span class="pc-dot" style="background:#c25e6e"></span>暮霞</button>
+            <button type="button" class="preset-chip" data-p="violet" onclick="pickPreset(this)"><span class="pc-dot" style="background:#6a5fb8"></span><span class="pc-dot" style="background:#b078c8"></span>紫罗兰</button>
+            <button type="button" class="preset-chip" data-p="mono" onclick="pickPreset(this)"><span class="pc-dot" style="background:#5b6472"></span><span class="pc-dot" style="background:#8b8f99"></span>墨灰</button>
+          </div>
+        </div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">背景壁纸</div><div class="shint">网页背景壁纸路径，支持图片(jpg/png/webp)或视频(mp4)，留空则使用当前配色预设的默认背景</div></div>
+          <input type="text" class="sinput sinput-wide" id="swall" placeholder="C:\wallpaper.png 或 C:\wallpaper.mp4（留空使用默认背景）">
+        </div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">壁纸毛玻璃效果</div><div class="shint">设置壁纸后启用玻璃模糊：0=无玻璃（完全透明），1~10 为模糊像素（数值越大越模糊）</div></div>
+          <input type="number" id="swallo" class="sinput" style="width:140px" min="0" max="10" step="1" placeholder="0">
+        </div>
+      </div>
+
       <div class="sg"><div class="sg-title">其他</div>
         <div class="srow"><div class="slabel-block"><div class="slabel">输入预览文件夹</div><div class="shint">文件管理预览的根目录，默认为 ComfyUI 目录下的 input 文件夹</div></div>
           <input type="text" class="sinput sinput-wide" id="sind" placeholder="C:\ComfyUI\ComfyUI\input">
@@ -178,12 +196,6 @@
         </div>
         <div class="srow"><div class="slabel-block"><div class="slabel">工作流备份目录</div><div class="shint">点击工作流管理的「备份」按钮时，工作流目录会复制到此处，留空则不启用备份</div></div>
           <input type="text" class="sinput sinput-wide" id="swfbd" placeholder="C:\backup（留空则不启用备份）">
-        </div>
-        <div class="srow"><div class="slabel-block"><div class="slabel">背景壁纸</div><div class="shint">网页背景壁纸路径，支持图片(jpg/png/webp)或视频(mp4)，留空则使用默认水彩背景</div></div>
-          <input type="text" class="sinput sinput-wide" id="swall" placeholder="C:\wallpaper.png 或 C:\wallpaper.mp4（留空使用默认背景）">
-        </div>
-        <div class="srow"><div class="slabel-block"><div class="slabel">壁纸毛玻璃效果</div><div class="shint">设置壁纸后启用玻璃模糊：0=无玻璃（完全透明），1~10 为模糊像素（数值越大越模糊）</div></div>
-          <input type="number" id="swallo" class="sinput" style="width:140px" min="0" max="10" step="1" placeholder="0">
         </div>
       </div>
 

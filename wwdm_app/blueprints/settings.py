@@ -91,6 +91,10 @@ def api_save_settings():
     except (ValueError, TypeError):
         d["wallpaper_blur"] = 0
     d["wallpaper_path"] = (d.get("wallpaper_path", "") or "").strip()
+    # ---- 配色主题预设（v5.1，与明暗主题正交：preset 管强调色）----
+    _tp = str(d.get("theme_preset",
+                    config.settings.get("theme_preset", "watercolor")) or "watercolor").strip()
+    d["theme_preset"] = _tp if config.theme_preset_known(_tp) else "watercolor"
     # GitHub 镜像：仅接受已知 key，非法值回退官方
     _gm = str(d.get("github_mirror", config.settings.get("github_mirror", "official")) or "official").strip()
     d["github_mirror"] = _gm if _gm in svc._GITHUB_MIRROR_MAP else "official"

@@ -73,6 +73,7 @@ RELEASE_KEYS = (
     # —— 界面 ——
     "wallpaper_path",
     "wallpaper_blur",
+    "theme_preset",
     # —— 抖音素材提取 ——
     "douyin_cookie_file",
     "douyin_save_dir",

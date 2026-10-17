@@ -273,7 +273,7 @@ async function loadSF(){
     setVal('dyCookieFile',s.douyin_cookie_file);setVal('dySaveDirSet',s.douyin_save_dir);
     setVal('sdly',s.shutdown_delay==null?60:s.shutdown_delay);
     accLoad(s);
-    cuiCmdPreview();applyWallpaper();
+    cuiCmdPreview();applyWallpaper();applyPreset(s.theme_preset||'watercolor');
     auditLoad();   // 顺手刷新操作审计（S7）；失败只在审计卡片里显示，不影响设置表单
   }catch(e){}
 }
@@ -301,6 +301,28 @@ function applyWallpaper(){
   document.body.appendChild(el);
 }
 function setVal(id,v){var e=document.getElementById(id);if(e)e.value=(v===undefined||v===null)?'':v}
+// ================= 配色主题预设（v5.1，与 data-theme 明暗正交） =================
+// 三个层次：applyPreset 真正改 documentElement 的 data-preset（CSS 变量随之切换）；
+// markPreset 只负责设置页 swatch 的 active 样式；pickPreset 是 onclick 入口，
+// 点一下即时预览但不落盘 —— 保存设置时才写进 settings.json。
+// 初值取服务端直出的 <html data-preset>（routes.py 渲染时带上）：万一 loadSF 的
+// fetch 挂了，内存里的预设与页面实际配色、swatch 高亮也仍然一致
+var _preset=(document.documentElement.getAttribute('data-preset'))||'watercolor';
+function curPreset(){return _preset}
+function applyPreset(p){
+  _preset=(typeof p==='string'&&p)?p:'watercolor';
+  // 一律写属性（含 watercolor）：状态可查（documentElement.dataset.preset），
+  // 而 watercolor 没有对应 CSS 块，:root 基座就是它，行为与不写属性完全一致
+  document.documentElement.setAttribute('data-preset',_preset);
+  markPreset(_preset);
+}
+function markPreset(p){
+  var chips=document.querySelectorAll('.preset-chip');
+  for(var i=0;i<chips.length;i++){
+    chips[i].classList.toggle('active',chips[i].getAttribute('data-p')===p);
+  }
+}
+function pickPreset(btn){applyPreset((btn&&btn.getAttribute('data-p'))||'watercolor')}
 async function saveS(){
   var d={aria2c_path:gv('sap'),comfyui_dir:gv('scd'),python_path:gv('spy'),git_path:gv('sgp'),
     max_concurrent_downloads:gvi('smc',3),max_concurrent_clones:gvi('scl',2),
@@ -314,7 +336,7 @@ async function saveS(){
     comfyui_cors_origin:gv('sclc'),comfyui_extra_args:gv('sclx'),
     comfyui_presets:collectPresets(),
     input_dir:gv('sind'),output_dir:gv('soutd'),workflow_backup_dir:gv('swfbd'),
-    wallpaper_path:gv('swall'),wallpaper_blur:gvi('swallo',0),
+    wallpaper_path:gv('swall'),wallpaper_blur:gvi('swallo',0),theme_preset:curPreset(),
     pip_mirror:gv('spm')||'default',github_mirror:gv('sghm')||'official',hf_channel:gv('shfc')||'hf-mirror',hf_env_inject:!!(document.getElementById('shfEnv')||{}).checked,douyin_cookie_file:gv('dyCookieFile'),douyin_save_dir:gv('dySaveDirSet'),shutdown_delay:gviClamp('sdly',60,0,3600),web_host:_accV('swh')||'0.0.0.0',web_port:_accI('swp',7860),access_token:_accV('stok'),token_required:!!(document.getElementById('stokreq')||{}).checked,max_upload_gb:gvf('smu',8)};
   try{var r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});var j=await r.json();
     if(j.ok){document.getElementById('mcd').textContent=d.max_concurrent_downloads;document.getElementById('cld').textContent=d.max_concurrent_clones;cuiCmdPreview();applyWallpaper();repairLoadMirrorInfo();accStatus();notify(j.msg)}else{notify('保存失败: '+j.msg)}}catch(e){notify('保存失败: '+e.message)}

@@ -66,8 +66,10 @@ DEFAULT_SETTINGS = {
     "workflow_dir": "",  # 空值表示用 comfyui_dir + user/default/workflows
     "workflow_backup_dir": "",  # 空值表示不启用备份功能
     # 网页背景壁纸
-    "wallpaper_path": "",  # 背景壁纸路径（图片或 mp4），空值表示使用默认水彩背景
+    "wallpaper_path": "",  # 背景壁纸路径（图片或 mp4），空值表示使用当前配色预设的默认背景
     "wallpaper_blur": 0,  # 壁纸毛玻璃效果：0=无玻璃，1-10=毛玻璃像素
+    # 配色主题预设（与明暗 data-theme **正交**：preset 管强调色，theme 管明暗基底）
+    "theme_preset": "watercolor",  # 见下方 THEME_PRESETS
     # 抖音提取
     "douyin_cookie_file": "",    # dy_cookie.json 文件路径
     "douyin_save_dir": "",       # 图片/视频保存目录
@@ -83,6 +85,29 @@ DEFAULT_SETTINGS = {
     "token_required": True,   # 非回环地址访问是否必须携带访问令牌
     "max_upload_gb": 8        # 单次上传体积上限（GB）
 }
+
+
+# ---- 配色主题预设（v5.1，与 data-theme 正交）----
+# key → 中文名。CSS 侧每个 key 对应 :root[data-preset="key"]（日间）与
+# :root[data-theme="dark"][data-preset="key"]（夜间）两组变量覆盖，
+# **只覆盖强调色系**（--cyan/--cyan2/--purple/--purple2/--blue/--teal/--teal2/
+# --amber/--amber2 与三个 glow）；背景/面板/文字色归 data-theme 管，两者不重叠、可任意组合。
+# --green/--red 是语义色（成功/失败），跨预设保持稳定，不跟着皮肤变。
+# watercolor 是「默认水彩」，不写 data-preset 属性时 :root 基座就是它。
+# ⚠️ 新增预设必须三处同步：本字典 / style.css 两组变量 / 设置页 swatch
+#    （tests/test_theme.py 会核对字典与 CSS 的一致性）。
+THEME_PRESETS = {
+    "watercolor": "水彩",
+    "forest":     "森林",
+    "sunset":     "暮霞",
+    "violet":     "紫罗兰",
+    "mono":       "墨灰",
+}
+
+
+def theme_preset_known(key):
+    """预设 key 是否合法（设置保存时校验用，非法值回退 watercolor）。"""
+    return key in THEME_PRESETS
 
 
 # ---- 运行态信息：由 run.py 在启动时写入「本进程真实监听」的值 ----
