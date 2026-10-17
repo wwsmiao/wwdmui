@@ -1289,55 +1289,6 @@ def register(app):
             return jsonify({"ok": False, "msg": "缺少路径"})
         return jsonify(svc.workflows_analyze(root, rel))
 
-    # ========== 笔记本 API ==========
-    db.notes_init_db()
-
-    @app.route("/api/notes", methods=["GET"])
-    def api_notes_list():
-        kw = request.args.get("q", "").strip()
-        tag = request.args.get("tag", "").strip()
-        sort = request.args.get("sort", "updated_desc").strip()
-        items = db.notes_get_all(kw, tag, sort)
-        return jsonify({"ok": True, "items": items, "tags": db.notes_get_tags()})
-
-    @app.route("/api/notes", methods=["POST"])
-    def api_notes_add():
-        d = request.get_json(force=True, silent=True) or {}
-        title = (d.get("title") or "未命名笔记").strip()[:200]
-        content = d.get("content") or ""
-        color = d.get("color") or "#00d4ff"
-        tag = (d.get("tag") or "").strip()[:50]
-        rid = db.notes_add(title, content, color, tag)
-        return jsonify({"ok": True, "id": rid})
-
-    @app.route("/api/notes/<int:rid>", methods=["GET"])
-    def api_notes_get(rid):
-        row = db.notes_get(rid)
-        return jsonify({"ok": True, "note": row}) if row else (jsonify({"ok": False, "msg": "笔记不存在"}), 404)
-
-    @app.route("/api/notes/<int:rid>", methods=["PUT"])
-    def api_notes_update(rid):
-        d = request.get_json(force=True, silent=True) or {}
-        note = db.notes_get(rid)
-        if not note:
-            return jsonify({"ok": False, "msg": "笔记不存在"}), 404
-        title = (d.get("title") if d.get("title") is not None else note["title"]).strip()[:200]
-        content = d.get("content") if d.get("content") is not None else note["content"]
-        color = d.get("color") or note["color"]
-        tag = (d.get("tag") if d.get("tag") is not None else note["tag"]).strip()[:50]
-        db.notes_update(rid, title, content, color, tag)
-        return jsonify({"ok": True})
-
-    @app.route("/api/notes/<int:rid>", methods=["DELETE"])
-    def api_notes_delete(rid):
-        db.notes_delete(rid)
-        return jsonify({"ok": True})
-
-    @app.route("/api/notes/<int:rid>/pin", methods=["POST"])
-    def api_notes_pin(rid):
-        db.notes_toggle_pin(rid)
-        return jsonify({"ok": True})
-
     # ========== 关机 API ==========
     @app.route("/api/shutdown", methods=["POST"])
     def api_shutdown():
