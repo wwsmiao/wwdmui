@@ -5,6 +5,8 @@ from ..config import (settings, DEFAULT_SETTINGS, IS_WINDOWS, IS_LINUX, BASE_DIR
                      get_comfyui_dir, get_git_path)   # 访问器实现在 core/config.py
 from ..database import db_get, db_get_many, plugin_get, plugin_get_many
 from ..core import tasks as task_bus        # 任务总线：后台活儿统一上报
+from ..core.tasks import KIND_DOWNLOAD, KIND_REPAIR
+from . import bus                           # 上报薄封装：整体 try/except，绝不反噬业务
 
 # ---- 日志 ----
 # 里程碑（开始 / 完成 / 失败 / 清理）走 logging：控制台和 logs/wwdm.log 都能看到；
@@ -308,9 +310,12 @@ def _do_start(rid, m, use_mirror):
     r, e = aria2_rpc("aria2.addUri", [[url], {"dir": d, "out": m["name"], "continue": "true"}])
     if e:
         log.error("[下载失败] %s: %s", m["name"], e)
+        bus.fail(KIND_DOWNLOAD, rid, "启动失败: " + str(e))
         return False, e
     download_gids[rid] = r
     download_mirrors[rid] = use_mirror
+    bus.start(KIND_DOWNLOAD, rid, title=m["name"], progress=0.0, message="下载中",
+              detail={"save_path": m["save_path"], "mirror": bool(use_mirror)})
     t = threading.Thread(target=_console_progress_monitor, args=(rid, r, m["name"]), daemon=True)
     console_threads[rid] = t
     t.start()
@@ -329,6 +334,7 @@ def _console_progress_monitor(rid, gid, name):
             errs += 1
             if errs > 30:
                 log.error("[下载中断] %s：aria2 RPC 连续出错", name)
+                bus.fail(KIND_DOWNLOAD, rid, "aria2 RPC 连续出错，任务中断")
                 break
             time.sleep(2)
             continue
@@ -344,12 +350,19 @@ def _console_progress_monitor(rid, gid, name):
             _cli("")
             if s == "complete":
                 log.info("[下载完成] %s (%s)", name, fmt_size(t))
+                bus.done(KIND_DOWNLOAD, rid, "下载完成 " + fmt_size(t),
+                         detail={"total": t, "mirror": bool(download_mirrors.get(rid, False))})
             elif s == "error":
                 log.error("[下载出错] %s", name)
+                bus.fail(KIND_DOWNLOAD, rid, "下载出错")
             elif s == "removed":
                 log.warning("[下载已取消] %s", name)
+                bus.cancel(KIND_DOWNLOAD, rid, "下载已取消")
             last_status = s
             break
+        bus.step(KIND_DOWNLOAD, rid, progress=round(pct, 1),
+                 message=(fmt_size(c) + "/" + fmt_size(t) + "  " + fmt_speed(sp)).strip(),
+                 detail={"total": t, "completed": c, "speed": sp})
         time.sleep(3 if s == "paused" else 1)
     if last_status == "complete":
         time.sleep(15)
@@ -399,6 +412,8 @@ def start_download(rid, use_mirror=False):
         download_queue.append(rid)
     pos = len(download_queue)
     log.info("[下载排队] %s (位置%d)", m["name"], pos)
+    bus.queued(KIND_DOWNLOAD, rid, title=m["name"], position=pos,
+               detail={"save_path": m["save_path"], "mirror": bool(use_mirror)})
     return True, "加入队列: " + m["name"] + " (位置" + str(pos) + ")"
 
 
@@ -411,6 +426,8 @@ def pause_download(rid):
     if not g:
         return False, "未找到任务"
     _, e = aria2_rpc("aria2.pause", [g])
+    if not e:
+        bus.step(KIND_DOWNLOAD, rid, message="已暂停")
     return (True, "已暂停") if not e else (False, str(e))
 
 
@@ -419,6 +436,8 @@ def resume_download(rid):
     if not g:
         return False, "未找到任务"
     _, e = aria2_rpc("aria2.unpause", [g])
+    if not e:
+        bus.step(KIND_DOWNLOAD, rid, message="下载中")
     return (True, "已恢复") if not e else (False, str(e))
 
 
@@ -427,6 +446,7 @@ def cancel_download(rid):
         if rid in download_queue:
             download_queue.remove(rid)
             download_mirrors.pop(rid, None)
+            bus.cancel(KIND_DOWNLOAD, rid, "已从队列移除")
             return True, "已从队列移除"
     g = download_gids.get(rid)
     if not g:
@@ -437,6 +457,9 @@ def cancel_download(rid):
     console_threads.pop(rid, None)
     with _dl_cache_lock:
         _dl_cache.pop(rid, None)
+    if not e:
+        # 监控线程通常也会收到 removed 再报一次，同 id 幂等，不会重复建行
+        bus.cancel(KIND_DOWNLOAD, rid, "已取消")
     return (True, "已取消") if not e else (False, str(e))
 
 
@@ -741,7 +764,12 @@ def parse_pytorch_info(path):
     return options
 
 
-def _repair_reader(proc):
+def _repair_key(action_name):
+    """任务中心的键：去掉「[GitHub镜像: xx]」这类标签，同一动作复用同一条任务。"""
+    return str(action_name or "").split(" [")[0].strip() or "repair"
+
+
+def _repair_reader(proc, task_key=None):
     global repair_logs
     try:
         for line in proc.stdout:
@@ -749,6 +777,16 @@ def _repair_reader(proc):
                 repair_logs.append(_strip_ansi(line.rstrip()))
     except Exception:
         pass
+    # 单步任务的收尾：读完 stdout 基本就等于进程结束了，这里补一条终态上报
+    if task_key:
+        try:
+            rc = proc.wait()
+        except Exception:
+            rc = None
+        if rc == 0:
+            bus.done(KIND_REPAIR, task_key, "完成")
+        else:
+            bus.fail(KIND_REPAIR, task_key, "退出码 %s" % rc)
 
 
 def _start_repair_proc(cmd, cwd, action_name, header_lines=None):
@@ -763,7 +801,10 @@ def _start_repair_proc(cmd, cwd, action_name, header_lines=None):
     repair_proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
         text=True, encoding="gbk", errors="replace", creationflags=cf)
-    threading.Thread(target=_repair_reader, args=(repair_proc,), daemon=True).start()
+    _rk = _repair_key(action_name)
+    bus.start(KIND_REPAIR, _rk, title=action_name, progress=task_bus.PROGRESS_UNKNOWN,
+              message="执行中", detail={"cmd": _fmt_cmd(cmd)})
+    threading.Thread(target=_repair_reader, args=(repair_proc, _rk), daemon=True).start()
     return {"ok": True, "msg": action_name + " 已启动", "pid": repair_proc.pid}
 
 
@@ -804,7 +845,12 @@ def _repair_run_steps(steps, action_name, header_lines=None):
         global repair_child_proc, repair_proc, repair_action
         cf = subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0
         stopped = False
-        for label, cmd, cwd in steps:
+        _rk = _repair_key(action_name)
+        _total = max(1, len(steps))
+        _failed = None
+        bus.start(KIND_REPAIR, _rk, title=action_name, progress=0.0,
+                  message="准备执行 %d 个步骤" % _total)
+        for _idx, (label, cmd, cwd) in enumerate(steps):
             if stop_flag.is_set():
                 stopped = True
                 break
@@ -812,6 +858,8 @@ def _repair_run_steps(steps, action_name, header_lines=None):
                 repair_logs.append("")
                 repair_logs.append(f"--- {label} ---")
                 repair_logs.append("$ " + _fmt_cmd(cmd))
+            bus.step(KIND_REPAIR, _rk, progress=round(_idx * 100.0 / _total, 1),
+                     message="%s (%d/%d)" % (label, _idx + 1, _total))
             try:
                 proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
@@ -829,6 +877,8 @@ def _repair_run_steps(steps, action_name, header_lines=None):
                 rc = proc.returncode
                 with repair_log_lock:
                     repair_logs.append(f"--- {label} 完成 (exit={rc}) ---")
+                if rc != 0 and _failed is None:
+                    _failed = (label, rc)
             except Exception as e:
                 repair_child_proc = None
                 with repair_log_lock:
@@ -843,6 +893,13 @@ def _repair_run_steps(steps, action_name, header_lines=None):
                 repair_logs.append(f"===== {action_name} 已停止 =====")
             else:
                 repair_logs.append(f"===== {action_name} 全部完成 =====")
+        # 任务中心收尾：停止 → 取消；有步骤非 0 退出 → 失败；否则完成
+        if stopped:
+            bus.cancel(KIND_REPAIR, _rk, "操作已被用户停止")
+        elif _failed:
+            bus.fail(KIND_REPAIR, _rk, "%s 失败 (exit=%s)" % (_failed[0], _failed[1]))
+        else:
+            bus.done(KIND_REPAIR, _rk, action_name + " 全部完成")
         if repair_proc is proxy:
             repair_proc = None
             repair_action = ""
@@ -1275,6 +1332,7 @@ def repair_stop():
         repair_action = ""
         return {"ok": False, "msg": "没有正在运行的操作"}
     a = repair_action or "操作"
+    _rk = _repair_key(repair_action)
     is_multi = hasattr(repair_proc, "_stop_flag")
     if is_multi:
         # 多步代理：置停止标志，执行线程会结束当前子进程并退出
@@ -1290,6 +1348,7 @@ def repair_stop():
     repair_proc = None
     repair_action = ""
     repair_child_proc = None
+    bus.cancel(KIND_REPAIR, _rk, a + " 已停止")
     return {"ok": True, "msg": a + " 已停止"}
 
 

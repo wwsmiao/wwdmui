@@ -18,6 +18,8 @@ import threading
 import time
 
 from ..config import IS_WINDOWS, get_comfyui_dir, get_git_path, settings
+from ..core.tasks import KIND_CLONE
+from . import bus
 
 log = logging.getLogger("wwdm.services")   # 与 services 包同一个 logger 对象
 
@@ -48,6 +50,7 @@ def _git_clone_thread(pid, repo_url, name, target_dir, use_mirror=None):
         except Exception as e:
             clone_infos[pid] = {"status": "error", "msg": "清理失败: " + str(e), "progress": 0, "phase": ""}
             clone_procs.pop(pid, None)
+            bus.fail(KIND_CLONE, pid, "清理失败: " + str(e))
             _process_clone_queue()
             return
     # 克隆一律使用「全局设置 → GitHub 镜像」，页面不再单独选择镜像
@@ -60,6 +63,8 @@ def _git_clone_thread(pid, repo_url, name, target_dir, use_mirror=None):
     cmd = [git_path, "clone", "--progress", actual_url, full_path]
     clone_infos[pid] = {"status": "cloning", "progress": 0, "phase": "remote", "msg": "",
                         "mirror_label": mlabel, "mirror_prefix": mprefix, "actual_url": actual_url}
+    bus.start(KIND_CLONE, pid, title=name, progress=0.0,
+              message="连接远端", detail={"phase": "remote", "mirror": mlabel})
     tag = (" [GitHub镜像: " + mlabel + "]") if mprefix else " [GitHub: 官方直连]"
     log.info("[克隆%s] %s", tag, name)
     log.info("  仓库地址: %s", actual_url)
@@ -75,6 +80,7 @@ def _git_clone_thread(pid, repo_url, name, target_dir, use_mirror=None):
     except Exception as e:
         clone_infos[pid] = {"status": "error", "msg": "启动失败: " + str(e), "progress": 0, "phase": ""}
         clone_procs.pop(pid, None)
+        bus.fail(KIND_CLONE, pid, "启动失败: " + str(e))
         _process_clone_queue()
         return
     last_pct = 0
@@ -93,6 +99,8 @@ def _git_clone_thread(pid, repo_url, name, target_dir, use_mirror=None):
                 bar = _console_bar(max(last_pct, pct))
                 sys.stdout.write("\r  " + bar + " " + str(max(last_pct, pct)) + "% " + phase + "          ")
                 sys.stdout.flush()
+                bus.step(KIND_CLONE, pid, progress=max(last_pct, pct),
+                         message=(detail or phase)[:120], detail={"phase": phase})
     except Exception:
         pass
     proc.wait()
@@ -101,9 +109,12 @@ def _git_clone_thread(pid, repo_url, name, target_dir, use_mirror=None):
         with clone_cleanup_lock:
             clone_session_done.add(pid)   # 克隆完成 → 停止克隆时不再删除
         log.info("[克隆完成] %s -> %s", name, full_path)
+        bus.done(KIND_CLONE, pid, "克隆完成", detail={"phase": "done", "path": full_path})
     else:
         clone_infos[pid] = {"status": "error", "progress": last_pct, "phase": "failed", "msg": "退出码: " + str(proc.returncode)}
         log.error("[克隆失败] %s 退出码=%s", name, proc.returncode)
+        bus.fail(KIND_CLONE, pid, "退出码: " + str(proc.returncode),
+                 detail={"phase": "failed", "exit_code": proc.returncode})
     clone_procs.pop(pid, None)
     time.sleep(10)
     clone_infos.pop(pid, None)
@@ -153,13 +164,16 @@ def start_clone(pid, use_mirror=None):
     clone_mirrors[pid] = use_mirror
     if _get_clone_count() < settings.get("max_concurrent_clones", 2):
         cn = os.path.join(get_comfyui_dir(), "custom_nodes")
+        bus.start(KIND_CLONE, pid, title=p["name"], progress=0.0, message="准备克隆")
         t = threading.Thread(target=_git_clone_thread, args=(pid, p["url"], p["name"], cn, use_mirror), daemon=True)
         t.start()
         tag = (" [GitHub镜像: " + github_mirror_label() + "]") if use_mirror else " [GitHub: 官方直连]"
         return True, "开始克隆" + tag + ": " + p["name"]
     with clone_lock:
         clone_queue.append(pid)
-    return True, "加入队列: " + p["name"] + " (位置" + str(len(clone_queue)) + ")"
+        pos = len(clone_queue)
+    bus.queued(KIND_CLONE, pid, title=p["name"], position=pos)
+    return True, "加入队列: " + p["name"] + " (位置" + str(pos) + ")"
 
 
 def start_clone_batch(pids, use_mirror=None):
@@ -172,6 +186,7 @@ def cancel_clone(pid):
         if pid in clone_queue:
             clone_queue.remove(pid)
             clone_mirrors.pop(pid, None)
+            bus.cancel(KIND_CLONE, pid, "已从队列移除")
             return True, "已从队列移除"
     proc = clone_procs.get(pid)
     if proc:
@@ -182,6 +197,7 @@ def cancel_clone(pid):
         clone_procs.pop(pid, None)
         clone_infos.pop(pid, None)
         clone_mirrors.pop(pid, None)
+        bus.cancel(KIND_CLONE, pid, "已停止克隆")
         return True, "已停止克隆"
     return False, "未找到任务"
 
@@ -289,6 +305,11 @@ def stop_clone_and_cleanup():
             partial.append(nm + "(删除失败)")
             partial_ids.append(pid)
 
+    # 任务中心：这些 pid 全部标成「已取消」（总线对不存在的 id 会自建一条，
+    # 所以这里按 stopped_ids 逐条取消，避免前端留下永远转圈的行）
+    for pid in stopped_ids:
+        bus.cancel(KIND_CLONE, pid, "已停止克隆")
+
     clone_procs.clear()
     clone_infos.clear()
     clone_mirrors.clear()
@@ -354,6 +375,8 @@ def cancel_clone_with_cleanup(pid):
             pass
     clone_infos.pop(pid, None)
     clone_mirrors.pop(pid, None)
+    if running or was_queued:
+        bus.cancel(KIND_CLONE, pid, "已停止克隆")
 
     with clone_cleanup_lock:
         folder = clone_session_folder.get(pid) or ""
