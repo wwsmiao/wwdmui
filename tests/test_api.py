@@ -8,8 +8,10 @@ import pytest
 
 from wwdm_app.core import tasks as T
 
-PAGES = ["launcher", "models", "plugins", "douyin", "notes", "workflows",
+PAGES = ["launcher", "models", "plugins", "douyin", "workflows",
          "help", "output", "input", "settings", "repair", "about"]
+# v5.1 起「笔记本」不再是页面：partials/notes.html 改为 FAB 唤出的 .lgmodal
+# 大弹窗（#notesModal），断言从 PAGES 挪到下面的骨架锚点里。
 
 
 # ============================================================
@@ -30,6 +32,7 @@ class TestIndex:
         'id="tcDraw"', 'id="tcMask"', 'id="tcList"', 'id="ctxMenu"',
         'id="tcActions"',              # 任务中心清理区
         'id="mbg"', 'id="batmbg"', 'id="pmbg"', 'id="rlogModal"',
+        'id="notesModal"',             # v5.1：笔记本弹窗（原 page-notes 页面）
     ])
     def test_skeleton_anchors(self, client, anchor):
         assert anchor in client.get("/").get_data(as_text=True)

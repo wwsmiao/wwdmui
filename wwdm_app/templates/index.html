@@ -12,7 +12,6 @@
 {% include "partials/models.html" %}
 {% include "partials/plugins.html" %}
 {% include "partials/douyin.html" %}
-{% include "partials/notes.html" %}
 {% include "partials/workflows.html" %}
 {% include "partials/help.html" %}
 {% include "partials/output.html" %}
@@ -24,6 +23,8 @@
 
 {% block modals %}
 {% include "partials/modals.html" %}
+{# v5.1：笔记本从页面改为 FAB 唤出的大弹窗，HTML 随之挪到 modals 块 #}
+{% include "partials/notes.html" %}
 {% endblock %}
 
 {% block scripts %}

@@ -4,7 +4,9 @@
 // ============================================================
 loadPaths();loadSF();
 var lastPage=sessionStorage.getItem('lastPage');
-if(lastPage&&lastPage!=='launcher'){switchPage(null,lastPage)}
+// 'notes' 自 v5.1 起不再是页面（改为 FAB 唤出的弹窗）。旧 sessionStorage 里可能
+// 留着它，直接 switchPage 会因没有 page-notes 容器而导致整个主区空白。
+if(lastPage&&lastPage!=='launcher'&&lastPage!=='notes'){switchPage(null,lastPage)}
 else{cuiCheckStatus()}
 // ====== 右下角扇形功能菜单 ======
 (function(){
@@ -119,7 +121,13 @@ else{cuiCheckStatus()}
     mainEl.scrollTo({top:0,behavior:'smooth'});toggleFab(false);
   });
 
-  // 2. 主题切换（日间/夜间）
+  // 2. 笔记本（v5.1 弹窗化：侧边栏入口已取消，改由 FAB 唤出）
+  document.getElementById('fabBtnNotes').addEventListener('click',function(){
+    toggleFab(false);
+    notesOpen();
+  });
+
+  // 3. 主题切换（日间/夜间）
   var themeBtn=document.getElementById('fabBtnTheme');
   function applyTheme(t){
     document.documentElement.setAttribute('data-theme',t);
@@ -138,7 +146,7 @@ else{cuiCheckStatus()}
   });
   applyTheme(currentTheme());
 
-  // 3. 定时关机（延迟取自全局设置 sdly；0 = 立即关机）
+  // 4. 定时关机（延迟取自全局设置 sdly；0 = 立即关机）
   function fabDelay(){
     var el=document.getElementById('sdly');
     var raw=(el&&el.value!=null)?String(el.value).trim():'';

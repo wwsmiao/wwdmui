@@ -338,6 +338,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--cyan);cursor:poin
 .fab-sub i.bi{display:block;pointer-events:none;font-size:18px;line-height:1}
 .fab-sub:hover i.bi{transform:scale(1.05)}
 .fab-top:hover{background:rgba(74,111,165,0.10)}
+.fab-notes:hover{background:rgba(74,111,165,0.10)}
 .fab-theme{background:linear-gradient(135deg,var(--panel),var(--panel2))}
 .fab-power:hover{background:rgba(195,141,148,0.15);color:#b07b82;border-color:rgba(195,141,148,0.4)}
 :root[data-theme="dark"] #fabMain{background:linear-gradient(135deg,#4a6fa5,#2d4666);border-color:rgba(255,255,255,0.15);box-shadow:0 4px 16px rgba(0,0,0,0.4)}
@@ -422,7 +423,12 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--cyan);cursor:poin
 /* ============================================================
    笔记本 (notes) - 仿 NotePal
    ============================================================ */
-.notes-app{display:flex;height:100vh;min-height:0}
+.notes-app{display:flex;height:100%;min-height:0;border:1px solid var(--border);border-radius:14px;overflow:hidden}
+/* v5.1：笔记本改为 FAB 唤出的大弹窗（复用 .lgmodal 体系），两栏整体作为一张内嵌卡片 */
+.notes-modal{width:min(1080px,94vw);height:min(88vh,920px)}
+/* .lgmodal-body 默认是块级 flow；笔记本要它变成 flex 容器让两栏撑满。
+   用 .notes-modal 前缀提特异性，不依赖「谁在文件后面」这种脆弱顺序。 */
+.notes-modal .lgmodal-body{display:flex;min-height:0;margin:14px 0}
 .notes-pane{min-height:0}
 .notes-list-pane{width:300px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column}
 .notes-pane-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 10px;gap:8px;border-bottom:1px solid rgba(74,111,165,0.10)}

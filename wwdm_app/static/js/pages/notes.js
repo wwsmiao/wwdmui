@@ -2,6 +2,8 @@
 // ============================================================
 // 笔记本
 // ============================================================
+// v5.1：从侧边栏页面改为右下角 FAB 唤出的大弹窗（templates/partials/notes.html）。
+// switchPage 不再触发 notesInit()，入口统一走 notesOpen()。
 var noteList=[],noteCurId=null,noteTags=[],noteDebounceTimer=null;
 var notePreviewMode=false;
 
@@ -9,6 +11,17 @@ function notesInit(){
     noteCurId=null;
     notePreviewMode=false;
     noteLoadAll();
+}
+
+// ---- 弹窗开合（v5.1）----
+function notesOpen(){
+    var m=document.getElementById('notesModal');
+    if(m)m.style.display='flex';
+    notesInit();
+}
+function notesClose(){
+    var m=document.getElementById('notesModal');
+    if(m)m.style.display='none';
 }
 
 function noteLoadAll(kw,tag){
@@ -186,9 +199,16 @@ document.addEventListener('click',function(e){
 });
 
 document.addEventListener('keydown',function(e){
+    // Ctrl/Cmd+S 保存：弹窗没开或编辑器没显示时不该拦按键
     if((e.ctrlKey||e.metaKey)&&e.key==='s'){
+        var m=document.getElementById('notesModal');
         var ed=document.getElementById('noteEditor');
-        if(ed&&ed.style.display!=='none'){e.preventDefault();noteSave();}
+        if(m&&m.style.display!=='none'&&ed&&ed.style.display!=='none'){e.preventDefault();noteSave();}
+    }
+    // Esc 关闭笔记本弹窗；确认弹窗（.cdlg-mask）开着时 Esc 归它，避免两个弹窗一起收
+    if(e.key==='Escape'){
+        var mm=document.getElementById('notesModal');
+        if(mm&&mm.style.display!=='none'&&!document.querySelector('.cdlg-mask')){notesClose();}
     }
 });
 
