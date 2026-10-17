@@ -16,12 +16,6 @@ def _zip_response(gen, name):
                     headers={"Content-Disposition": 'attachment; filename="%s"' % name})
 
 
-def _scope_arg(raw):
-    """本地浏览作用域：models（ComfyUI/models）/ plugins（ComfyUI/custom_nodes）"""
-    s = (raw or "").strip().lower()
-    return s if s in ("models", "plugins") else "models"
-
-
 # ---- 外部工具版本探测缓存 ----
 # git / python / aria2c 的 --version 每次都要 fork/exec 一个进程（Windows 上 50~300ms），
 # 而 checkGit()/detectPy() 在每次进插件页、每次点克隆前都会调一次，属纯重复劳动。
@@ -146,82 +140,6 @@ def register(app):
     def api_delete(rid):
         db.db_delete(rid)
         return jsonify({"ok": True})
-
-    # ========== 本地模型文件 API（直接操作 ComfyUI/models 目录） ==========
-    @app.route("/api/models/local/list", methods=["GET"])
-    def api_local_list():
-        return jsonify(svc.local_models_list(
-            request.args.get("rel", ""), request.args.get("sort", "name_asc"),
-            _scope_arg(request.args.get("scope")),
-            with_stats=request.args.get("stats") == "1"))
-
-    @app.route("/api/models/local/stats", methods=["GET"])
-    def api_local_stats():
-        """目录递归统计（较慢，前端异步补状态栏与文件夹卡片数字）"""
-        return jsonify(svc.local_dir_stats(request.args.get("rel", ""),
-                                           _scope_arg(request.args.get("scope"))))
-
-    @app.route("/api/models/local/search", methods=["GET"])
-    def api_local_search():
-        q = request.args.get("q", "").strip()
-        if not q:
-            return jsonify({"ok": False, "msg": "请输入搜索关键字"}), 400
-        sc = _scope_arg(request.args.get("scope"))
-        return jsonify(svc.local_models_search(
-            q, request.args.get("rel", ""), sort=request.args.get("sort", "size_desc"),
-            scope=sc, include_dirs=(sc == "plugins")))
-
-    @app.route("/api/models/local/delete", methods=["POST"])
-    def api_local_delete():
-        d = request.get_json(force=True, silent=True) or {}
-        rels = d.get("rels") or []
-        if not isinstance(rels, list) or not rels:
-            return jsonify({"ok": False, "msg": "未选择任何文件"}), 400
-        return jsonify(svc.local_models_delete(rels, bool(d.get("permanent")),
-                                               _scope_arg(d.get("scope"))))
-
-    @app.route("/api/models/local/rename", methods=["POST"])
-    def api_local_rename():
-        d = request.get_json(force=True, silent=True) or {}
-        return jsonify(svc.local_models_rename(d.get("rel", ""), d.get("new_name", ""),
-                                               _scope_arg(d.get("scope"))))
-
-    @app.route("/api/models/local/move", methods=["POST"])
-    def api_local_move():
-        d = request.get_json(force=True, silent=True) or {}
-        rels = d.get("rels") or []
-        if not isinstance(rels, list) or not rels:
-            return jsonify({"ok": False, "msg": "未选择任何文件"}), 400
-        return jsonify(svc.local_models_move(rels, d.get("dest", ""),
-                                             _scope_arg(d.get("scope"))))
-
-    @app.route("/api/models/local/move_targets", methods=["GET"])
-    def api_local_move_targets():
-        """返回根目录下所有文件夹，供「移动到」选择"""
-        return jsonify(svc.local_models_folder_tree(
-            scope=_scope_arg(request.args.get("scope"))))
-    @app.route("/api/models/local/open", methods=["GET"])
-    def api_local_open():
-        return jsonify(svc.local_models_open(request.args.get("rel", ""),
-                                             request.args.get("select", "0") == "1",
-                                             _scope_arg(request.args.get("scope"))))
-
-    @app.route("/api/models/local/upload", methods=["POST"])
-    def api_local_upload():
-        """上传单个或多个文件到本地模型 / 插件目录（multipart/form-data：files, dest, scope）"""
-        files = request.files.getlist("files")
-        if not files:
-            return jsonify({"ok": False, "msg": "未选择文件"}), 400
-        return jsonify(svc.local_models_upload((request.form.get("dest") or "").strip(),
-                                               files, _scope_arg(request.form.get("scope")),
-                                               request.form.getlist("paths")))
-
-    @app.route("/api/models/local/mkdir", methods=["POST"])
-    def api_local_mkdir():
-        """在本地模型 / 插件目录下新建文件夹（JSON：rel, name, scope）"""
-        d = request.get_json(silent=True) or {}
-        return jsonify(svc.local_models_mkdir(d.get("rel", ""), d.get("name", ""),
-                                              _scope_arg(d.get("scope"))))
 
     @app.route("/api/paths", methods=["GET"])
     def api_paths():

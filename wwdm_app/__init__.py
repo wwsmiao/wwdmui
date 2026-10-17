@@ -44,6 +44,10 @@ def create_app():
     from .blueprints import clone as bp_clone        # v5.0 第 6 步：域 5/10
     app.register_blueprint(bp_clone.bp)
 
+    from .blueprints import files as bp_files        # v5.0 第 6 步：域 6/11
+    app.register_blueprint(bp_files.bp)
+
+
 
     errors.register(app)    # 必须早于 security：先分配 trace_id，security 的日志才带号
     security.register(app)
