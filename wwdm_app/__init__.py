@@ -56,6 +56,9 @@ def create_app():
     from .blueprints import input as bp_input        # v5.0 第 6 步：域 9/11
     app.register_blueprint(bp_input.bp)
 
+    from .blueprints import models as bp_models      # v5.0 第 6 步：域 10/11
+    app.register_blueprint(bp_models.bp)
+
 
 
 
