@@ -1337,10 +1337,32 @@
     <button class="fab-sub fab-power" id="fabBtnPower" title="定时关机">
       <i class="bi bi-power"></i>
     </button>
+    <button class="fab-sub tc-btn" id="fabBtnTasks" title="任务中心">
+      <i class="bi bi-list-task"></i>
+      <span class="tc-badge" id="tcBadge" style="display:none">0</span>
+    </button>
   </div>
   <button id="fabMain" title="更多功能">
     <i class="bi bi-alexa"></i>
   </button>
+</div>
+
+<!-- ====== 任务中心抽屉（v5.0 第 11 步）======
+     全局俯视图：一眼看到「机器上现在有几件事在跑」。
+     与下载 / 克隆 / 修复各自的弹窗并存 —— 抽屉看全局，弹窗看单条详情。 -->
+<div class="tc-mask" id="tcMask"></div>
+<div class="tc-draw" id="tcDraw" aria-hidden="true">
+  <div class="tc-head">
+    <h4><i class="bi bi-list-task"></i> 任务中心</h4>
+    <span class="tc-count" id="tcCount">空闲</span>
+    <span style="flex:1"></span>
+    <button class="tc-x" id="tcClose" title="收起"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="tc-list gscroll" id="tcList"></div>
+  <div class="tc-foot">
+    <i class="bi bi-arrow-repeat"></i>
+    <span>每 1.5 秒自动刷新；已完成的任务保留 6 小时后自动清理</span>
+  </div>
 </div>
 
 <!-- ====== SCRIPTS ====== -->
@@ -1348,6 +1370,7 @@
 <script src="/static/js/api.js"></script>
 <script src="/static/js/poll.js"></script>
 <script src="/static/js/table.js"></script>
+<script src="/static/js/taskcenter.js"></script>
 <script>
 
 // ============================================================
