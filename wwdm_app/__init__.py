@@ -62,6 +62,18 @@ def create_app():
     from .blueprints import download as bp_download  # v5.0 第 6 步：域 11/11
     app.register_blueprint(bp_download.bp)
 
+    from .blueprints import settings as bp_settings  # 第 6 步收尾：设置 / 系统
+    app.register_blueprint(bp_settings.bp)
+
+    from .blueprints import tools as bp_tools        # 第 6 步收尾：工具检测 + GitHub 镜像
+    app.register_blueprint(bp_tools.bp)
+
+    from .blueprints import comfyui as bp_comfyui    # 第 6 步收尾：ComfyUI 启动器
+    app.register_blueprint(bp_comfyui.bp)
+
+    from .blueprints import repair as bp_repair      # 第 6 步收尾：修复安装
+    app.register_blueprint(bp_repair.bp)
+
 
 
 
