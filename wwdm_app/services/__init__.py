@@ -1734,9 +1734,9 @@ from .output import (                                               # noqa: E402
 # 说明：本域是 v5.0 之后第一个新拆的子域。GitHub 侧函数体逐字未改，
 # HuggingFace 侧把原来写死 hf-mirror 的 convert_to_mirror() 改成可切换渠道。
 from .mirror import (                                               # noqa: E402,F401
-    GITHUB_MIRRORS, GITHUB_PROBE_URL,
+    GITHUB_MIRRORS, GITHUB_PROBE_URL, _GITHUB_MIRROR_MAP,
     github_mirror_prefix, github_mirror_label, apply_github_mirror,
     convert_git_mirror, test_github_mirrors, pick_fastest_mirror,
-    HF_CHANNELS, HF_ENV_KEY, hf_channel, hf_endpoint, hf_preset_entry,
-    convert_to_mirror,
+    HF_CHANNELS, HF_ENV_KEY, hf_channel, hf_channel_known, hf_endpoint,
+    hf_preset_entry, hf_preset_entry_for, convert_to_mirror,
 )

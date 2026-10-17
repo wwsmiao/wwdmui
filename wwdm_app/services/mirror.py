@@ -41,6 +41,11 @@ def hf_channel():
     return k if k in _HF_CHANNEL_MAP else "hf-mirror"
 
 
+def hf_channel_known(key):
+    """该 key 是否是已知渠道（供设置保存时校验，别让任意字符串落盘）"""
+    return key in _HF_CHANNEL_MAP
+
+
 def hf_endpoint():
     """当前 HF 渠道对应的 HF_ENDPOINT 值；官方渠道返回空串（= 不注入）"""
     c = _HF_CHANNEL_MAP[hf_channel()]
@@ -64,10 +69,15 @@ def hf_preset_entry():
     用户在设置页只勾选「给 ComfyUI 注入 HF 镜像」，不手输 key/value ——
     HF_ENDPOINT 拼错一个字母会静默无效。
     """
-    ep = hf_endpoint()
-    if not ep:
+    return hf_preset_entry_for(hf_channel())
+
+
+def hf_preset_entry_for(channel_key):
+    """同上，但**不读 settings** —— 供设置保存时按用户刚选的渠道算出条目。"""
+    c = _HF_CHANNEL_MAP.get(channel_key) or _HF_CHANNEL_MAP["hf-mirror"]
+    if c["key"] == "official":
         return None
-    return {"key": HF_ENV_KEY, "value": ep}
+    return {"key": HF_ENV_KEY, "value": "https://" + c["host"]}
 
 
 # ---- GitHub 镜像（全局设置） ----
@@ -214,4 +224,5 @@ def pick_fastest_mirror(timeout=8):
     except Exception:
         pass
     return {"ok": True, "key": best["key"], "label": best["label"],
-            "ms": best["ms"], "msg": "已选用 " + best["label"]}
+            "ms": best["ms"], "msg": "已选用 " + best["label"],
+            "results": res.get("results") or []}

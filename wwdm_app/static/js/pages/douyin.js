@@ -249,6 +249,10 @@ async function loadSF(){
   try{var r=await fetch('/api/settings');var s=await r.json();
     setVal('sap',s.aria2c_path);setVal('scd',s.comfyui_dir);setVal('spy',s.python_path);setVal('sgp',s.git_path);
     setVal('spm',s.pip_mirror||'default');setVal('sghm',s.github_mirror||'official');applyGithubMirrorLabels();
+    setVal('shfc',s.hf_channel||'hf-mirror');
+    // 注入开关不回读 hf_env_inject 本身，而是看 presets 里有没有 HF_ENDPOINT ——
+    // 那个条目才是真正生效的东西（后端按「渠道+开关」自动增删它）
+    (document.getElementById('shfEnv')||{}).checked=(s.comfyui_presets||[]).some(function(p){return (p.key||'')==='HF_ENDPOINT'});
     setVal('smc',s.max_concurrent_downloads);setVal('scl',s.max_concurrent_clones);
     setVal('smcs',s.max_connection_per_server);setVal('sspl',s.split);setVal('smss',s.min_split_size);
     setVal('sct',s.connect_timeout);setVal('sto',s.timeout);setVal('sls',s.lowest_speed_limit);
@@ -310,7 +314,7 @@ async function saveS(){
     comfyui_presets:collectPresets(),
     input_dir:gv('sind'),output_dir:gv('soutd'),workflow_backup_dir:gv('swfbd'),
     wallpaper_path:gv('swall'),wallpaper_blur:gvi('swallo',0),
-    pip_mirror:gv('spm')||'default',github_mirror:gv('sghm')||'official',douyin_cookie_file:gv('dyCookieFile'),douyin_save_dir:gv('dySaveDirSet'),shutdown_delay:gviClamp('sdly',60,0,3600),web_host:_accV('swh')||'0.0.0.0',web_port:_accI('swp',7860),access_token:_accV('stok'),token_required:!!(document.getElementById('stokreq')||{}).checked,max_upload_gb:gvf('smu',8)};
+    pip_mirror:gv('spm')||'default',github_mirror:gv('sghm')||'official',hf_channel:gv('shfc')||'hf-mirror',hf_env_inject:!!(document.getElementById('shfEnv')||{}).checked,douyin_cookie_file:gv('dyCookieFile'),douyin_save_dir:gv('dySaveDirSet'),shutdown_delay:gviClamp('sdly',60,0,3600),web_host:_accV('swh')||'0.0.0.0',web_port:_accI('swp',7860),access_token:_accV('stok'),token_required:!!(document.getElementById('stokreq')||{}).checked,max_upload_gb:gvf('smu',8)};
   try{var r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});var j=await r.json();
     if(j.ok){document.getElementById('mcd').textContent=d.max_concurrent_downloads;document.getElementById('cld').textContent=d.max_concurrent_clones;cuiCmdPreview();applyWallpaper();repairLoadMirrorInfo();accStatus();notify(j.msg)}else{notify('保存失败: '+j.msg)}}catch(e){notify('保存失败: '+e.message)}
 }
@@ -450,6 +454,32 @@ async function ghMirrorTest(){
     box.innerHTML='<div style="font-size:12px;color:var(--red);padding:8px 2px">测试失败: '+esc(e.message)+'</div>';
   }finally{
     btn.disabled=false;btn.innerHTML='<i class="bi bi-activity"></i> 连通性测试';
+  }
+}
+async function ghMirrorFastest(){
+  var btn=document.getElementById('ghmFastBtn'),box=document.getElementById('ghmResult');
+  if(!btn||btn.disabled)return;
+  btn.disabled=true;btn.innerHTML='<i class="bi bi-hourglass-split"></i> 测速中...';
+  box.style.display='block';
+  box.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px 2px"><i class="bi bi-arrow-repeat"></i> 正在并发测速各镜像，稍后自动选用最快的一个…</div>';
+  try{
+    var r=await fetch('/api/github/mirror_fastest');var j=await r.json();
+    if(!j.ok){
+      // 探测失败或全军覆没：有明细就摊开给用户自己选，没有就只报错
+      if(j.results&&j.results.length){_ghmResults=j.results;renderGhMirrorResult(_ghmResults,(document.getElementById('sghm')||{}).value||'official')}
+      else{box.innerHTML='<div style="font-size:12px;color:var(--red);padding:8px 2px">'+esc(j.msg||'测速失败')+'</div>'}
+      return;
+    }
+    // 后端已把最快镜像原地写进 settings 并落盘，这里只同步界面 + 重绘结果表
+    document.getElementById('sghm').value=j.key;
+    applyGithubMirrorLabels();
+    if(j.results&&j.results.length){_ghmResults=j.results;renderGhMirrorResult(_ghmResults,j.key)}
+    else{box.innerHTML='<div style="font-size:12px;color:var(--green);padding:8px 2px"><i class="bi bi-check-circle-fill"></i> '+esc(j.msg||('已选用 '+j.label))+'（'+(j.ms||0)+' ms），已自动保存</div>'}
+    notify('已选用 '+(j.label||j.key)+'（'+(j.ms||0)+' ms），已自动保存');
+  }catch(e){
+    box.innerHTML='<div style="font-size:12px;color:var(--red);padding:8px 2px">测速失败: '+esc(e.message)+'</div>';
+  }finally{
+    btn.disabled=false;btn.innerHTML='<i class="bi bi-lightning-charge"></i> 测速选最快';
   }
 }
 // 环境变量预设

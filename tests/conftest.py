@@ -54,6 +54,16 @@ FINGERPRINT_BEFORE = {k: _sha(v) for k, v in WATCHED.items()}
 from wwdm_app.core import config  # noqa: E402
 from wwdm_app.core import db as coredb  # noqa: E402
 
+# ⚠️ settings.json 要在 import 之后**重新记基线**（只重记这一个文件）：
+# ``load_settings()`` 在 core/config.py 导入期就会 repair —— 补默认键、
+# token_required bool 化、max_upload_gb clamp、web_port 越界修正、
+# access_token 空则生成 —— 然后 ``_save_settings(merged)`` 落盘。这是
+# 既有设计行为（每次启动管理器都会做），不是测试搞脏数据。
+# 若不重记，每次往 DEFAULT_SETTINGS 加新键（v5.1 加 hf_env_inject 时就
+# 踩过），第一次跑 pytest 必然被指纹守卫误报「测试弄脏了真数据」。
+# models.db / notes.db 没有导入期写盘行为，仍按 import 前的基线盯。
+FINGERPRINT_BEFORE["settings.json"] = _sha(WATCHED["settings.json"])
+
 TMP_ROOT = tempfile.mkdtemp(prefix="wwdm_pytest_")
 
 for _attr, _name in (("DB_PATH", "models.db"), ("NOTES_DB_PATH", "notes.db")):

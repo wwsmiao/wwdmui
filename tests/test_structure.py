@@ -25,7 +25,8 @@ EXPECTED_BLUEPRINTS = {
 }
 # 含 Flask /static。⚠️ 同一个 rule 字符串若挂了两个 endpoint（如 /api/tasks 的
 # GET 与 DELETE），url_map 里算**两条** Rule —— 所以加了清理端点后是 135 不是 134。
-EXPECTED_ROUTES = 135
+# v5.1 又加了 /api/github/mirror_fastest → 136。
+EXPECTED_ROUTES = 136
 
 
 # ============================================================
@@ -131,18 +132,24 @@ class TestDependencyDirection:
             plugins: ["_PLUGIN_LIB_BASES"],
             output: ["_safe_path", "_safe_rel", "_is_inside", "recursive_search"],
             # v5.1 新拆的镜像域：GitHub 镜像表 + HF 渠道切换
-            mirror: ["GITHUB_MIRRORS", "GITHUB_PROBE_URL", "HF_CHANNELS",
-                     "HF_ENV_KEY", "convert_to_mirror", "apply_github_mirror",
-                     "convert_git_mirror", "github_mirror_prefix",
-                     "github_mirror_label", "test_github_mirrors",
-                     "pick_fastest_mirror", "hf_channel", "hf_endpoint",
-                     "hf_preset_entry"],
+            mirror: ["GITHUB_MIRRORS", "GITHUB_PROBE_URL", "_GITHUB_MIRROR_MAP",
+                     "HF_CHANNELS", "HF_ENV_KEY", "convert_to_mirror",
+                     "apply_github_mirror", "convert_git_mirror",
+                     "github_mirror_prefix", "github_mirror_label",
+                     "test_github_mirrors", "pick_fastest_mirror",
+                     "hf_channel", "hf_channel_known", "hf_endpoint",
+                     "hf_preset_entry", "hf_preset_entry_for"],
         }
         checked = 0
         for mod, names in shared.items():
             for n in names:
-                if not hasattr(svc, n):
-                    continue
+                # ⚠️ 必须是硬断言，不能 ``if not hasattr: continue`` ——
+                # 2026-10-18 真出过事：blueprints/settings.py 用了
+                # ``svc._GITHUB_MIRROR_MAP``，拆 mirror 域时忘了再导出，
+                # 每次保存设置都 500。旧写法对「漏导出」一律跳过，正好放跑它。
+                assert hasattr(svc, n), \
+                    "services 漏了再导出：%s（%s 里有）" % (
+                        n, mod.__name__.rsplit(".", 1)[-1])
                 checked += 1
                 assert getattr(svc, n) is getattr(mod, n), \
                     ("services.%s 与 services/%s.py.%s 不是同一个对象"

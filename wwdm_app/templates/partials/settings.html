@@ -71,7 +71,7 @@
           <div class="shint" id="spmNote" style="margin-top:6px"></div>
         </div>
         <div class="srow srow-full" style="margin-top:12px">
-          <div class="slabel-block"><div class="slabel">GitHub 镜像</div><div class="shint">克隆 ComfyUI 插件、更新 ComfyUI 时使用的 GitHub 通道。镜像仓库直接替换 github.com 域名，加速网站为前缀加速；建议先点右侧按钮做连通性测试再选择</div></div>
+          <div class="slabel-block"><div class="slabel">GitHub 镜像</div><div class="shint">克隆 ComfyUI 插件、更新 ComfyUI 时使用的 GitHub 通道。镜像仓库直接替换 github.com 域名，加速网站为前缀加速；建议先点「连通性测试」看清哪些真的能用，或直接「测速选最快」</div></div>
           <div style="display:flex;gap:10px;align-items:center">
             <select id="sghm" class="sinput-wide" onchange="applyGithubMirrorLabels()">
               <option value="official">GitHub 官方 (github.com)</option>
@@ -81,14 +81,30 @@
               </optgroup>
               <optgroup label="加速网站 · 前缀加速">
                 <option value="ghproxy">gh-proxy.com</option>
+                <option value="yuntao">gh-proxy.yuntao.me</option>
+                <option value="ghproxycn">ghproxy.cn</option>
                 <option value="ghproxynet">ghproxy.net</option>
                 <option value="homeboyc">ghproxy.homeboyc.cn</option>
                 <option value="akams">github.akams.cn</option>
               </optgroup>
             </select>
-            <button class="btn btn6" style="min-width:112px;flex-shrink:0" id="ghmTestBtn" onclick="ghMirrorTest()"><i class="bi bi-activity"></i> 连通性测试</button>
+            <button class="btn btn6" style="min-width:104px;flex-shrink:0" id="ghmTestBtn" onclick="ghMirrorTest()"><i class="bi bi-activity"></i> 连通性测试</button>
+            <button class="btn btn1" style="min-width:104px;flex-shrink:0" id="ghmFastBtn" onclick="ghMirrorFastest()"><i class="bi bi-lightning-charge"></i> 测速选最快</button>
           </div>
           <div id="ghmResult" style="display:none;margin-top:10px"></div>
+          <div class="shint" style="margin-top:6px">⚠️ 列表里保留了少数已失效的老代理（2026-10-18 实测 gitclone.com / github.ur1.fun / ghproxy.homeboyc.cn / github.akams.cn 均不可用）—— 公益服务会死也会复活，删掉会让你保存过的选项变成未知值。不确定就用「测速选最快」。</div>
+        </div>
+        <div class="srow srow-full" style="margin-top:12px">
+          <div class="slabel-block"><div class="slabel">HuggingFace 渠道</div><div class="shint">下载模型时改写 huggingface.co 的通道。hf-mirror.com 是国内公益镜像，快但有宕机/限流历史；官方直连稳但国内可能连不上。需要登录才能下载的模型（gated repo）在镜像上拿不到，这种情况请切官方</div></div>
+          <select id="shfc" class="sinput-wide">
+            <option value="hf-mirror">hf-mirror.com（国内推荐）</option>
+            <option value="official">huggingface.co（官方直连）</option>
+          </select>
+          <label style="display:flex;gap:8px;align-items:center;margin-top:8px;cursor:pointer">
+            <input type="checkbox" id="shfEnv">
+            <span>同时给 ComfyUI 注入 HF 镜像（HF_ENDPOINT）</span>
+          </label>
+          <div class="shint" style="margin-top:6px">勾选后，ComfyUI 本体和插件在运行时自己拉模型也会走该渠道 —— 这部分不走上面的下载链路，只能靠环境变量生效。取消勾选即移除注入</div>
         </div>
       </div>
 

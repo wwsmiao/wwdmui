@@ -272,3 +272,113 @@ class TestPickFastest:
         r = mirror.pick_fastest_mirror()
         assert r["ok"] and r["key"] == "ghproxy"
         assert calls == [1], "save_settings 应被调用一次（且是 conftest 的桩）"
+
+
+# ============================================================
+# 设置接口层（POST /api/settings 对 HF 渠道的加工 + 测速端点）
+# ============================================================
+class TestSettingsApiHf:
+    """走 Flask test_client 验证 HF 渠道的入站加工与测速端点。
+
+    保存动作被 conftest 的通用 save_settings 桩接住，不会落盘；
+    用例前后快照还原相关键，避免串场。
+    """
+
+    @pytest.fixture(autouse=True)
+    def _snapshot(self):
+        """整字典快照还原 —— POST /api/settings 是**合并**语义，会把
+        comfyui_dir / python_path / web_host / access_token 等二十来个个键
+        一起写进活 settings，只还原 HF 相关的键会污染后续文件对沙箱的断言
+        （2026-10-18：test_safety_net 的 comfyui_dir 重定向检查就这么挂的）。
+        """
+        old = dict(svc.settings)      # 浅拷贝足矣：值均为标量，list 也是整体替换
+        yield
+        svc.settings.clear()
+        svc.settings.update(old)
+
+    def _post(self, client, origin, payload):
+        return client.post("/api/settings", headers=origin, json=payload)
+
+    def _hf_entries(self, presets):
+        return [p for p in (presets or []) if (p.get("key") or "") == "HF_ENDPOINT"]
+
+    def test_official_removes_preset(self, client, origin):
+        """切官方渠道必须清掉 HF_ENDPOINT 预设 —— 留着它会强制走镜像"""
+        r = self._post(client, origin, {
+            "hf_channel": "official",
+            "comfyui_presets": [{"key": "HF_ENDPOINT", "value": "https://hf-mirror.com"}],
+        })
+        assert r.status_code == 200 and r.get_json()["ok"]
+        assert svc.settings["hf_channel"] == "official"
+        assert self._hf_entries(svc.settings.get("comfyui_presets")) == []
+
+    def test_bogus_channel_falls_back(self, client, origin):
+        r = self._post(client, origin, {"hf_channel": "__bogus__"})
+        assert r.get_json()["ok"]
+        assert svc.settings["hf_channel"] == "hf-mirror"
+
+    def test_mirror_injects_preset(self, client, origin):
+        r = self._post(client, origin, {"hf_channel": "hf-mirror", "hf_env_inject": True})
+        assert r.get_json()["ok"]
+        assert self._hf_entries(svc.settings.get("comfyui_presets")) == \
+            [{"key": "HF_ENDPOINT", "value": "https://hf-mirror.com"}]
+
+    def test_env_inject_false_removes_preset(self, client, origin):
+        r = self._post(client, origin, {
+            "hf_channel": "hf-mirror", "hf_env_inject": False,
+            "comfyui_presets": [{"key": "HF_ENDPOINT", "value": "https://hf-mirror.com"}],
+        })
+        assert r.get_json()["ok"]
+        assert self._hf_entries(svc.settings.get("comfyui_presets")) == []
+
+    def test_other_presets_survive(self, client, origin):
+        """非 HF_ENDPOINT 的预设必须原样保留，一条都不许丢"""
+        r = self._post(client, origin, {
+            "hf_channel": "hf-mirror", "hf_env_inject": True,
+            "comfyui_presets": [
+                {"key": "HF_HOME", "value": "/tmp/hf"},
+                {"key": "HF_ENDPOINT", "value": "https://stale.example"},
+            ],
+        })
+        assert r.get_json()["ok"]
+        got = svc.settings.get("comfyui_presets") or []
+        assert got[0] == {"key": "HF_HOME", "value": "/tmp/hf"}
+        ent = self._hf_entries(got)
+        assert len(ent) == 1 and ent[0]["value"] == "https://hf-mirror.com"
+
+    def test_fastest_endpoint_stubbed(self, client, monkeypatch):
+        """/api/github/mirror_fastest 打桩后返回选中 key + 全量 results"""
+        monkeypatch.setattr(mirror, "test_github_mirrors",
+                            lambda timeout=8: {"ok": True, "results": [
+                                {"key": "ghproxycn", "label": "ghproxy.cn",
+                                 "ms": 878, "status": "ok"},
+                                {"key": "ghproxynet", "label": "ghproxy.net",
+                                 "ms": 9000, "status": "ok"}]})
+        old = svc.settings.get("github_mirror")
+        try:
+            r = client.get("/api/github/mirror_fastest")
+            assert r.status_code == 200
+            j = r.get_json()
+            assert j["ok"] and j["key"] == "ghproxycn" and j["ms"] == 878
+            assert [x["key"] for x in j["results"]] == ["ghproxycn", "ghproxynet"]
+            assert svc.settings["github_mirror"] == "ghproxycn"
+        finally:
+            if old is None:
+                svc.settings.pop("github_mirror", None)
+            else:
+                svc.settings["github_mirror"] = old
+
+    def test_fastest_endpoint_no_candidate(self, client, monkeypatch):
+        """没有可用镜像时接口返回 ok:False 且不改设置"""
+        monkeypatch.setattr(mirror, "test_github_mirrors",
+                            lambda timeout=8: {"ok": True, "results": [
+                                {"key": "ghproxynet", "label": "ghproxy.net",
+                                 "ms": 9000, "status": "slow"}]})
+        old = svc.settings.get("github_mirror", "official")
+        svc.settings["github_mirror"] = "ghproxy"
+        try:
+            j = client.get("/api/github/mirror_fastest").get_json()
+            assert j["ok"] is False and "没有可用" in j["msg"]
+            assert svc.settings["github_mirror"] == "ghproxy"
+        finally:
+            svc.settings["github_mirror"] = old

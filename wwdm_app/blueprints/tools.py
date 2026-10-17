@@ -64,3 +64,12 @@ def api_github_mirrors():
 def api_github_mirror_test():
     """并发测试各 GitHub 镜像连通性（探测 git-upload-pack 端点）"""
     return jsonify(svc.test_github_mirrors())
+
+@bp.route("/api/github/mirror_fastest")
+def api_github_mirror_fastest():
+    """测速并自动选用最快的可用镜像（只认 status=ok，不含 slow）
+
+    后端已把选中的 key 原地写进 settings 并落盘，前端只需同步界面。
+    一个可用候选都没有时返回 ok:False 且不改动当前设置。
+    """
+    return jsonify(svc.pick_fastest_mirror())

@@ -94,6 +94,20 @@ def api_save_settings():
     # GitHub 镜像：仅接受已知 key，非法值回退官方
     _gm = str(d.get("github_mirror", config.settings.get("github_mirror", "official")) or "official").strip()
     d["github_mirror"] = _gm if _gm in svc._GITHUB_MIRROR_MAP else "official"
+    # ---- HuggingFace 渠道（v5.1）----
+    _hfc = str(d.get("hf_channel", config.settings.get("hf_channel", "hf-mirror")) or "hf-mirror").strip()
+    d["hf_channel"] = _hfc if svc.hf_channel_known(_hfc) else "hf-mirror"
+    d["hf_env_inject"] = bool(d.get("hf_env_inject",
+                                    config.settings.get("hf_env_inject", True)))
+    # 按「渠道 + 是否注入」自动维护 comfyui_presets 里的 HF_ENDPOINT 条目 ——
+    # 不让用户手输 key/value：HF_ENDPOINT 拼错一个字母会静默无效。
+    # 用户手动加的同名条目会被这一条覆盖（同键后者生效，本就是既有语义）。
+    _presets = [p for p in (d.get("comfyui_presets") or [])
+                if (p.get("key") or "").strip() != svc.HF_ENV_KEY]
+    _hf_entry = svc.hf_preset_entry_for(d["hf_channel"]) if d["hf_env_inject"] else None
+    if _hf_entry:
+        _presets.append(_hf_entry)
+    d["comfyui_presets"] = _presets
     # ---- 管理器访问 ----
     _wh = str(d.get("web_host", config.settings.get("web_host", "0.0.0.0")) or "").strip()
     d["web_host"] = _wh if _wh in ("0.0.0.0", "127.0.0.1") else "0.0.0.0"

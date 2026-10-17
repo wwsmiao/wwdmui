@@ -56,6 +56,7 @@ DEFAULT_SETTINGS = {
     # HuggingFace 渠道（模型下载 URL 改写 + 注入给 ComfyUI 的 HF_ENDPOINT）
     # hf-mirror=国内公益镜像（默认，保持既有体验）/ official=官方直连
     "hf_channel": "hf-mirror",    # hf-mirror/official
+    "hf_env_inject": True,        # 是否给 ComfyUI 注入 HF_ENDPOINT（改渠道时自动增删条目）
     # ComfyUI 环境变量预设（启动前注入）
     "comfyui_presets": [],  # [{"key":"TORCH_COMPILE_OFF","value":"1"},...]
     # 输出管理
