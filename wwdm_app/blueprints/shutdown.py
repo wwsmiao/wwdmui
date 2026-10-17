@@ -23,11 +23,17 @@ def api_shutdown():
     # 延迟的取值与校验统一放在 services.schedule_shutdown 里，
     # 避免这里再兜一层 int() 把非法值悄悄改成 60（会无视用户配置）。
     delay = d.get("delay", config.settings.get("shutdown_delay", 60))
-    return jsonify(svc.schedule_shutdown(delay))
+    r = svc.schedule_shutdown(delay)
+    # audit_result 归一化返回形态：生产是 dict，conftest 桩是 (ok,msg) 元组，
+    # 直接 r.get() 会在求参阶段 AttributeError 把接口打成 500。
+    svc.audit_result("shutdown.schedule", r, target="%s 秒" % delay)
+    return jsonify(r)
 
 @bp.route("/api/shutdown/cancel", methods=["POST"])
 def api_shutdown_cancel():
-    return jsonify(svc.cancel_shutdown())
+    r = svc.cancel_shutdown()
+    svc.audit_result("shutdown.cancel", r)
+    return jsonify(r)
 
 @bp.route("/api/shutdown/status")
 def api_shutdown_status():

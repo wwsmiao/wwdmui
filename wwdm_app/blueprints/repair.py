@@ -59,13 +59,18 @@ def api_repair_comfyui_update():
     # 先等后台的分支刷新收工：git fetch 与 git pull 同时写 refs 会抢锁，
     # 让用户在日志里看到 "cannot lock ref" 是很差的体验。最多等 12 秒。
     svc.comfyui_git_idle()
-    return jsonify(svc.repair_comfyui_update(git_path, comfyui_dir, target))
+    r = svc.repair_comfyui_update(git_path, comfyui_dir, target)
+    svc.audit_result("repair.run", r, target="ComfyUI 本体更新",
+                     extra="目标=%s" % (target or "当前分支"))
+    return jsonify(r)
 
 @bp.route("/api/repair/requirements", methods=["POST"])
 def api_repair_requirements():
     python_path = config.settings.get("python_path", config.DEFAULT_SETTINGS["python_path"])
     comfyui_dir = config.settings.get("comfyui_dir", config.COMFYUI_DIR)
-    return jsonify(svc.repair_requirements(python_path, comfyui_dir))
+    r = svc.repair_requirements(python_path, comfyui_dir)
+    svc.audit_result("pip.install", r, target="ComfyUI requirements.txt")
+    return jsonify(r)
 
 @bp.route("/api/repair/mirror_info")
 def api_repair_mirror_info():
@@ -77,7 +82,9 @@ def api_repair_pytorch():
     d = request.get_json(force=True) or {}
     python_path = config.settings.get("python_path", config.DEFAULT_SETTINGS["python_path"])
     cmd_str = (d.get("cmd") or "").strip()
-    return jsonify(svc.repair_pytorch(python_path, cmd_str))
+    r = svc.repair_pytorch(python_path, cmd_str)
+    svc.audit_result("pip.install", r, target="PyTorch", extra=cmd_str[:200])
+    return jsonify(r)
 
 @bp.route("/api/repair/stop", methods=["POST"])
 def api_repair_stop():
@@ -86,7 +93,9 @@ def api_repair_stop():
 @bp.route("/api/repair/purge_cache", methods=["POST"])
 def api_repair_purge_cache():
     python_path = config.settings.get("python_path", config.DEFAULT_SETTINGS["python_path"])
-    return jsonify(svc.repair_purge_cache(python_path))
+    r = svc.repair_purge_cache(python_path)
+    svc.audit_result("repair.run", r, target="清理 pip / __pycache__ 缓存")
+    return jsonify(r)
 
 @bp.route("/api/repair/status")
 def api_repair_status():
@@ -107,7 +116,9 @@ def api_repair_plugin():
     if not plugin_name:
         return jsonify({"ok": False, "msg": "请填写插件名称"})
     # 镜像统一取自全局设置（GitHub 镜像 + pip 镜像源）
-    return jsonify(svc.repair_single_plugin(git_path, python_path, comfyui_dir, plugin_name))
+    r = svc.repair_single_plugin(git_path, python_path, comfyui_dir, plugin_name)
+    svc.audit_result("repair.run", r, target="插件修复：%s" % plugin_name)
+    return jsonify(r)
 
 @bp.route("/api/repair/pip_install", methods=["POST"])
 def api_repair_pip_install():
@@ -115,7 +126,9 @@ def api_repair_pip_install():
     python_path = config.settings.get("python_path", config.DEFAULT_SETTINGS["python_path"])
     packages = (d.get("packages") or "").strip()
     # 镜像统一取自全局设置中的 pip 镜像源
-    return jsonify(svc.repair_pip_install(python_path, packages))
+    r = svc.repair_pip_install(python_path, packages)
+    svc.audit_result("pip.install", r, target=packages[:200])
+    return jsonify(r)
 
 @bp.route("/api/repair/download", methods=["POST"])
 def api_repair_download():

@@ -142,6 +142,12 @@ def api_save_settings():
         msg += "；监听地址/端口有改动，需要重启管理器才生效"
     else:
         msg += "，重启 aria2c 生效"
+    # 审计：把这次改动的渠道类设置写进 detail —— 「为啥下载走官方了」
+    # 这类问题以后直接翻审计日志就有答案，不用猜。
+    svc.audit("settings.save",
+              detail="HF 渠道=%s · GitHub 镜像=%s · pip 源=%s · 主机=%s:%s"
+                     % (d.get("hf_channel"), d.get("github_mirror"),
+                        d.get("pip_mirror"), d.get("web_host"), d.get("web_port")))
     return jsonify({"ok": True, "msg": msg, "need_restart": need_restart})
 
 @bp.route("/api/settings/reset", methods=["POST"])
@@ -159,6 +165,7 @@ def api_reset_settings():
     config.settings.clear()
     config.settings.update(fresh)
     config.save_settings(config.settings)
+    svc.audit("settings.reset", detail="已恢复默认设置（访问令牌已保留）")
     return jsonify({"ok": True, "msg": "已恢复默认设置（访问令牌已保留）"})
 
 @bp.route("/api/settings/regenerate_token", methods=["POST"])
@@ -171,6 +178,7 @@ def api_regenerate_token():
         sec._LOG.warning("访问令牌已重新生成")
     except Exception:
         pass
+    svc.audit("token.regenerate", detail="旧令牌立即失效，已登录的其它设备需重新输入")
     return jsonify({"ok": True, "access_token": tok,
                     "msg": "已生成新的访问令牌并立即生效，已登录的其它设备需要重新输入"})
 
@@ -186,6 +194,7 @@ def api_system_quit():
         except Exception:
             pass
         os._exit(0)
+    svc.audit("system.quit", detail="管理器退出（不自动拉起新进程）")
     threading.Thread(target=_die, daemon=True).start()
     return jsonify({"ok": True, "msg": "管理器正在退出，请重新双击启动器打开"})
 

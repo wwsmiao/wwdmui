@@ -18,11 +18,15 @@ def api_comfyui_start():
     s = config.settings  # 实时读取
     python_path = s.get("python_path") or config.DEFAULT_SETTINGS["python_path"]
     comfyui_dir = s.get("comfyui_dir") or config.DEFAULT_SETTINGS["comfyui_dir"]
-    return jsonify(svc.start_comfyui(python_path, comfyui_dir))
+    r = svc.start_comfyui(python_path, comfyui_dir)
+    svc.audit_result("comfyui.start", r, target=comfyui_dir)
+    return jsonify(r)
 
 @bp.route("/api/comfyui/stop", methods=["POST"])
 def api_comfyui_stop():
-    return jsonify(svc.stop_comfyui())
+    r = svc.stop_comfyui()
+    svc.audit_result("comfyui.stop", r)
+    return jsonify(r)
 
 @bp.route("/api/comfyui/status")
 def api_comfyui_status():

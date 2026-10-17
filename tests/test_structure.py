@@ -21,12 +21,12 @@ PKG = os.path.join(ROOT, "wwdm_app")
 EXPECTED_BLUEPRINTS = {
     "clone", "comfyui", "douyin", "download", "files", "input", "models",
     "notes", "output", "plugins", "repair", "settings", "shutdown", "tools",
-    "workflows",
+    "workflows", "audit",
 }
 # 含 Flask /static。⚠️ 同一个 rule 字符串若挂了两个 endpoint（如 /api/tasks 的
 # GET 与 DELETE），url_map 里算**两条** Rule —— 所以加了清理端点后是 135 不是 134。
-# v5.1 又加了 /api/github/mirror_fastest → 136。
-EXPECTED_ROUTES = 136
+# v5.1 又加了 /api/github/mirror_fastest → 136，/api/audit → 137。
+EXPECTED_ROUTES = 137
 
 
 # ============================================================
@@ -120,7 +120,7 @@ class TestDependencyDirection:
         """
         import wwdm_app.services as svc
         from wwdm_app.services import (clone, files, mirror, output, plugins,
-                                       shutdown, workflows)
+                                       shutdown, workflows, auditlog)
 
         shared = {
             clone: ["clone_procs", "clone_infos", "clone_mirrors", "clone_queue",
@@ -139,6 +139,12 @@ class TestDependencyDirection:
                      "test_github_mirrors", "pick_fastest_mirror",
                      "hf_channel", "hf_channel_known", "hf_endpoint",
                      "hf_preset_entry", "hf_preset_entry_for"],
+            # v5.1 新拆的审计域（S7）。⚠️ 模块叫 auditlog 而不是 audit：
+            # ``from .audit import audit`` 会把包属性 services.audit（子模块）
+            # shadow 成同名函数，之后 ``from ..services import audit`` 想拿
+            # 模块的代码会静默拿到函数。
+            auditlog: ["AUDIT_ACTIONS", "audit", "audit_result",
+                       "audit_list", "audit_count"],
         }
         checked = 0
         for mod, names in shared.items():

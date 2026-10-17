@@ -47,14 +47,22 @@ def api_local_delete():
     rels = d.get("rels") or []
     if not isinstance(rels, list) or not rels:
         return jsonify({"ok": False, "msg": "未选择任何文件"}), 400
-    return jsonify(svc.local_models_delete(rels, bool(d.get("permanent")),
-                                           _scope_arg(d.get("scope"))))
+    r = svc.local_models_delete(rels, bool(d.get("permanent")),
+                                _scope_arg(d.get("scope")))
+    svc.audit_result("localfile.delete", r,
+                     target=", ".join(str(x) for x in rels)[:200],
+                     extra="永久删除" if d.get("permanent") else "移入回收站")
+    return jsonify(r)
 
 @bp.route("/api/models/local/rename", methods=["POST"])
 def api_local_rename():
     d = request.get_json(force=True, silent=True) or {}
-    return jsonify(svc.local_models_rename(d.get("rel", ""), d.get("new_name", ""),
-                                           _scope_arg(d.get("scope"))))
+    r = svc.local_models_rename(d.get("rel", ""), d.get("new_name", ""),
+                                _scope_arg(d.get("scope")))
+    svc.audit_result("localfile.rename", r,
+                     target=str(d.get("rel") or "")[:200],
+                     extra="→ %s" % (d.get("new_name") or ""))
+    return jsonify(r)
 
 @bp.route("/api/models/local/move", methods=["POST"])
 def api_local_move():
@@ -62,8 +70,12 @@ def api_local_move():
     rels = d.get("rels") or []
     if not isinstance(rels, list) or not rels:
         return jsonify({"ok": False, "msg": "未选择任何文件"}), 400
-    return jsonify(svc.local_models_move(rels, d.get("dest", ""),
-                                         _scope_arg(d.get("scope"))))
+    r = svc.local_models_move(rels, d.get("dest", ""),
+                              _scope_arg(d.get("scope")))
+    svc.audit_result("localfile.move", r,
+                     target=", ".join(str(x) for x in rels)[:200],
+                     extra="→ %s" % (d.get("dest") or ""))
+    return jsonify(r)
 
 @bp.route("/api/models/local/move_targets", methods=["GET"])
 def api_local_move_targets():
@@ -82,13 +94,21 @@ def api_local_upload():
     files = request.files.getlist("files")
     if not files:
         return jsonify({"ok": False, "msg": "未选择文件"}), 400
-    return jsonify(svc.local_models_upload((request.form.get("dest") or "").strip(),
-                                           files, _scope_arg(request.form.get("scope")),
-                                           request.form.getlist("paths")))
+    r = svc.local_models_upload((request.form.get("dest") or "").strip(),
+                                files, _scope_arg(request.form.get("scope")),
+                                request.form.getlist("paths"))
+    svc.audit_result("localfile.upload", r,
+                     target=", ".join((f.filename or "") for f in files)[:200],
+                     extra="→ %s" % (request.form.get("dest") or ""))
+    return jsonify(r)
 
 @bp.route("/api/models/local/mkdir", methods=["POST"])
 def api_local_mkdir():
     """在本地模型 / 插件目录下新建文件夹（JSON：rel, name, scope）"""
     d = request.get_json(silent=True) or {}
-    return jsonify(svc.local_models_mkdir(d.get("rel", ""), d.get("name", ""),
-                                          _scope_arg(d.get("scope"))))
+    r = svc.local_models_mkdir(d.get("rel", ""), d.get("name", ""),
+                               _scope_arg(d.get("scope")))
+    svc.audit_result("localfile.mkdir", r,
+                     target=str(d.get("rel") or "")[:200],
+                     extra="→ %s" % (d.get("name") or ""))
+    return jsonify(r)

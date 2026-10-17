@@ -741,3 +741,98 @@ def notes_get_tags():
         return [r["tag"] for r in rows]
     finally:
         conn.close()
+
+
+# ============================================================
+# 操作审计日志（S7，v5.1）
+# 刻意放在 notes.db 里而不是新开一个库文件：
+#   · 复用 NOTES_DB_PATH 与 _get_notes_db() 的 WAL 配置，零新路径管理
+#   · conftest 的测试沙箱已经把 NOTES_DB_PATH 重定向到临时副本，
+#     测试跑得再欢也不会脏到真库（新库文件就得给沙箱也加一遍重定向）
+# 表是「本地小体量、只追加」型，与 notes 的读写模型一致。
+# ============================================================
+AUDIT_DDL = (
+    "CREATE TABLE IF NOT EXISTS audit_log ("
+    " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+    " ts TEXT NOT NULL,"              # 本地时间 "YYYY-MM-DD HH:MM:SS"
+    " action TEXT NOT NULL,"          # 动作 key，见 services/audit.py 的 AUDIT_ACTIONS
+    " target TEXT NOT NULL DEFAULT '',"
+    " detail TEXT NOT NULL DEFAULT '',"
+    " ip TEXT NOT NULL DEFAULT '',"   # 来源 IP（局域网场景能看出是哪台设备动的）
+    " ok INTEGER NOT NULL DEFAULT 1"  # 1=成功 0=失败
+    ")"
+)
+AUDIT_IDX = "CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(ts DESC, id DESC)"
+AUDIT_KEEP = 2000        # 只留最近这么多条，超出顺手删旧的
+AUDIT_LIMIT_MAX = 500    # 单次查询上限，防止 limit=99999 把整表拉走
+
+
+def audit_log_init():
+    """建 audit_log 表（老库自动升级）。与 notes_init_db 同调用时机。"""
+    conn = _get_notes_db()
+    try:
+        conn.execute(AUDIT_DDL)
+        conn.execute(AUDIT_IDX)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def audit_log_add(action, target="", detail="", ip="", ok=True, ts=None):
+    """写一条审计，返回新行 id。异常直接往上抛（由 services 层统一吞）。"""
+    import datetime
+    conn = _get_notes_db()
+    try:
+        if ts is None:
+            ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cur = conn.execute(
+            "INSERT INTO audit_log (ts, action, target, detail, ip, ok) VALUES (?,?,?,?,?,?)",
+            (ts, str(action or "")[:64], str(target or "")[:500],
+             str(detail or "")[:2000], str(ip or "")[:64], 1 if ok else 0))
+        conn.commit()
+        # 顺手裁剪：rowid 连续，留下最近 AUDIT_KEEP 条。低频写入，每次都跑也不心疼
+        try:
+            conn.execute("DELETE FROM audit_log WHERE id <= ?",
+                         ((cur.lastrowid or 0) - AUDIT_KEEP,))
+            conn.commit()
+        except Exception:
+            pass
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
+def audit_log_list(limit=100, action="", kw=""):
+    """最近的审计记录（id 倒序），支持按动作类型 / 关键词过滤。"""
+    conn = _get_notes_db()
+    try:
+        conn.execute(AUDIT_DDL)
+        conn.execute(AUDIT_IDX)
+        sql = "SELECT id, ts, action, target, detail, ip, ok FROM audit_log"
+        conds, args = [], []
+        if action:
+            conds.append("action = ?")
+            args.append(action)
+        if kw:
+            conds.append("(target LIKE ? OR detail LIKE ?)")
+            args += ["%" + kw + "%"] * 2
+        if conds:
+            sql += " WHERE " + " AND ".join(conds)
+        sql += " ORDER BY id DESC LIMIT ?"
+        try:
+            n = int(limit or 100)
+        except (TypeError, ValueError):
+            n = 100
+        args.append(max(1, min(AUDIT_LIMIT_MAX, n)))
+        return [dict(r) for r in conn.execute(sql, args).fetchall()]
+    finally:
+        conn.close()
+
+
+def audit_log_count():
+    conn = _get_notes_db()
+    try:
+        conn.execute(AUDIT_DDL)
+        return conn.execute("SELECT COUNT(*) FROM audit_log").fetchone()[0]
+    finally:
+        conn.close()

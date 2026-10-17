@@ -18,6 +18,12 @@ bp = Blueprint("clone", __name__)
 def api_clone(pid):
     # 镜像一律取全局设置，页面不再传 mirror
     ok, msg = svc.start_clone(pid)
+    if ok:
+        p = svc.plugin_get(pid) or {}
+        svc.audit("clone.start", target=p.get("name") or ("#%d" % pid),
+                  detail=p.get("url") or "")
+    else:
+        svc.audit("clone.start", target="#%d" % pid, detail=msg, ok=False)
     return jsonify({"ok": ok, "msg": msg})
 
 @bp.route("/api/plugins/clone_batch", methods=["POST"])
@@ -26,7 +32,11 @@ def api_clone_batch():
     pids = d.get("ids", [])
     if not isinstance(pids, list) or not pids:
         return jsonify({"ok": False, "msg": "ids无效"}), 400
-    return jsonify({"ok": True, "results": svc.start_clone_batch(pids)})
+    results = svc.start_clone_batch(pids)
+    started = [r for r in (results or []) if r.get("ok")]
+    svc.audit("clone.start", target="批量 %d 个" % len(pids),
+              detail="已发起 %d 个" % len(started))
+    return jsonify({"ok": True, "results": results})
 @bp.route("/api/plugins/clone_url", methods=["POST"])
 def api_clone_by_url():
     """按仓库地址克隆插件（工作流解析弹窗的「下载」按钮）。
@@ -39,6 +49,7 @@ def api_clone_by_url():
     if not url:
         return jsonify({"ok": False, "msg": "缺少仓库地址"}), 400
     ok, msg, pid = svc.plugins_clone_by_url(url, d.get("name") or "")
+    svc.audit("clone.start", target=url, detail=msg, ok=bool(ok))
     return jsonify({"ok": ok, "msg": msg, "id": pid})
 
 @bp.route("/api/plugins/clone_status/<int:pid>", methods=["GET"])

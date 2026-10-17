@@ -212,5 +212,19 @@
       <div class="sacts"><button class="btn btn6" onclick="resetS()"><i class="bi bi-arrow-counterclockwise"></i> 恢复默认</button><button class="btn btn1" onclick="saveS()"><i class="bi bi-save"></i> 保存设置</button><button class="btn btn5" onclick="saveSRestart()"><i class="bi bi-arrow-repeat"></i> 保存并重启 aria2c</button></div>
       <div class="snote">设置保存后需重启 aria2c 生效；监听地址 / 端口改动需要重启管理器才生效</div>
     </div>
+
+    <div class="card scard" style="margin-top:16px">
+      <div class="sg sg-wide">
+        <div class="sg-title">操作审计 <span style="font-size:11px;font-weight:400;color:var(--text3)">删除 / 关机 / 装依赖 / 改设置等危险操作的流水，只保留最近 2000 条</span></div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <select id="auditAction" class="sinput" style="width:170px" onchange="auditLoad()">
+            <option value="">全部动作</option>
+          </select>
+          <input type="text" id="auditKw" class="sinput" style="width:220px" placeholder="搜对象 / 详情" oninput="auditDebounce()">
+          <button class="btn btn6" onclick="auditLoad()"><i class="bi bi-arrow-repeat"></i> 刷新</button>
+        </div>
+        <div id="auditBox"><div style="font-size:12px;color:var(--text3);padding:8px 2px">加载中…</div></div>
+      </div>
+    </div>
   </div>
 </div>

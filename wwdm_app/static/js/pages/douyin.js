@@ -273,7 +273,8 @@ async function loadSF(){
     setVal('dyCookieFile',s.douyin_cookie_file);setVal('dySaveDirSet',s.douyin_save_dir);
     setVal('sdly',s.shutdown_delay==null?60:s.shutdown_delay);
     accLoad(s);
-    cuiCmdPreview();applyWallpaper()
+    cuiCmdPreview();applyWallpaper();
+    auditLoad();   // 顺手刷新操作审计（S7）；失败只在审计卡片里显示，不影响设置表单
   }catch(e){}
 }
 function applyWallpaper(){
@@ -481,6 +482,50 @@ async function ghMirrorFastest(){
   }finally{
     btn.disabled=false;btn.innerHTML='<i class="bi bi-lightning-charge"></i> 测速选最快';
   }
+}
+// ---- 操作审计（S7，v5.1）----
+// 只读展示：写入全在各蓝线的危险动作处埋点（svc.audit），这里不提供写入口。
+var _auditTimer=null;
+function auditDebounce(){clearTimeout(_auditTimer);_auditTimer=setTimeout(auditLoad,300)}
+async function auditLoad(){
+  var box=document.getElementById('auditBox');if(!box)return;
+  box.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px 2px"><i class="bi bi-arrow-repeat"></i> 正在读取审计记录…</div>';
+  try{
+    var act=document.getElementById('auditAction'),kw=document.getElementById('auditKw');
+    var q='?limit=200';
+    if(act&&act.value)q+='&action='+encodeURIComponent(act.value);
+    if(kw&&kw.value.trim())q+='&kw='+encodeURIComponent(kw.value.trim());
+    var j=await api('/api/audit'+q);
+    // 动作下拉第一次拿到字典时填充（之后 options 已存在，不再重建）
+    if(act&&j.actions&&act.options.length<=1){
+      Object.keys(j.actions).forEach(function(k){
+        var o=document.createElement('option');o.value=k;o.textContent=j.actions[k];act.appendChild(o);
+      });
+    }
+    renderAudit(j.logs||[],j.actions||{});
+  }catch(e){
+    box.innerHTML='<div style="font-size:12px;color:var(--red);padding:8px 2px">读取失败: '+esc(e.message)+'</div>';
+  }
+}
+function renderAudit(list,labels){
+  var box=document.getElementById('auditBox');
+  if(!list.length){box.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 2px">暂无记录</div>';return}
+  var h='<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">';
+  h+='<div style="display:flex;gap:10px;padding:6px 12px;font-size:11px;color:var(--text3);background:rgba(74,111,165,0.04)"><span style="flex:0 0 138px">时间</span><span style="flex:0 0 96px">动作</span><span style="flex:0 0 260px">对象</span><span style="flex:1 1 auto">详情</span><span style="flex:0 0 92px;text-align:right">来源</span></div>';
+  list.forEach(function(x){
+    var lab=labels[x.action]||x.action;
+    var col=x.ok?'var(--green)':'var(--red)';
+    var ico=x.ok?'bi-check-circle-fill':'bi-x-circle-fill';
+    h+='<div style="display:flex;gap:10px;align-items:baseline;padding:7px 12px;font-size:12px;border-top:1px solid var(--border)">'
+      +'<span style="flex:0 0 138px;color:var(--text3);font-size:11px;font-variant-numeric:tabular-nums">'+esc(x.ts||'')+'</span>'
+      +'<span style="flex:0 0 96px;color:'+col+';white-space:nowrap"><i class="bi '+ico+'"></i> '+esc(lab)+'</span>'
+      +'<span style="flex:0 0 260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escAttr(x.target||'')+'">'+esc(x.target||'')+'</span>'
+      +'<span style="flex:1 1 auto;color:var(--text3);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escAttr(x.detail||'')+'">'+esc(x.detail||'')+'</span>'
+      +'<span style="flex:0 0 92px;color:var(--text3);font-size:11px;text-align:right">'+esc(x.ip||'')+'</span>'
+      +'</div>';
+  });
+  h+='</div>';
+  box.innerHTML=h;
 }
 // 环境变量预设
 function collectPresets(){var r=[];document.querySelectorAll('#presetList .pr-row').forEach(function(row){var k=row.querySelector('.pr-key'),v=row.querySelector('.pr-val');if(k&&v){var key=k.value.trim(),val=v.value.trim();if(key)r.push({key:key,value:val})}});return r}

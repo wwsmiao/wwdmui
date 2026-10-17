@@ -93,7 +93,9 @@ def api_plugin_delete(pid):
     # 卸载只删除插件文件夹，保留插件数据库中的记录（便于重新克隆/查询）
     ok, msg = svc.plugin_uninstall(p["name"])
     if not ok:
+        svc.audit("plugin.delete", target=p["name"], detail=msg, ok=False)
         return jsonify({"ok": False, "error": msg}), 500
+    svc.audit("plugin.delete", target=p["name"], detail="已删除插件目录（数据库记录保留）")
     return jsonify({"ok": True, "msg": msg + "（数据库记录已保留）"})
 
 @bp.route("/api/plugins/installed", methods=["GET"])

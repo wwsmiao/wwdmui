@@ -7,6 +7,7 @@
 from flask import Blueprint, jsonify, request
 
 from .. import database as db
+from .. import services as svc
 
 bp = Blueprint("models", __name__)
 
@@ -98,7 +99,10 @@ def api_update(rid):
 
 @bp.route("/api/models/<int:rid>", methods=["DELETE"])
 def api_delete(rid):
+    row = db.db_get(rid)          # 先取出来，删完就只有 id 了，审计要记名字
     db.db_delete(rid)
+    svc.audit("model.delete", target=(row or {}).get("name") or ("#%d" % rid),
+              detail=(row or {}).get("save_path") or "")
     return jsonify({"ok": True})
 
 @bp.route("/api/paths", methods=["GET"])

@@ -74,6 +74,9 @@ def create_app():
     from .blueprints import repair as bp_repair      # 第 6 步收尾：修复安装
     app.register_blueprint(bp_repair.bp)
 
+    from .blueprints import audit as bp_audit        # v5.1：操作审计日志（S7，只读）
+    app.register_blueprint(bp_audit.bp)
+
 
 
 

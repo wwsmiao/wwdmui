@@ -1740,3 +1740,11 @@ from .mirror import (                                               # noqa: E402
     HF_CHANNELS, HF_ENV_KEY, hf_channel, hf_channel_known, hf_endpoint,
     hf_preset_entry, hf_preset_entry_for, convert_to_mirror,
 )
+
+# ⚠️ 模块叫 auditlog 而不是 audit：``from .audit import audit`` 会把包属性
+# ``services.audit``（子模块）shadow 成同名函数，以后谁写
+# ``from ..services import audit`` 想拿模块就会拿到函数。函数名保持 audit()，
+# 各蓝线的调用点 ``svc.audit(...)`` 不用动。
+from .auditlog import (                                             # noqa: E402,F401
+    AUDIT_ACTIONS, audit, audit_result, audit_list, audit_count,
+)
