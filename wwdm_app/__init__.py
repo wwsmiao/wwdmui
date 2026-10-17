@@ -41,6 +41,10 @@ def create_app():
     from .blueprints import plugins as bp_plugins    # v5.0 第 6 步：域 4/10
     app.register_blueprint(bp_plugins.bp)
 
+    from .blueprints import clone as bp_clone        # v5.0 第 6 步：域 5/10
+    app.register_blueprint(bp_clone.bp)
+
+
     errors.register(app)    # 必须早于 security：先分配 trace_id，security 的日志才带号
     security.register(app)
     tasks.register(app)     # 只读的 GET /api/tasks；不参与鉴权闸，放最后
