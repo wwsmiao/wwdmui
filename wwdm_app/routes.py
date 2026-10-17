@@ -1288,20 +1288,3 @@ def register(app):
         if not rel:
             return jsonify({"ok": False, "msg": "缺少路径"})
         return jsonify(svc.workflows_analyze(root, rel))
-
-    # ========== 关机 API ==========
-    @app.route("/api/shutdown", methods=["POST"])
-    def api_shutdown():
-        d = request.get_json(silent=True) or {}
-        # 延迟的取值与校验统一放在 services.schedule_shutdown 里，
-        # 避免这里再兜一层 int() 把非法值悄悄改成 60（会无视用户配置）。
-        delay = d.get("delay", config.settings.get("shutdown_delay", 60))
-        return jsonify(svc.schedule_shutdown(delay))
-
-    @app.route("/api/shutdown/cancel", methods=["POST"])
-    def api_shutdown_cancel():
-        return jsonify(svc.cancel_shutdown())
-
-    @app.route("/api/shutdown/status")
-    def api_shutdown_status():
-        return jsonify(svc.shutdown_status())
