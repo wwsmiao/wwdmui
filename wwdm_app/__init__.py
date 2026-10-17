@@ -59,6 +59,9 @@ def create_app():
     from .blueprints import models as bp_models      # v5.0 第 6 步：域 10/11
     app.register_blueprint(bp_models.bp)
 
+    from .blueprints import download as bp_download  # v5.0 第 6 步：域 11/11
+    app.register_blueprint(bp_download.bp)
+
 
 
 
