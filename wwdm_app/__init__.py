@@ -47,6 +47,10 @@ def create_app():
     from .blueprints import files as bp_files        # v5.0 第 6 步：域 6/11
     app.register_blueprint(bp_files.bp)
 
+    from .blueprints import workflows as bp_workflows  # v5.0 第 6 步：域 7/11
+    app.register_blueprint(bp_workflows.bp)
+
+
 
 
     errors.register(app)    # 必须早于 security：先分配 trace_id，security 的日志才带号
