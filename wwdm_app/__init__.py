@@ -50,6 +50,10 @@ def create_app():
     from .blueprints import workflows as bp_workflows  # v5.0 第 6 步：域 7/11
     app.register_blueprint(bp_workflows.bp)
 
+    from .blueprints import output as bp_output      # v5.0 第 6 步：域 8/11
+    app.register_blueprint(bp_output.bp)
+
+
 
 
 
