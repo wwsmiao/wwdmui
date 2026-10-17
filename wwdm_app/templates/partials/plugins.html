@@ -1,0 +1,89 @@
+<!-- ====== 插件管理（含克隆） ====== -->
+<div id="page-plugins" class="page">
+  <div class="phead">
+    <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-puzzle"></i></span>插件管理</h1>
+    <div class="phead-right">
+      <div class="modesw" id="plmodeSw" role="tablist">
+        <button class="ms-btn active" data-mode="db" onclick="LBp.setMode('db')"><i class="bi bi-database"></i> 插件库</button>
+        <button class="ms-btn" data-mode="local" onclick="LBp.setMode('local')"><i class="bi bi-folder2-open"></i> 本地插件</button>
+      </div>
+    </div>
+  </div>
+  <!-- ===== 模式一：插件库（原有功能） ===== -->
+  <div class="mmode" id="plmode-db">
+  <div class="dlbar">
+    <div class="a2stat"><span class="a2dot off" id="gitdot"></span><span id="gittext" style="font-size:12.5px">Git 状态</span></div>
+    <button class="btn btn6 btn-sm" onclick="checkGit()"><i class="bi bi-git"></i> 检测 Git</button>
+    <span style="flex:1"></span>
+    <input type="text" id="ps" placeholder="搜索插件..." onkeydown="if(event.key==='Enter'){plPage=1;loadPlugins()}" style="width:200px">
+    <button class="btn btn1 btn-sm" onclick="plPage=1;loadPlugins()"><i class="bi bi-search"></i> 搜索</button>
+  </div>
+  <div class="sbar" style="margin-bottom:12px">
+    <button class="btn btn6 btn-sm" onclick="openPluginDir()" title="打开插件文件夹" style="font-size:15px;padding:2px 7px"><i class="bi bi-folder2-open"></i></button>
+    <select id="plsort" onchange="plPage=1;loadPlugins()" style="width:160px">
+      <option value="id_asc">ID 升序</option><option value="id_desc">ID 降序</option>
+      <option value="name_asc">名称 A-Z</option><option value="name_desc">名称 Z-A</option>
+      <option value="installed">已安装插件</option>
+    </select>
+    <button class="btn btn6 btn-sm" onclick="resetPlugins()" title="重置搜索与排序"><i class="bi bi-arrow-counterclockwise"></i> 重置</button>
+    <button class="btn btn2" onclick="openPluginModal()"><i class="bi bi-plus-lg"></i> 新增</button>
+    <button class="btn btn6 btn-sm" onclick="repairPluginDb()" title="去除重复插件（名称与仓库地址完全相同）并把插件序号整理为连续的 1~n，操作前自动备份数据库"><i class="bi bi-wrench-adjustable"></i> 修复插件库</button>
+    <button class="btn btn-teal btn-sm" onclick="updatePluginLibrary()" title="从 ComfyUI-Manager 官方数据源获取最新插件库：仓库地址已有的覆盖、没有的新增，并刷新「节点→插件」映射表（工作流解析用）"><i class="bi bi-cloud-arrow-down"></i> 更新插件库</button>
+    <div class="bbar" style="margin:0 0 0 0;flex:1">
+      <button class="btn btn-teal btn-sm" onclick="batchClone()"><i class="bi bi-files"></i> 批量克隆</button>
+      <button class="btn btn6 btn-sm" onclick="plLogOpen()"><i class="bi bi-journal-text"></i> 克隆日志</button>
+      <span style="flex:1"></span>
+      <span style="font-size:11.5px;color:var(--text3)">镜像: <strong id="plMirrorTag" style="color:var(--cyan)">-</strong></span>
+      <span style="font-size:11.5px;color:var(--text3)">并发: <strong id="cld" style="color:var(--teal)">2</strong></span>
+      <span id="plmcount" style="color:var(--text3);font-size:12px"></span>
+    </div>
+  </div>
+  <div class="card"><div class="twrap gscroll">
+    <table><thead><tr><th class="cb-cell"><input type="checkbox" onchange="plSelAll(this.checked)"></th><th>ID</th><th>名称</th><th>仓库地址</th><th>描述</th><th>状态</th><th>操作</th></tr></thead>
+    <tbody id="pltbody"></tbody></table>
+  </div>
+    <div class="paginate" id="plpag" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border);margin-top:8px;flex-wrap:wrap">
+      <button class="btn btn6 btn-xs" id="plprev" onclick="plPage--;loadPlugins()" disabled><i class="bi bi-chevron-left"></i> 上一页</button>
+      <span id="plinfo" style="font-size:12px;color:var(--text2)"></span>
+      <button class="btn btn6 btn-xs" id="plnext" onclick="plPage++;loadPlugins()" disabled><i class="bi bi-chevron-right"></i> 下一页</button>
+      <span style="margin-left:12px;font-size:11.5px;color:var(--text3)">每页</span>
+      <select id="plps" onchange="plPageSize=+this.value;plPage=1;loadPlugins()" style="width:auto;padding:3px 6px;background:var(--card);color:var(--text1);border:1px solid var(--border);border-radius:4px;font-size:11.5px">
+        <option value="20" selected>20</option><option value="50">50</option><option value="100">100</option><option value="200">200</option>
+      </select>
+    </div>
+  </div>
+  </div><!-- /#plmode-db -->
+
+  <!-- ===== 模式二：本地插件（直接管理 ComfyUI/custom_nodes 目录） ===== -->
+  <div class="mmode" id="plmode-local" style="display:none">
+    <div class="dlbar">
+      <button class="btn btn6 btn-sm" id="lplUpBtn" onclick="LBp.up()" title="返回上级目录" disabled><i class="bi bi-arrow-up"></i> 上级</button>
+      <button class="btn btn6 btn-sm" onclick="LBp.refresh()" title="重新读取磁盘"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+      <button class="btn btn6 btn-sm" onclick="LBp.openDir()" title="在资源管理器中打开当前文件夹"><i class="bi bi-folder2-open"></i> 打开文件夹</button>
+      <span style="flex:1"></span>
+      <input type="text" id="lplSearch" placeholder="搜索插件或文件..." oninput="LBp.filterLocal()" onkeydown="if(event.key==='Enter')LBp.searchNow()" style="width:200px">
+      <label class="mlchk" title="在 custom_nodes 下所有子目录中递归搜索（插件文件夹名与文件名都匹配）"><input type="checkbox" id="lplDeep" onchange="LBp.searchNow()"> 递归</label>
+      <button class="btn btn1 btn-sm" onclick="LBp.searchNow()"><i class="bi bi-search"></i> 搜索</button>
+    </div>
+
+    <div class="mlcrumbs" id="lplCrumbs"></div>
+
+    <div class="sbar" style="margin-bottom:14px">
+      <select id="lplSort" onchange="LBp.sortChanged()" style="width:170px" title="排序方式：按名称或修改时间，正序 / 倒序">
+        <option value="name_asc">名称 A-Z</option><option value="name_desc">名称 Z-A</option>
+        <option value="mtime_desc">修改时间：最新在前</option><option value="mtime_asc">修改时间：最早在前</option>
+      </select>
+      <span class="mlhint"><i class="bi bi-mouse2"></i> 右键可新建文件夹 / 上传文件 / 上传文件夹 / 重命名 / 移动 / 删除，空白处右键同样可用</span>
+      <span style="flex:1"></span>
+      <span style="font-size:11.5px;color:var(--text3)">已选 <strong id="lplSelCnt" style="color:var(--cyan)">0</strong></span>
+      <span id="lplStat" style="color:var(--text3);font-size:12px"></span>
+    </div>
+
+    <div class="card" id="lplTableCard"><div class="twrap gscroll">
+      <table><thead><tr>
+        <th class="cb-cell"><input type="checkbox" id="lplSelAll" onchange="LBp.toggleAll(this.checked)"></th>
+        <th>名称</th><th>类型</th><th>大小</th><th>修改时间</th><th>所在目录</th>
+      </tr></thead><tbody id="lplTbody"></tbody></table>
+    </div></div>
+  </div><!-- /#plmode-local -->
+</div>

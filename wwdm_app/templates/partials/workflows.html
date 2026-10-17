@@ -1,0 +1,69 @@
+<!-- ====== 工作流管理 ====== -->
+<div id="page-workflows" class="page center-page">
+  <div class="center-wrap">
+    <h1 class="ph">&#128295; 工作流管理</h1>
+
+    <!-- 面包屑 + 工具栏 -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <span id="wfBread" style="color:var(--cyan);font-size:13px"></span>
+      <span style="flex:1"></span>
+      <button class="btn btn1" onclick="wfNew()" title="新建工作流"><i class="bi bi-plus-lg"></i> 新建</button>
+      <button class="btn btn4" onclick="wfBackup()" title="备份工作流目录"><i class="bi bi-cloud-arrow-up"></i> 备份</button>
+      <button class="btn btn6" onclick="wfOpenFolder()" title="在资源管理器中打开工作流文件夹" style="font-size:18px;padding:4px 8px"><i class="bi bi-folder2-open"></i></button>
+      <button class="btn btn6" onclick="wfDoBrowse()" title="刷新" style="font-size:15px;padding:4px 8px"><i class="bi bi-arrow-clockwise"></i></button>
+    </div>
+
+    <!-- 搜索 + 排序 + 分页控制 -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <input type="text" id="wfSearch" class="sinput" placeholder="搜索文件名/文件夹..." style="width:180px" onkeydown="if(event.key==='Enter')wfDoBrowse()">
+      <button class="btn btn6" onclick="wfClearSearch()" title="清除搜索" style="font-size:14px;padding:4px 8px;min-width:28px"><i class="bi bi-backspace"></i></button>
+      <button class="btn btn6" onclick="wfDoBrowse()" style="font-size:12px"><i class="bi bi-search"></i> 搜索</button>
+      <select id="wfSort" class="sinput" style="width:120px" onchange="wfDoBrowse()">
+        <option value="date_desc">最新优先</option><option value="date_asc">最早优先</option>
+        <option value="name_asc">名称 ↑</option><option value="name_desc">名称 ↓</option>
+      </select>
+      <select id="wfPS" class="sinput" style="width:80px" onchange="wfDoBrowse()">
+        <option value="12">12条</option><option value="20" selected>20条</option><option value="40">40条</option><option value="60">60条</option>
+      </select>
+      <span id="wfPageInfo" style="color:var(--text2);font-size:13px;margin-left:8px"></span>
+    </div>
+
+    <!-- 内容区域 -->
+    <div id="wfList" class="wf-list" style="min-height:200px"></div>
+
+    <!-- 分页 -->
+    <div id="wfPager" style="display:flex;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap"></div>
+  </div>
+</div>
+
+<!-- 工作流编辑器弹窗 -->
+<div id="wfEditorModal" class="wf-modal-mask" style="display:none" onclick="if(event.target===this)wfCloseEditor()">
+  <div class="wf-modal">
+    <div class="wf-modal-hd">
+      <span id="wfEditorTitle" style="font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">工作流编辑器</span>
+      <span id="wfEditorStatus" style="color:var(--text3);font-size:11.5px;margin-right:10px"></span>
+      <button class="btn btn6" onclick="wfFormatJson()" title="格式化 JSON" style="font-size:11px;padding:3px 8px"><i class="bi bi-braces"></i> 格式化</button>
+      <button class="btn btn1" onclick="wfSave()" style="font-size:12px;padding:4px 10px"><i class="bi bi-save"></i> 保存</button>
+      <button class="btn btn7" onclick="wfCloseEditor()" style="font-size:12px;padding:4px 10px;margin-left:6px"><i class="bi bi-x-lg"></i> 关闭</button>
+    </div>
+    <textarea id="wfContent" class="sinput gscroll" spellcheck="false"
+      style="width:100%;flex:1;min-height:0;resize:none;background:var(--bg2);border:none;outline:none;padding:14px;font-size:13px;line-height:1.6;color:var(--text);font-family:'JetBrains Mono',Consolas,monospace"></textarea>
+  </div>
+</div>
+
+
+<!-- 工作流解析结果弹窗 -->
+<div id="wfAnaModal" class="wf-modal-mask" style="display:none" onclick="if(event.target===this)wfAnaClose()">
+  <div class="wf-modal" style="max-width:900px">
+    <div class="wf-modal-hd">
+      <span id="wfAnaName" style="font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">工作流解析</span>
+      <span id="wfAnaCount" style="color:var(--text3);font-size:11.5px;margin-right:10px"></span>
+      <button class="btn btn2" id="wfAnaCopyModelsBtn" onclick="wfAnaCopyModels()" title="复制全部模型文件名" style="font-size:12px;padding:4px 10px"><i class="bi bi-clipboard"></i> 模型名</button>
+      <button class="btn btn2" id="wfAnaCopyPluginsBtn" onclick="wfAnaCopyPlugins()" title="复制缺失插件及其仓库地址" style="font-size:12px;padding:4px 10px;margin-left:6px"><i class="bi bi-clipboard"></i> 缺失插件</button>
+      <button class="btn btn-teal" id="wfAnaDownloadAllBtn" onclick="wfAnaAllClick()" title="按「全局设置 → GitHub 镜像」依次克隆所有缺失插件到 custom_nodes；并发上限取「最大同时克隆数」，超出的自动排队" style="font-size:12px;padding:4px 10px;margin-left:6px" disabled><i class="bi bi-download"></i> 下载缺失插件</button>
+      <button class="btn btn-teal" id="wfAnaModelDlAllBtn" onclick="wfAnaMdlAllClick()" title="按模型库里的下载地址，用 aria2 依次下载所有缺失模型；并发上限取「最大同时下载数」，超出的自动排队" style="font-size:12px;padding:4px 10px;margin-left:6px" disabled><i class="bi bi-download"></i> 下载缺失模型</button>
+      <button class="btn btn7" onclick="wfAnaClose()" style="font-size:12px;padding:4px 10px"><i class="bi bi-x-lg"></i> 关闭</button>
+    </div>
+    <div id="wfAnaBody" class="gscroll" style="flex:1;overflow:auto;padding:6px 4px"></div>
+  </div>
+</div>

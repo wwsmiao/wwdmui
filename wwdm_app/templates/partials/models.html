@@ -1,0 +1,88 @@
+<!-- ====== 模型管理（含下载） ====== -->
+<div id="page-models" class="page">
+  <div class="phead">
+    <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-box-seam"></i></span>模型管理</h1>
+    <div class="phead-right">
+      <div class="modesw" id="mmodeSw" role="tablist">
+        <button class="ms-btn active" data-mode="db" onclick="LBm.setMode('db')"><i class="bi bi-database"></i> 数据库模型</button>
+        <button class="ms-btn" data-mode="local" onclick="LBm.setMode('local')"><i class="bi bi-folder2-open"></i> 本地文件</button>
+      </div>
+    </div>
+  </div>
+  <!-- ===== 模式一：数据库模型（原有功能） ===== -->
+  <div class="mmode" id="mmode-db">
+  <div class="dlbar">
+    <div class="a2stat"><span class="a2dot off" id="a2dot"></span><span id="a2text" style="font-size:12.5px">aria2c 未运行</span></div>
+    <button class="btn btn2 btn-sm" onclick="a2Start()"><i class="bi bi-play-fill"></i> 启动</button>
+    <button class="btn btn3 btn-sm" onclick="a2Stop()"><i class="bi bi-stop-fill"></i> 停止</button>
+    <span style="flex:1"></span>
+    <input type="text" id="sinput" placeholder="搜索模型..." onkeydown="if(event.key==='Enter'){mPage=1;loadModels()}" style="width:200px">
+    <button class="btn btn1 btn-sm" onclick="mPage=1;loadModels()"><i class="bi bi-search"></i> 搜索</button>
+  </div>
+  <div class="sbar" style="margin-bottom:12px">
+    <select id="ssort" onchange="mPage=1;loadModels()" style="width:160px">
+      <option value="id_asc">ID 升序</option><option value="id_desc">ID 降序</option>
+      <option value="name_asc">名称 A-Z</option><option value="name_desc">名称 Z-A</option>
+    </select>
+    <button class="btn btn6 btn-sm" onclick="resetModels()" title="重置搜索与排序"><i class="bi bi-arrow-counterclockwise"></i> 重置</button>
+    <button class="btn btn2" onclick="openModal()"><i class="bi bi-plus-lg"></i> 新增</button>
+    <button class="btn btn5" onclick="openBatModal()"><i class="bi bi-clipboard-plus"></i> 批量新增</button>
+    <div class="bbar" style="margin:0 0 0 0;flex:1">
+      <button class="btn btn2 btn-sm" onclick="batchDl(false)"><i class="bi bi-download"></i> 批量下载</button>
+      <button class="btn btn5 btn-sm" onclick="batchDl(true)"><i class="bi bi-globe2"></i> 国内批量</button>
+      <span style="flex:1"></span>
+      <span style="font-size:11.5px;color:var(--text3)">并发: <strong id="mcd" style="color:var(--cyan)">3</strong></span>
+      <span id="mcount" style="color:var(--text3);font-size:12px"></span>
+    </div>
+  </div>
+  <div class="card"><div class="twrap gscroll">
+    <table><thead><tr><th class="cb-cell"><input type="checkbox" onchange="dlSelAll(this.checked)"></th><th>ID</th><th>名称</th><th>路径</th><th>下载链接</th><th>大小</th><th>进度</th><th>状态</th><th>操作</th></tr></thead>
+    <tbody id="mtbody"></tbody></table>
+  </div>
+    <div class="paginate" id="mpag" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border);margin-top:8px;flex-wrap:wrap">
+      <button class="btn btn6 btn-xs" id="mprev" onclick="mPage--;loadModels()" disabled><i class="bi bi-chevron-left"></i> 上一页</button>
+      <span id="minfo" style="font-size:12px;color:var(--text2)"></span>
+      <button class="btn btn6 btn-xs" id="mnext" onclick="mPage++;loadModels()" disabled><i class="bi bi-chevron-right"></i> 下一页</button>
+      <span style="margin-left:12px;font-size:11.5px;color:var(--text3)">每页</span>
+      <select id="mps" onchange="mPageSize=+this.value;mPage=1;loadModels()" style="width:auto;padding:3px 6px;background:var(--card);color:var(--text1);border:1px solid var(--border);border-radius:4px;font-size:11.5px">
+        <option value="20" selected>20</option><option value="50">50</option><option value="100">100</option><option value="200">200</option>
+      </select>
+    </div>
+  </div>
+  <div class="card pcard" id="pcard" style="display:none"><h3>&#9200; 下载进度</h3><div id="plist_dl"></div></div>
+  <div class="card pcard" id="qcard" style="display:none"><h3>&#9776; 下载队列</h3><div id="qlist"></div></div>
+  </div><!-- /#mmode-db -->
+
+  <!-- ===== 模式二：本地文件（直接管理 ComfyUI/models 目录） ===== -->
+  <div class="mmode" id="mmode-local" style="display:none">
+    <div class="dlbar">
+      <button class="btn btn6 btn-sm" id="mlUpBtn" onclick="LBm.up()" title="返回上级目录" disabled><i class="bi bi-arrow-up"></i> 上级</button>
+      <button class="btn btn6 btn-sm" onclick="LBm.refresh()" title="重新读取磁盘"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+      <button class="btn btn6 btn-sm" onclick="LBm.openDir()" title="在资源管理器中打开当前文件夹"><i class="bi bi-folder2-open"></i> 打开文件夹</button>
+      <span style="flex:1"></span>
+      <input type="text" id="mlSearch" placeholder="搜索模型文件..." oninput="LBm.filterLocal()" onkeydown="if(event.key==='Enter')LBm.searchNow()" style="width:200px">
+      <label class="mlchk" title="在 models 下所有子目录中递归搜索（结果沿用左侧排序）"><input type="checkbox" id="mlDeep" onchange="LBm.searchNow()"> 递归</label>
+      <button class="btn btn1 btn-sm" onclick="LBm.searchNow()"><i class="bi bi-search"></i> 搜索</button>
+    </div>
+
+    <div class="mlcrumbs" id="mlCrumbs"></div>
+
+    <div class="sbar" style="margin-bottom:14px">
+      <select id="mlSort" onchange="LBm.sortChanged()" style="width:170px" title="排序方式：按名称或修改时间，正序 / 倒序">
+        <option value="name_asc">名称 A-Z</option><option value="name_desc">名称 Z-A</option>
+        <option value="mtime_desc">修改时间：最新在前</option><option value="mtime_asc">修改时间：最早在前</option>
+      </select>
+      <span class="mlhint"><i class="bi bi-mouse2"></i> 右键可新建文件夹 / 上传文件 / 上传文件夹 / 重命名 / 移动 / 删除，空白处右键同样可用</span>
+      <span style="flex:1"></span>
+      <span style="font-size:11.5px;color:var(--text3)">已选 <strong id="mlSelCnt" style="color:var(--cyan)">0</strong></span>
+      <span id="mlStat" style="color:var(--text3);font-size:12px"></span>
+    </div>
+
+    <div class="card" id="mlTableCard"><div class="twrap gscroll">
+      <table><thead><tr>
+        <th class="cb-cell"><input type="checkbox" id="mlSelAll" onchange="LBm.toggleAll(this.checked)"></th>
+        <th>名称</th><th>类型</th><th>大小</th><th>修改时间</th><th>所在目录</th>
+      </tr></thead><tbody id="mlTbody"></tbody></table>
+    </div></div>
+  </div><!-- /#mmode-local -->
+</div>

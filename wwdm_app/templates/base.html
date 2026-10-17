@@ -1,0 +1,141 @@
+<!--
+  全站骨架 —— v5.0 第 9 步。
+
+  以前 index.html 是一个 6000 行的巨型单页，这里拆成三层：
+    base.html              骨架：head / 横幅 / 侧边栏 / #main 容器 / FAB / 任务中心抽屉 / script 引用
+    partials/<page>.html   每个页面的 HTML（launcher models plugins douyin notes
+                           workflows help output input settings repair about）
+    partials/modals.html   全站共用弹窗（运行日志 / 新增模型 / 批量新增 / 新增插件）
+
+  组合入口仍是 index.html（routes.py 里 render_template("index.html") 不用改）。
+
+  ⚠️ 三个 block 的位置有讲究，别乱挪：
+    pages 块    —— 夹在 <div id="main"> 里，页面靠父级 .page 选择器切换显示
+    modals 块   —— 在 #main / .layout 闭合之后，与拆分前的位置一致（弹窗是 fixed 定位，
+                   放外层更干净，也与原来一模一样）
+    scripts 块  —— 排在外链 script src 之后、右键菜单之前，
+                   因为内联脚本顶层直接用了 ui.js / api.js / poll.js / table.js 的全局符号
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="https://i2.wp.com/wx2.sinaimg.cn/large/006dp3hUgy1ieudx0sa2uj301s01s0si.jpg" type="image/x-icon">
+<title>薇薇的猫-comfyui管理器</title>
+  <link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/fonts/bootstrap-icons.css">
+</head>
+<body>
+<div class="banner">
+  <div class="banner-wrap" id="bannerWrap">
+    <span class="banner-text">&#x1F431; 当前薇薇的猫已更新插件 <em id="bCntP">...</em> 个，模型 <em id="bCntM">...</em> 个</span>
+    <span class="banner-text">&#x1F431; 当前薇薇的猫已更新插件 <em id="bCntP2">...</em> 个，模型 <em id="bCntM2">...</em> 个</span>
+  </div>
+</div>
+<div class="layout">
+
+<!-- ====== SIDEBAR ====== -->
+<div id="sidebar">
+  <div id="sidebar-hd">
+    <button id="sidebar-btn" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <span>薇薇的猫-comfyui</span>
+  </div>
+  <div class="nav gscroll">
+    <div class="mi active" data-page="launcher" onclick="switchPage(event,'launcher')"><span class="mi-icon"><i class="bi bi-rocket-takeoff"></i></span><span class="mt">wwdmc启动器</span></div>
+    <div class="mi" data-page="models" onclick="switchPage(event,'models')"><span class="mi-icon"><i class="bi bi-box-seam"></i></span><span class="mt">模型管理</span></div>
+    <div class="mi" data-page="plugins" onclick="switchPage(event,'plugins')"><span class="mi-icon"><i class="bi bi-puzzle"></i></span><span class="mt">插件管理</span></div>
+    <div class="mi" data-page="input" onclick="switchPage(event,'input')"><span class="mi-icon"><i class="bi bi-box-arrow-in-down"></i></span><span class="mt">输入管理</span></div>
+    <div class="mi" data-page="output" onclick="switchPage(event,'output')"><span class="mi-icon"><i class="bi bi-folder2-open"></i></span><span class="mt">输出管理</span></div>
+    <div class="mi" data-page="workflows" onclick="switchPage(event,'workflows')"><span class="mi-icon"><i class="bi bi-diagram-3"></i></span><span class="mt">工作流管理</span></div>
+    <div class="mi" data-page="settings" onclick="switchPage(event,'settings')"><span class="mi-icon"><i class="bi bi-gear"></i></span><span class="mt">全局设置</span></div>
+    <div class="mi" data-page="repair" onclick="switchPage(event,'repair')"><span class="mi-icon"><i class="bi bi-wrench-adjustable"></i></span><span class="mt">修复安装</span></div>
+    <div class="mi" data-page="douyin" onclick="switchPage(event,'douyin')"><span class="mi-icon"><i class="bi bi-music-note-beamed"></i></span><span class="mt">抖音提取</span></div>
+    <div class="mi" data-page="notes" onclick="switchPage(event,'notes')"><span class="mi-icon"><i class="bi bi-journal-text"></i></span><span class="mt">笔记本</span></div>
+    <div class="mi" data-page="help" onclick="switchPage(event,'help')"><span class="mi-icon"><i class="bi bi-question-circle"></i></span><span class="mt">帮助</span></div>
+    <div class="mi" data-page="about" onclick="switchPage(event,'about')"><span class="mi-icon"><i class="bi bi-info-circle"></i></span><span class="mt">关于</span></div>
+  </div>
+  <div id="sidebar-ft">v4.0 &copy; 薇薇的猫</div>
+</div>
+
+<!-- ====== MAIN ====== -->
+<div id="main" class="gscroll">
+
+{% block pages %}{% endblock %}
+</div><!-- /#main -->
+</div><!-- /.layout -->
+
+{% block modals %}{% endblock %}
+
+<!-- ====== 右下角扇形功能菜单（iconfont 线性画风图标） ====== -->
+<div id="fabWrap">
+  <div class="fab-fan" id="fabFan">
+    <button class="fab-sub fab-top" id="fabBtnTop" title="回到顶部">
+      <i class="bi bi-arrow-up"></i>
+    </button>
+    <button class="fab-sub fab-theme" id="fabBtnTheme" title="切换主题">
+      <i class="bi bi-sun-fill ico-sun"></i>
+      <i class="bi bi-moon-stars-fill ico-moon" style="display:none"></i>
+    </button>
+    <button class="fab-sub fab-power" id="fabBtnPower" title="定时关机">
+      <i class="bi bi-power"></i>
+    </button>
+    <button class="fab-sub tc-btn" id="fabBtnTasks" title="任务中心">
+      <i class="bi bi-list-task"></i>
+      <span class="tc-badge" id="tcBadge" style="display:none">0</span>
+    </button>
+  </div>
+  <button id="fabMain" title="更多功能">
+    <i class="bi bi-alexa"></i>
+  </button>
+</div>
+
+<!-- ====== 任务中心抽屉（v5.0 第 11 步）======
+     全局俯视图：一眼看到「机器上现在有几件事在跑」。
+     与下载 / 克隆 / 修复各自的弹窗并存 —— 抽屉看全局，弹窗看单条详情。 -->
+<div class="tc-mask" id="tcMask"></div>
+<div class="tc-draw" id="tcDraw" aria-hidden="true">
+  <div class="tc-head">
+    <h4><i class="bi bi-list-task"></i> 任务中心</h4>
+    <span class="tc-count" id="tcCount">空闲</span>
+    <span style="flex:1"></span>
+    <button class="tc-x" id="tcClose" title="收起"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="tc-list gscroll" id="tcList"></div>
+  <div class="tc-foot">
+    <i class="bi bi-arrow-repeat"></i>
+    <span>每 1.5 秒自动刷新；已完成的任务保留 6 小时后自动清理</span>
+  </div>
+</div>
+
+<!-- ====== SCRIPTS ====== -->
+<script src="/static/js/ui.js"></script>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/poll.js"></script>
+<script src="/static/js/table.js"></script>
+<script src="/static/js/taskcenter.js"></script>
+
+{% block scripts %}{% endblock %}
+
+<!-- 右键菜单 -->
+<div id="ctxMenu" class="ctx-menu" style="display:none">
+  <div class="ctx-item" id="ctxNewFolder" onclick="ctxNewFolder()"><i class="bi bi-folder-plus"></i> 新建文件夹</div>
+  <div class="ctx-item" id="ctxUploadFile" onclick="ctxUploadFile()"><i class="bi bi-upload"></i> 上传文件</div>
+  <div class="ctx-item" id="ctxUploadFolder" onclick="ctxUploadFolder()"><i class="bi bi-folder-symlink"></i> 上传文件夹</div>
+  <div class="ctx-sep" id="ctxSep0"></div>
+  <div class="ctx-item" id="ctxDownload" onclick="ctxDownload()"><i class="bi bi-download"></i> 下载</div>
+  <div class="ctx-item" id="ctxCopy" onclick="ctxCopy()"><i class="bi bi-files"></i> 复制</div>
+  <div class="ctx-item" id="ctxMove" onclick="ctxMove()"><i class="bi bi-scissors"></i> 移动</div>
+  <div class="ctx-sep" id="ctxSep1"></div>
+  <div class="ctx-item" id="ctxPaste" onclick="ctxPaste()" style="display:none"><i class="bi bi-clipboard"></i> 粘贴</div>
+  <div class="ctx-sep" id="ctxSep2" style="display:none"></div>
+  <div class="ctx-item" id="ctxDelete" onclick="ctxDelete()"><i class="bi bi-trash"></i> 删除</div>
+  <div class="ctx-item" id="ctxRename" onclick="ctxRename()"><i class="bi bi-pencil-square"></i> 重命名</div>
+  <div class="ctx-sep" id="ctxSep3"></div>
+  <div class="ctx-item" id="ctxSendToInput" onclick="ctxSendToInput()" style="display:none"><i class="bi bi-box-arrow-right"></i> 发送到输入文件夹</div>
+</div>
+
+
+
+</body>
+</html>

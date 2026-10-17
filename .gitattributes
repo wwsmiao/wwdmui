@@ -14,7 +14,7 @@
 wwdm_app/core/config.py            text eol=crlf
 wwdm_app/routes.py                 text eol=crlf
 wwdm_app/services/__init__.py      text eol=crlf
-wwdm_app/templates/index.html      text eol=crlf
+wwdm_app/templates/**/*.html       text eol=crlf
 wwdm_app/static/style.css          text eol=crlf
 
 # ---- 其余（run.py / README.md / database.py / __init__.py / kill_aria2.py 等）保持 LF ----

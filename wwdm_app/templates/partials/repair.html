@@ -1,0 +1,122 @@
+<!-- ====== 修复安装 ====== -->
+<div id="page-repair" class="page center-page"><div class="center-wrap">
+  <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-wrench-adjustable"></i></span>修复安装</h1>
+  <div class="card" style="border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.03)">
+    <div style="font-size:16px;font-weight:700;color:var(--amber);margin-bottom:8px">&#9888; 请先配置全局设置</div>
+    <div style="color:var(--text2);line-height:1.6">在使用以下功能前，请务必在 <a href="javascript:switchPage(null,'settings')" style="color:var(--cyan);text-decoration:underline">全局设置</a> 中正确配置 <strong>Python 路径</strong>、<strong>Git 路径</strong> 和 <strong>ComfyUI 根目录</strong>。</div>
+  </div>
+
+  <!-- ====== 安装区域 ====== -->
+  <div class="section-title"><span class="mi-icon"><i class="bi bi-download"></i></span> 安装区域</div>
+
+  <div class="card">
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-git"></i></span> 克隆 ComfyUI 仓库</div>
+    <div class="rdesc">从 GitHub 克隆一份 ComfyUI 到指定目录。git 使用全局设置里的 GitHub 镜像（在「全局设置 → GitHub 镜像」选择并保存后即刻生效）。</div>
+    <div class="srow"><span class="sl">安装目录</span><input id="rclone_dir" class="sinput sinput-wide" placeholder="如 C:\ComfyUI\ComfyUI2" style="width:100%"></div>
+    <div class="rchipline" data-mirror-note="git"></div>
+    <div id="rclone_warn" style="margin-bottom:10px;display:none"></div>
+    <button class="btn btn2" id="rclone_btn" onclick="repairClone()"><i class="bi bi-pc-display"></i> 克隆 ComfyUI</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-tools"></i></span> 安装 requirements.txt 依赖</div>
+    <div style="color:var(--text2);margin-bottom:10px">基于 ComfyUI 根目录，执行 <code>pip install -r requirements.txt</code>（使用全局设置里的 pip 镜像源，并以 <code>-i</code> 显式指定，优先于系统 pip 配置）</div>
+    <div class="rchipline" data-mirror-note="pip"></div>
+    <button class="btn btn1" id="rreq_btn" onclick="repairRequirements()"><i class="bi bi-tools"></i> 安装 requirements.txt</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-cpu"></i></span> 安装 PyTorch</div>
+    <div style="color:var(--text2);margin-bottom:6px">基于 static/info/pytorch.txt，选择版本与计算平台</div>
+    <div class="srow"><span class="sl">PyTorch 版本</span><select id="rpt_ver" class="sinput sinput-wide" onchange="repairUpdateVariants()" style="width:100%"><option value="">加载中...</option></select></div>
+    <div class="srow"><span class="sl">计算平台</span><select id="rpt_var" class="sinput sinput-wide" style="width:100%" onchange="repairUpdateCmd()"><option value="">请先选择版本</option></select></div>
+    <div class="srow"><span class="sl">安装命令</span><code id="rpt_cmd" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:12px;word-break:break-all;min-height:38px;display:flex;align-items:center;width:100%;box-sizing:border-box">等待选择...</code></div>
+    <div class="rchipline" data-mirror-note="pytorch"></div>
+    <button class="btn btn5" id="rpt_btn" onclick="repairPytorch()"><i class="bi bi-cpu"></i> 安装 PyTorch</button>
+  </div>
+
+  <!-- ====== 修复区域 ====== -->
+  <div class="section-title"><span class="mi-icon"><i class="bi bi-wrench-adjustable"></i></span> 修复区域</div>
+
+  <!-- 当前镜像信息条 -->
+  <div class="card rmirror-bar">
+    <div class="rmirror-row">
+      <span class="rmirror-item"><i class="bi bi-git"></i><span>GitHub 镜像</span><strong id="rCuiGhMirror">读取中…</strong></span>
+      <span class="rmirror-item"><i class="bi bi-box-seam"></i><span>pip 镜像源</span><strong id="rCuiPipMirror">读取中…</strong></span>
+      <a href="javascript:switchPage(null,'settings')" class="rmirror-link">前往全局设置修改 <i class="bi bi-chevron-right"></i></a>
+    </div>
+    <div class="rmirror-tip">修复区域里的 git / pip 操作都会使用上面这两个镜像，并在日志开头打印实际使用的源与完整命令行；镜像可用性可在全局设置中一键测试。</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-arrow-up-circle"></i></span> 更新 ComfyUI</div>
+    <div class="rdesc">用 <strong>git</strong> 更新 ComfyUI 到最新版或切换到指定分支/标签，完成后自动用 <strong>pip</strong> 安装根目录下的 <code>requirements.txt</code> 依赖。<br>需要 ComfyUI 根目录是 Git 仓库；普通用户直接点「更新到最新版」即可。</div>
+    <div class="srow"><span class="sl">版本选择</span>
+      <select id="rcui_branch" class="sinput sinput-wide" style="width:100%" onchange="repairCuiBranchChange()">
+        <option value="">加载中...</option>
+      </select>
+    </div>
+    <div class="rchipline" id="rCuiUpdateHint">正在读取镜像配置…</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn5" id="rcui_latest_btn" onclick="repairComfyUIUpdate('')"><i class="bi bi-arrow-up-circle"></i> 更新到最新版</button>
+      <button class="btn btn1" id="rcui_tag_btn" onclick="repairComfyUIUpdate(document.getElementById('rcui_branch').value)"><i class="bi bi-arrow-up-circle"></i> 更新到选中版本</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-box-seam"></i></span> 安装依赖</div>
+    <div style="color:var(--text2);margin-bottom:10px">使用全局设置中的 Python 路径与 pip 镜像源安装依赖包。多个包名用空格分隔。</div>
+    <div class="srow"><span class="sl">包名</span><input id="rpip_pkgs" class="sinput sinput-wide" placeholder="例如: numpy pandas torch==2.1.0" style="width:100%"></div>
+    <div class="rchipline" data-mirror-note="pip"></div>
+    <button class="btn btn1" id="rpip_btn" onclick="repairPipInstall()"><i class="bi bi-box-seam"></i> 安装依赖</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-puzzle"></i></span> 修复单个插件</div>
+    <div style="color:var(--text2);margin-bottom:10px">输入 custom_nodes 中的插件文件夹名，执行 <strong>git pull</strong> 更新 + 安装 requirements.txt 依赖。<br>git 与 pip 均使用全局设置，页面不再单独选择镜像。</div>
+    <div class="srow"><span class="sl">插件名称</span><input id="rplugin_name" class="sinput sinput-wide" placeholder="例如: ComfyUI-Manager" style="width:100%"></div>
+    <div class="rchipline" data-mirror-note="both"></div>
+    <div style="margin-top:8px">
+      <button class="btn btn1" id="rplugin_btn" onclick="repairPlugin()"><i class="bi bi-wrench"></i> 修复此插件</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-puzzle-fill"></i></span> 修复所有插件</div>
+    <div style="color:var(--text2);margin-bottom:10px">扫描 custom_nodes 下所有 Git 插件，逐个执行 <strong>git pull</strong> + requirements.txt 依赖安装。<br>git 与 pip 均使用全局设置，页面不再单独选择镜像。</div>
+    <div class="rchipline" data-mirror-note="both"></div>
+    <button class="btn btn1" id="rall_btn" onclick="repairAllPlugins()"><i class="bi bi-tools"></i> 批量修复全部插件</button>
+  </div>
+
+  <div class="card" style="border-color:rgba(239,68,68,0.5);background:rgba(239,68,68,0.04)">
+    <div class="card-title" style="color:var(--red)"><span class="mi-icon"><i class="bi bi-exclamation-triangle"></i></span> 强制进程控制</div>
+    <div style="color:rgba(239,68,68,0.85);margin-bottom:12px;padding:10px 14px;background:rgba(239,68,68,0.08);border-radius:6px;line-height:1.6">
+      <strong>&#9888; 危险操作</strong>：以下按钮将强制结束所有相关进程，可能丢失未保存数据，请谨慎使用。
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn3" id="rkill_a2" onclick="repairKillAria2()"><i class="bi bi-x-octagon-fill"></i> 结束所有 aria2 进程</button>
+    </div>
+  </div>
+
+  <!-- ====== 工具区域 ====== -->
+  <div class="section-title"><span class="mi-icon"><i class="bi bi-tools"></i></span> 工具区域</div>
+
+  <div class="card">
+    <div class="card-title"><span class="mi-icon"><i class="bi bi-box-arrow-in-down"></i></span> 下载文件</div>
+    <div class="rdesc">使用 <strong>aria2c</strong> 下载远程文件。<strong>文件名称、下载链接、保存路径三项都需要手动填写</strong>，不再使用任何默认路径。</div>
+    <div class="srow"><span class="sl">文件名称</span><input id="rdl_name" class="sinput sinput-wide" placeholder="例如: flux1-dev.safetensors" style="width:100%"></div>
+    <div class="srow"><span class="sl">下载链接</span><input id="rdl_url" class="sinput sinput-wide" placeholder="https://huggingface.co/.../model.safetensors" style="width:100%"></div>
+    <div class="srow"><span class="sl">保存路径</span><input id="rdl_path" class="sinput sinput-wide" placeholder="例如: C:\ComfyUI\ComfyUI\models\checkpoints" style="width:100%"></div>
+    <div class="rchipline" data-mirror-note="aria2c"></div>
+    <button class="btn btn2" id="rdl_btn" onclick="repairDownload()"><i class="bi bi-download"></i> 下载文件</button>
+  </div>
+
+  <!-- ====== 运行日志（大弹窗入口） ====== -->
+  <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+    <div style="min-width:240px">
+      <div class="card-title" style="margin:0"><span class="mi-icon"><i class="bi bi-journal-text"></i></span> 运行日志</div>
+      <div class="rdesc" style="margin:6px 0 0">安装 / 修复 / 下载的实时输出，以及「停止操作」「清除 pip 缓存」都在大弹窗中。当前：<span id="rlog_status2">空闲</span></div>
+    </div>
+    <button class="btn btn1" onclick="rlogOpen()"><i class="bi bi-window-stack"></i> 打开运行日志</button>
+  </div>
+</div></div>

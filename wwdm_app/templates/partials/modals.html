@@ -1,0 +1,82 @@
+<!-- ====== 运行日志大弹窗（仅修复安装页使用） ====== -->
+<div class="lgmodal-mask" id="rlogModal" style="display:none" onclick="if(event.target===this)rlogClose()">
+  <div class="lgmodal">
+    <div class="lgmodal-hd">
+      <span class="lgmodal-ico"><i class="bi bi-journal-text"></i></span>
+      <h3>运行日志</h3>
+      <span class="lgmodal-status" id="rlog_status">空闲</span>
+    </div>
+    <div class="lgmodal-body">
+      <pre id="rlog" class="lgmodal-log gscroll">等待操作...</pre>
+    </div>
+    <div class="lgmodal-ft">
+      <button class="btn btn3" id="rstop_btn" onclick="repairStop()" disabled><i class="bi bi-stop-circle"></i> 停止操作</button>
+      <button class="btn btn4" id="rpurge_btn" onclick="repairPurgeCache()"><i class="bi bi-trash"></i> 清除 pip 缓存</button>
+      <button class="btn btn1" id="rlogCopyBtn" onclick="rlogCopy()"><i class="bi bi-clipboard"></i> 复制日志</button>
+      <span class="lgmodal-spacer"></span>
+      <button class="btn btn2" onclick="rlogClose()"><i class="bi bi-x-lg"></i> 关闭弹窗</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 插件克隆日志弹窗（仅插件管理页使用） ====== -->
+<div class="lgmodal-mask" id="plLogModal" style="display:none" onclick="if(event.target===this)plLogClose()">
+  <div class="lgmodal">
+    <div class="lgmodal-hd">
+      <span class="lgmodal-ico"><i class="bi bi-cloud-arrow-down"></i></span>
+      <h3>插件克隆日志</h3>
+      <span class="lgmodal-status" id="plLogStatus">空闲</span>
+    </div>
+    <div class="lgmodal-body pllog-body">
+      <div class="rchipline" id="plMirrorLine" style="margin:0"></div>
+      <pre id="plClog" class="lgmodal-log gscroll">等待克隆任务 ...</pre>
+    </div>
+    <div class="lgmodal-ft">
+      <button class="btn btn3" id="plStopAllBtn" onclick="plStopAll()" title="停止所有克隆；克隆到一半的插件文件夹会被删除，已克隆完成的会保留"><i class="bi bi-stop-circle"></i> 停止克隆</button>
+      <button class="btn btn4" onclick="plLogClear()"><i class="bi bi-eraser"></i> 清空日志</button>
+      <span class="lgmodal-spacer"></span>
+      <button class="btn btn2" onclick="plLogClose()"><i class="bi bi-x-lg"></i> 关闭弹窗</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 模型模态框 ====== -->
+<div class="modal-bg" id="mbg"><div class="modal gscroll">
+  <h3 id="mtitle">新增模型</h3><input type="hidden" id="eid">
+  <div class="fg"><label>模型名称</label><input type="text" id="fname" placeholder="例如: model.safetensors"></div>
+  <div class="fg"><label>存放路径</label><input type="text" id="fpath" placeholder="models/diffusion_models" list="plist"><datalist id="plist"></datalist></div>
+  <div class="fg"><label>下载链接</label><input type="url" id="furl" placeholder="https://huggingface.co/..."></div>
+  <div class="fact"><button class="btn btn6" onclick="closeModal()"><i class="bi bi-x-lg"></i> 取消</button><button class="btn btn1" onclick="saveModel()"><i class="bi bi-save"></i> 保存</button></div>
+</div></div>
+
+<!-- 批量新增模型弹窗 -->
+<div class="modal-bg" id="batmbg"><div class="modal gscroll" style="min-width:800px;max-width:95vw">
+  <h3 style="margin-bottom:18px">&#128230; 批量新增模型</h3>
+  <div class="fg"><label>下载链接（每行一个）</label>
+    <textarea id="batUrls" class="gscroll" rows="8" style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-family:var(--font);font-size:12px;resize:vertical" placeholder="https://huggingface.co/user/repo/resolve/main/model1.safetensors&#10;https://civitai.com/api/download/models/12345?type=Model&#10;..."></textarea>
+  </div>
+  <div class="fg" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+    <div id="batRegexWrap" style="flex:2;min-width:300px"><label>正则表达式 <span style="color:var(--text3);font-weight:400">（第一个捕获组作为模型名，留空则不过滤）</span></label>
+      <input type="text" id="batRegex" placeholder="例如: /([^/]+?\.safetensors)" style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-family:var(--font);font-size:12px">
+    </div>
+  </div>
+  <div class="fg"><label>存放路径</label><input type="text" id="batPath" placeholder="models/diffusion_models" list="plist"></div>
+  <div class="fg" style="margin-bottom:4px"><label>解析预览</label>
+    <div id="batPreview" class="gscroll" style="max-height:200px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-size:11.5px;color:var(--text2);min-height:48px;line-height:1.8">等待输入链接...</div>
+  </div>
+  <div class="fact" style="margin-top:16px">
+    <span id="batMsg" style="flex:1;font-size:12px;color:var(--text2)"></span>
+    <button class="btn btn6" onclick="closeBatModal()"><i class="bi bi-x-lg"></i> 取消</button>
+    <button class="btn btn2" id="batExtractBtn" onclick="extractNames()"><i class="bi bi-magic"></i> 提取名称</button>
+    <button class="btn btn1" id="batSubmitBtn" onclick="submitBatch()"><i class="bi bi-clipboard-plus"></i> 批量新增</button>
+  </div>
+</div></div>
+
+<!-- ====== 插件模态框 ====== -->
+<div class="modal-bg" id="pmbg"><div class="modal gscroll">
+  <h3 id="pmtitle">新增插件</h3><input type="hidden" id="peid">
+  <div class="fg"><label>插件名称</label><input type="text" id="pfname" placeholder="如: ComfyUI-Manager"></div>
+  <div class="fg"><label>Git 仓库地址</label><input type="url" id="pfurl" placeholder="https://github.com/user/repo.git"></div>
+  <div class="fg"><label>描述</label><input type="text" id="pfdesc" placeholder="简短描述"></div>
+  <div class="fact"><button class="btn btn6" onclick="closePluginModal()"><i class="bi bi-x-lg"></i> 取消</button><button class="btn btn1" onclick="savePlugin()"><i class="bi bi-save"></i> 保存</button></div>
+</div></div>

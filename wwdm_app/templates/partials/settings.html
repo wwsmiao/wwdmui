@@ -1,0 +1,200 @@
+<!-- ====== 全局设置 ====== -->
+<div id="page-settings" class="page center-page">
+  <div class="center-wrap">
+    <h1 class="ptitle"><span class="mi-icon"><i class="bi bi-gear"></i></span>全局设置</h1>
+    <div class="card scard">
+      <div class="sg sg-wide"><div class="sg-title">管理器访问 <span id="accBadge" class="acc-badge" style="display:none"><i class="bi bi-exclamation-triangle"></i> 有改动待重启生效</span></div>
+        <div class="srow srow-full">
+          <div class="slabel-block"><div class="slabel">监听地址</div><div class="shint">决定这台电脑之外能不能打开本管理器。<b>修改后需要重启管理器才生效</b></div></div>
+          <select id="swh" class="sinput-wide" onchange="accStatus()">
+            <option value="0.0.0.0">局域网可访问（0.0.0.0）— 手机 / 另一台电脑也能打开，需要访问令牌</option>
+            <option value="127.0.0.1">仅本机访问（127.0.0.1）— 最安全，其它设备打不开</option>
+          </select>
+        </div>
+        <div class="srow srow-full">
+          <div class="slabel-block"><div class="slabel">端口</div><div class="shint">默认 7860，范围 1024–65535。<b>修改后需要重启管理器才生效</b></div></div>
+          <input type="text" id="swp" class="sinput" style="width:200px" placeholder="留空=7860" oninput="accStatus()">
+        </div>
+        <div class="srow srow-full">
+          <div class="slabel-block"><div class="slabel">访问令牌</div><div class="shint">从本机（127.0.0.1）打开时免校验；从其它设备打开需要这个令牌。改动立即生效</div></div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <input type="text" id="stok" class="acc-mono" style="flex:1 1 auto;min-width:220px;width:auto" readonly>
+            <button class="btn btn6" onclick="accCopy()"><i class="bi bi-clipboard"></i> 复制</button>
+            <button class="btn btn6" onclick="accCopyLink()"><i class="bi bi-link-45deg"></i> 复制直链</button>
+            <button class="btn btn6" onclick="accRegen()"><i class="bi bi-arrow-repeat"></i> 重新生成</button>
+          </div>
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">要求非本机访问携带令牌</div><div class="shint">推荐开启。关闭后同一局域网内任何人都能直接进入本管理器</div></div>
+          <input type="checkbox" id="stokreq" onchange="accStatus()">
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">上传大小上限（GB）</div><div class="shint">单次上传模型的总体积上限，范围 0.1–64。防止一个超大请求把内存和磁盘打满</div></div>
+          <input type="text" id="smu" class="sinput" style="width:140px" placeholder="8">
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">当前状态</div></div>
+          <div id="accStatus" class="shint" style="line-height:1.9"></div>
+        </div>
+      </div>
+
+      <div class="sg sg-wide"><div class="sg-title">路径配置</div>
+        <div class="srow srow-full">
+          <div class="slabel-block"><div class="slabel">ComfyUI 根目录</div><div class="shint">模型下载到此目录下的对应子目录</div></div>
+          <input type="text" id="scd" class="sinput-wide" placeholder="如 D:\ComfyUI 或 /home/user/ComfyUI">
+        </div>
+        <div class="srow srow-full" style="margin-top:12px">
+          <div class="slabel-block"><div class="slabel">Python 路径</div><div class="shint">项目驱动使用的 Python 解释器路径</div></div>
+          <div style="display:flex;gap:10px;align-items:center"><input type="text" id="spy" class="sinput-wide" placeholder="如 C:\python312\python.exe"><button class="btn btn6" style="min-width:80px" onclick="detectPy()"><i class="bi bi-search"></i> 检测</button></div>
+          <div id="pyr"></div>
+        </div>
+        <div class="srow srow-full" style="margin-top:12px">
+          <div class="slabel-block"><div class="slabel">Git 路径</div><div class="shint">用于克隆 ComfyUI 插件的 git 可执行文件路径</div></div>
+          <div style="display:flex;gap:10px;align-items:center"><input type="text" id="sgp" class="sinput-wide" placeholder="git"><button class="btn btn6" style="min-width:80px" onclick="detectGit()"><i class="bi bi-search"></i> 检测</button></div>
+          <div id="gtr"></div>
+        </div>
+        <div class="srow srow-full" style="margin-top:12px">
+          <div class="slabel-block"><div class="slabel">aria2c 路径</div><div class="shint">Windows: C:\aria2\aria2c.exe | Linux: /usr/bin/aria2c</div></div>
+          <div style="display:flex;gap:10px;align-items:center"><input type="text" id="sap" class="sinput-wide" placeholder="aria2c 路径"><button class="btn btn6" style="min-width:80px" onclick="detectA2()"><i class="bi bi-search"></i> 检测</button></div>
+          <div id="adr"></div>
+        </div>
+        <div class="srow srow-full" style="margin-top:12px">
+          <div class="slabel-block"><div class="slabel">pip 镜像源</div><div class="shint">安装 Python 依赖时使用的镜像源。本工具会把它作为 -i 显式传给 pip，优先级高于电脑里已有的 pip 镜像配置，国内用户推荐清华源</div></div>
+          <select id="spm" class="sinput-wide" onchange="repairLoadMirrorInfo()">
+            <option value="default">国外官方 (pypi.org)</option>
+            <option value="tsinghua">清华大学 (tuna.tsinghua.edu.cn) - 国内推荐</option>
+            <option value="aliyun">阿里云 (mirrors.aliyun.com)</option>
+            <option value="tencent">腾讯云 (mirrors.cloud.tencent.com)</option>
+            <option value="douban">豆瓣 (pypi.douban.com)</option>
+            <option value="ustc">中科大 (pypi.mirrors.ustc.edu.cn)</option>
+          </select>
+          <div class="shint" id="spmNote" style="margin-top:6px"></div>
+        </div>
+        <div class="srow srow-full" style="margin-top:12px">
+          <div class="slabel-block"><div class="slabel">GitHub 镜像</div><div class="shint">克隆 ComfyUI 插件、更新 ComfyUI 时使用的 GitHub 通道。镜像仓库直接替换 github.com 域名，加速网站为前缀加速；建议先点右侧按钮做连通性测试再选择</div></div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <select id="sghm" class="sinput-wide" onchange="applyGithubMirrorLabels()">
+              <option value="official">GitHub 官方 (github.com)</option>
+              <optgroup label="镜像仓库 · 替换 github.com 域名">
+                <option value="gitclone">gitclone.com</option>
+                <option value="ur1">github.ur1.fun</option>
+              </optgroup>
+              <optgroup label="加速网站 · 前缀加速">
+                <option value="ghproxy">gh-proxy.com</option>
+                <option value="ghproxynet">ghproxy.net</option>
+                <option value="homeboyc">ghproxy.homeboyc.cn</option>
+                <option value="akams">github.akams.cn</option>
+              </optgroup>
+            </select>
+            <button class="btn btn6" style="min-width:112px;flex-shrink:0" id="ghmTestBtn" onclick="ghMirrorTest()"><i class="bi bi-activity"></i> 连通性测试</button>
+          </div>
+          <div id="ghmResult" style="display:none;margin-top:10px"></div>
+        </div>
+      </div>
+
+      <div class="sg sg-wide"><div class="sg-title">ComfyUI 启动命令 <button class="btn btn6 btn-xs" onclick="cuiCmdReset()" style="margin-left:12px"><i class="bi bi-arrow-counterclockwise"></i> 重置为默认</button><span id="cuiCmdPreview" style="margin-left:12px;font-size:10px;color:var(--cyan);word-break:break-all"></span></div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">监听 IP</div><div class="shint">--listen，默认 127.0.0.1 (仅本机)。设为 0.0.0.0 监听所有网络接口，可局域网访问</div></div>
+          <input type="text" class="sinput" id="scli" placeholder="留空=127.0.0.1">
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">端口</div><div class="shint">--port，ComfyUI Web 服务端口，默认 8188</div></div>
+          <input type="text" class="sinput" id="sclp" placeholder="留空=8188">
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">自动打开浏览器</div><div class="shint">--auto-launch，启动后自动打开默认浏览器访问 WebUI</div></div>
+          <input type="checkbox" id="scla" checked>
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">VRAM 模式</div><div class="shint">显存管理策略。高显存=模型常驻GPU；低显存=编码器放CPU；极低=极限省显存；仅GPU=全部放GPU；CPU=纯CPU慢速</div></div>
+          <select class="sinput" id="sclv"><option value="default">默认 (Dynamic VRAM)</option><option value="highvram">高显存 (--highvram)</option><option value="lowvram">低显存 (--lowvram)</option><option value="novram">极低显存 (--novram)</option><option value="gpu_only">仅GPU (--gpu-only)</option><option value="cpu">纯CPU (--cpu)</option></select>
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">预览方式</div><div class="shint">--preview-method，采样器节点的默认预览方式。auto=自动选择；latent2rgb=潜空间转RGB；taesd=TAESD快速解码；none=不预览</div></div>
+          <select class="sinput" id="sclpm"><option value="default">默认 (auto)</option><option value="auto">auto (自动)</option><option value="latent2rgb">latent2rgb (潜空间转RGB)</option><option value="taesd">taesd (TAESD)</option><option value="none">none (关闭)</option></select>
+        </div>
+        <div class="srow">
+          <div class="slabel-block"><div class="slabel">启用 CORS</div><div class="shint">--enable-cors-header，允许跨域资源共享。填入允许的域名，留空=禁用。设为 * 允许所有来源</div></div>
+          <input type="text" class="sinput" id="sclc" placeholder="留空禁用，* = 允许所有">
+        </div>
+        <div class="srow srow-full">
+          <div class="slabel-block"><div class="slabel">额外命令行参数</div><div class="shint">其他 main.py 参数，用空格分隔，如: --force-fp16 --bf16-vae --verbose DEBUG</div></div>
+          <input type="text" class="sinput-wide" id="sclx" placeholder="如 --force-fp16 --bf16-vae">
+        </div>
+        <div class="srow srow-full" style="flex-direction:column;align-items:stretch;">
+          <div class="slabel-block"><div class="slabel">环境变量预设</div><div class="shint">在 ComfyUI 启动前注入 set 命令，每行为一组变量名=值，如 TORCH_COMPILE_OFF=1</div></div>
+          <div id="presetList" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;"></div>
+          <div style="display:flex;gap:6px;margin-top:6px;"><button class="btn btn-xs" onclick="addPreset()"><i class="bi bi-plus-lg"></i> 添加</button><span style="font-size:11px;color:#888;align-self:center;">示例: TORCH_COMPILE_OFF=1</span></div>
+        </div>
+      </div>
+
+      <div class="sg"><div class="sg-title">下载队列</div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">最大同时下载</div><div class="shint">aria2c 同时下载 (1-10)</div></div><input type="number" class="sinput" id="smc" min="1" max="10" value="3"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">最大同时克隆</div><div class="shint">Git clone 并发数 (1-5)</div></div><input type="number" class="sinput" id="scl" min="1" max="5" value="2"></div>
+      </div>
+
+      <div class="sg"><div class="sg-title">连接参数</div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">单服务器最大连接</div><div class="shint">(1-16)</div></div><input type="number" class="sinput" id="smcs" min="1" max="16" value="8"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">文件分片数</div><div class="shint">(1-16)</div></div><input type="number" class="sinput" id="sspl" min="1" max="16" value="8"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">最小分片大小</div><div class="shint">如 10M, 1M</div></div><input type="text" class="sinput" id="smss" value="10M"></div>
+      </div>
+
+      <div class="sg sg-wide"><div class="sg-title">超时与重试</div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">连接超时(秒)</div></div><input type="number" class="sinput" id="sct" min="10" value="60"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">下载超时(秒)</div></div><input type="number" class="sinput" id="sto" min="10" value="60"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">最低速度</div></div><input type="text" class="sinput" id="sls" value="1K"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">重试等待(秒)</div></div><input type="number" class="sinput" id="srw" min="1" value="3"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">最大重试次数</div><div class="shint">0=无限</div></div><input type="number" class="sinput" id="smt" min="0" value="0"></div>
+      </div>
+
+      <div class="sg sg-wide"><div class="sg-title">高级</div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">文件预分配</div></div><select class="sinput" id="sfa"><option value="none">none</option><option value="falloc">falloc</option><option value="prealloc">prealloc</option></select></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">验证HTTPS证书</div></div><input type="checkbox" id="scc"></div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">启动时自动运行aria2c</div></div><input type="checkbox" id="sas" checked></div>
+      </div>
+
+      <div class="sg"><div class="sg-title">其他</div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">输入预览文件夹</div><div class="shint">文件管理预览的根目录，默认为 ComfyUI 目录下的 input 文件夹</div></div>
+          <input type="text" class="sinput sinput-wide" id="sind" placeholder="C:\ComfyUI\ComfyUI\input">
+        </div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">输出预览文件夹</div><div class="shint">文件管理预览的根目录，默认为 ComfyUI 目录下的 output 文件夹</div></div>
+          <input type="text" class="sinput sinput-wide" id="soutd" placeholder="C:\ComfyUI\ComfyUI\output">
+        </div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">工作流备份目录</div><div class="shint">点击工作流管理的「备份」按钮时，工作流目录会复制到此处，留空则不启用备份</div></div>
+          <input type="text" class="sinput sinput-wide" id="swfbd" placeholder="C:\backup（留空则不启用备份）">
+        </div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">背景壁纸</div><div class="shint">网页背景壁纸路径，支持图片(jpg/png/webp)或视频(mp4)，留空则使用默认水彩背景</div></div>
+          <input type="text" class="sinput sinput-wide" id="swall" placeholder="C:\wallpaper.png 或 C:\wallpaper.mp4（留空使用默认背景）">
+        </div>
+        <div class="srow"><div class="slabel-block"><div class="slabel">壁纸毛玻璃效果</div><div class="shint">设置壁纸后启用玻璃模糊：0=无玻璃（完全透明），1~10 为模糊像素（数值越大越模糊）</div></div>
+          <input type="number" id="swallo" class="sinput" style="width:140px" min="0" max="10" step="1" placeholder="0">
+        </div>
+      </div>
+
+
+      <h2 class="sg-title">抖音提取</h2>
+      <div class="slabel-block" style="margin-bottom:4px"><div class="slabel">Cookie 文件路径</div><div class="shint">dy_cookie.json 绝对路径（从 Chrome/Edge 的 EditThisCookie 导出的 JSON）</div></div>
+      <input type="text" id="dyCookieFile" class="sinput sinput-wide" placeholder="C:\\tmp\\douyin-tiqu\\dy_cookie.json" style="width:100%;margin-bottom:14px">
+      <div class="slabel-block" style="margin-bottom:4px"><div class="slabel">默认保存目录</div><div class="shint">图片保存目录</div></div>
+      <input type="text" id="dySaveDirSet" class="sinput sinput-wide" placeholder="C:\\tmp\\douyin-tiqu\\images" style="width:100%;margin-bottom:14px">
+      <div class="slabel-block" style="margin-bottom:4px"><div class="slabel">默认图片格式</div></div>
+      <select id="dyFmtSet" class="sinput" style="width:120px;margin-bottom:14px">
+        <option value="png">PNG</option>
+        <option value="jpg">JPG</option>
+      </select>
+
+      <h2 class="sg-title">关机功能</h2>
+      <div class="srow"><div class="slabel-block"><div class="slabel">默认关机延迟(秒)</div><div class="shint">点击右下角菜单的关机按钮后，等待多少秒执行关机。1-3600 = 可随时取消的倒计时；0 = 立即关机（不可取消）</div></div>
+        <input type="number" id="sdly" class="sinput" style="width:140px" min="0" max="3600" placeholder="60">
+      </div>
+
+      <div class="srow srow-full" style="border-top:1px dashed var(--border);padding-top:14px">
+        <div class="slabel-block"><div class="slabel">退出管理器</div><div class="shint">只关闭管理器本身，不影响 ComfyUI。改过监听地址/端口后，需要退出再重新双击启动器才会生效 —— 本工具不做「一键重启」，因为 Windows 下新旧进程会同时占用同一端口</div></div>
+        <div><button class="btn btn6" onclick="accQuit()"><i class="bi bi-power"></i> 退出管理器</button></div>
+      </div>
+
+      <div class="sacts"><button class="btn btn6" onclick="resetS()"><i class="bi bi-arrow-counterclockwise"></i> 恢复默认</button><button class="btn btn1" onclick="saveS()"><i class="bi bi-save"></i> 保存设置</button><button class="btn btn5" onclick="saveSRestart()"><i class="bi bi-arrow-repeat"></i> 保存并重启 aria2c</button></div>
+      <div class="snote">设置保存后需重启 aria2c 生效；监听地址 / 端口改动需要重启管理器才生效</div>
+    </div>
+  </div>
+</div>

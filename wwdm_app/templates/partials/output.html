@@ -1,0 +1,44 @@
+<!-- ====== 输出管理 ====== -->
+<div id="page-output" class="page center-page">
+  <div class="center-wrap">
+    <h1 class="ph">&#128193; 输出管理</h1>
+
+    <!-- 面包屑 + 工具栏 -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <span id="outBread" style="color:var(--cyan);font-size:13px"></span>
+      <span style="flex:1"></span>
+      <select id="outViewSel" class="sinput" style="width:140px" onchange="outViewChange()">
+        <option value="grid">&#9630; 网格</option><option value="masonry">&#9630; 瀑布流</option><option value="list">&#9776; 列表</option>
+      </select>
+    </div>
+
+    <!-- 搜索 + 排序 + 分页控制 -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn btn6" onclick="outOpenFolder()" title="在资源管理器中打开输出文件夹" style="font-size:18px;padding:4px 8px"><i class="bi bi-folder2-open"></i></button>
+      <span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 2px"></span>
+      <label class="btn btn6" style="font-size:12px;padding:4px 8px;cursor:pointer;margin:0;display:inline-flex;align-items:center;gap:4px">
+        <input type="checkbox" id="outSelAll" onclick="outToggleSelectAll()" style="margin:0"> 全选本页
+      </label>
+      <span id="outSelCount" style="color:var(--cyan);font-size:12px;display:none"></span>
+      <button class="btn btn6" id="outClearSel" onclick="outClearSelection()" style="font-size:11px;padding:3px 6px;display:none"><i class="bi bi-x-lg"></i> 清除</button>
+      <button class="btn btn7" id="outDelSel" onclick="outDeleteSelected()" style="font-size:11px;padding:3px 6px;display:none"><i class="bi bi-trash"></i> 删除选中</button>
+      <input type="text" id="outSearch" class="sinput" placeholder="搜索文件名/文件夹..." style="width:180px" onkeydown="if(event.key==='Enter')outSearch()">
+      <button class="btn btn6" onclick="outClearSearch()" title="清除搜索" style="font-size:14px;padding:4px 8px;min-width:28px"><i class="bi bi-backspace"></i></button>
+      <button class="btn btn6" onclick="outSearch()" style="font-size:12px"><i class="bi bi-search"></i> 搜索</button>
+      <select id="outSort" class="sinput" style="width:120px" onchange="outDoBrowse()">
+        <option value="date_desc">最新优先</option><option value="date_asc">最早优先</option>
+        <option value="name_asc">名称 ↑</option><option value="name_desc">名称 ↓</option>
+      </select>
+      <select id="outPS" class="sinput" style="width:80px" onchange="outDoBrowse()">
+        <option value="12">12条</option><option value="20" selected>20条</option><option value="40">40条</option><option value="60">60条</option>
+      </select>
+      <span id="outPageInfo" style="color:var(--text2);font-size:13px;margin-left:8px"></span>
+    </div>
+
+    <!-- 内容区域 -->
+    <div id="outGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;min-height:200px"></div>
+
+    <!-- 分页 -->
+    <div id="outPager" style="display:flex;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap"></div>
+  </div>
+</div>
