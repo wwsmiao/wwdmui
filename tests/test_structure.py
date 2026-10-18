@@ -226,7 +226,7 @@ class TestTemplates:
 
     def test_partials_exist(self):
         d = os.path.join(PKG, "templates", "partials")
-        for name in ("launcher", "models", "plugins", "douyin",
+        for name in ("launcher", "models", "plugins",
                      "workflows", "help", "output", "input", "settings",
                      "repair", "about", "modals"):
             assert os.path.exists(os.path.join(d, name + ".html")), "缺 partial：%s" % name

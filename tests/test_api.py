@@ -8,7 +8,7 @@ import pytest
 
 from wwdm_app.core import tasks as T
 
-PAGES = ["launcher", "models", "plugins", "douyin", "workflows",
+PAGES = ["launcher", "models", "plugins", "workflows",
          "help", "output", "input", "settings", "repair", "about"]
 # v5.1 起「笔记本」不再是页面：partials/notes.html 改为 FAB 唤出的 .lgmodal
 # 大弹窗（#notesModal），断言从 PAGES 挪到下面的骨架锚点里。

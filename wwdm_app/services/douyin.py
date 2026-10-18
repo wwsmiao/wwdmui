@@ -298,6 +298,7 @@ def douyin_fetch(raw_text_or_url: str, cookie_file: str):
 
 def douyin_download_images(urls: list, save_dir: str, name_template: str = "{index:02d}.{ext}", cookie_file: str = ""):
     """通过 aria2c 批量下载图片。返回 {ok, gids, save_dir}。"""
+    from . import aria2_rpc   # 延迟导入：符号仍住在 services/__init__.py
     os.makedirs(save_dir, exist_ok=True)
     gids = []
     total = len(urls)
@@ -326,6 +327,7 @@ def douyin_download_images(urls: list, save_dir: str, name_template: str = "{ind
 
 def douyin_download_video(video_url: str, save_dir: str, name: str = "video.mp4", cookie_file: str = ""):
     """通过 aria2c 下载视频文件。返回 {ok, gid, out}。"""
+    from . import aria2_rpc   # 延迟导入：符号仍住在 services/__init__.py
     os.makedirs(save_dir, exist_ok=True)
     opts = {"dir": save_dir, "out": name, "continue": "true"}
     header = _douyin_aria2_headers(cookie_file)

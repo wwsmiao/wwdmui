@@ -16,7 +16,6 @@ function switchPage(e,p){
   if(p==='input'){inInitView();browseInput('')}
   if(p==='output')browseOutput('')
   if(p==='settings')loadSF()
-  if(p==='douyin'){loadDySettings()}
   if(p==='workflows'){wfInit()}
   if(p==='repair'){repairLoadPytorch();repairLoadComfyUIBranches();repairCheckStatus();repairLoadMirrorInfo()}
   else{rlogClose()}

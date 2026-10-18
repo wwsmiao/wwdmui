@@ -312,10 +312,14 @@ def _impl():
                 lab.setWordWrap(True)
                 self.grid.addWidget(lab, 0, 0, 1, 4)
                 if g.get("url"):
-                    b = QPushButton("用浏览器打开链接")
-                    b.clicked.connect(
+                    card = QPushButton("\u25B6\n视频（需浏览器）")
+                    card.setObjectName("DyCard")
+                    card.setFixedSize(164, 164)
+                    card.setCursor(Qt.CursorShape.PointingHandCursor)
+                    card.setToolTip("抖音视频直链需要登录态：点击用浏览器打开")
+                    card.clicked.connect(
                         lambda _=False, u=g["url"]: self._open_url(u))
-                    self.grid.addWidget(b, 1, 0)
+                    self.grid.addWidget(card, 1, 0)
                 return
             for idx, it in enumerate(g["items"]):
                 card = QPushButton()
