@@ -22,6 +22,14 @@ bp = Blueprint("douyin", __name__)
 
 
 # ========== 抖音提取 API ==========
+def _pick_cookie(raw):
+    """弹窗传入的 cookie 路径优先（须是存在的 .json），否则回退全局设置。"""
+    p = (raw or "").strip()
+    if p and os.path.isfile(p) and p.lower().endswith(".json"):
+        return p
+    return _douyin_cookie_file()
+
+
 def _douyin_cookie_file():
     """获取抖音 Cookie 文件路径"""
     f = config.settings.get("douyin_cookie_file", "").strip()
@@ -41,9 +49,9 @@ def api_douyin_fetch():
     raw_text = (data.get("url") or data.get("text") or "").strip()
     if not raw_text:
         return jsonify({"ok": False, "msg": "请输入抖音链接或包含链接的文本"})
-    cookie_file = _douyin_cookie_file()
+    cookie_file = _pick_cookie(data.get("cookie_file"))
     if not cookie_file:
-        return jsonify({"ok": False, "msg": "请先在全局设置中配置 dy_cookie.json 路径（Cookie 文件格式：原始 Cookie 字符串或 JSON）"})
+        return jsonify({"ok": False, "msg": "请先配置 Cookie 文件（.json，可在「抖音提取」弹窗里选择）"})
     return jsonify(svc.douyin_fetch(raw_text, cookie_file))
 
 @bp.route("/api/douyin/download", methods=["POST"])
@@ -56,11 +64,12 @@ def api_douyin_download():
     if not save_dir:
         return jsonify({"ok": False, "msg": "请配置保存目录"})
 
+    cookie_file = _pick_cookie(data.get("cookie_file"))
+
     # 视频下载
     video_url = (data.get("video_url") or "").strip()
     if video_url:
         name = (data.get("video_name") or data.get("aweme_id") or "video").strip() + ".mp4"
-        cookie_file = _douyin_cookie_file()
         return jsonify(svc.douyin_download_video(video_url, save_dir, name, cookie_file))
 
     # 图片下载
@@ -68,7 +77,6 @@ def api_douyin_download():
     if not urls:
         return jsonify({"ok": False, "msg": "没有可下载的图片"})
     tmpl = (data.get("name_template") or "{index:02d}.{ext}").strip()
-    cookie_file = _douyin_cookie_file()
     return jsonify(svc.douyin_download_images(urls, save_dir, tmpl, cookie_file))
 
 

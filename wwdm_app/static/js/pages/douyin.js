@@ -337,7 +337,7 @@ async function saveS(){
     comfyui_cors_origin:gv('sclc'),comfyui_extra_args:gv('sclx'),
     comfyui_presets:collectPresets(),
     input_dir:gv('sind'),output_dir:gv('soutd'),workflow_backup_dir:gv('swfbd'),
-    pip_mirror:gv('spm')||'default',github_mirror:gv('sghm')||'official',hf_channel:gv('shfc')||'hf-mirror',hf_env_inject:!!(document.getElementById('shfEnv')||{}).checked,douyin_cookie_file:gv('dyCookieFile'),douyin_save_dir:gv('dySaveDirSet'),web_host:_accV('swh')||'0.0.0.0',web_port:_accI('swp',7860),access_token:_accV('stok'),token_required:!!(document.getElementById('stokreq')||{}).checked,max_upload_gb:gvf('smu',8)};
+    pip_mirror:gv('spm')||'default',github_mirror:gv('sghm')||'official',hf_channel:gv('shfc')||'hf-mirror',hf_env_inject:!!(document.getElementById('shfEnv')||{}).checked,web_host:_accV('swh')||'0.0.0.0',web_port:_accI('swp',7860),access_token:_accV('stok'),token_required:!!(document.getElementById('stokreq')||{}).checked,max_upload_gb:gvf('smu',8)};
   try{var r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});var j=await r.json();
     if(j.ok){document.getElementById('mcd').textContent=d.max_concurrent_downloads;document.getElementById('cld').textContent=d.max_concurrent_clones;cuiCmdPreview();applyWallpaper();repairLoadMirrorInfo();accStatus();notify(j.msg)}else{notify('保存失败: '+j.msg)}}catch(e){notify('保存失败: '+e.message)}
 }

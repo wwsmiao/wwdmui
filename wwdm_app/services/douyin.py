@@ -255,12 +255,24 @@ def douyin_fetch(raw_text_or_url: str, cookie_file: str):
         if not video_url:
             image_urls = douyin_extract_image_urls(html)
 
+        if video_url:
+            typ, msg = "video", ""
+        elif image_urls:
+            typ, msg = "note", ""
+        elif aweme_id:
+            # 抖音详情接口现在按请求签名（a_bogus），服务端直取会被拦；
+            # 保留链接让用户在浏览器里打开查看。
+            typ = "video_blocked"
+            msg = "视频直链受抖音风控限制，可点「用浏览器打开链接」查看"
+        else:
+            typ, msg = "unknown", ""
         return {
             "target_url": url,
             "aweme_id": aweme_id,
             "note_id": note_id,
             "desc": desc,
-            "type": "video" if video_url else ("note" if image_urls else "unknown"),
+            "type": typ,
+            "msg": msg,
             "video_url": video_url,
             "cover_url": cover_url,
             "image_urls": image_urls,

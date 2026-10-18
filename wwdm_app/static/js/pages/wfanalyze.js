@@ -21,26 +21,93 @@ function _wfAnaMdlPending() {
     return !s || !_WFANA_MDL_END[s.status];
   });
 }
+function _wfAnaMdlActHtml(i, label, fn, cls) {
+  return '<button class="btn ' + cls + '" style="font-size:11px;padding:1px 8px;margin-right:4px" onclick="' + fn + '(' + i + ')">' + label + '</button>';
+}
+function _wfAnaMdlDlHtml(i) {
+  return '<button id="wfAnaMDl' + i + '" class="btn btn-teal" style="font-size:11.5px;padding:2px 9px;white-space:nowrap" onclick="wfAnaMdlDl(' + i + ',this)" title="按模型库下载地址，用 aria2 下载"><i class="bi bi-download"></i> 下载</button>';
+}
+function _wfAnaMdlSearchHtml(i) {
+  return '<button class="btn btn6" style="font-size:11.5px;padding:2px 9px;white-space:nowrap" onclick="wfAnaSearchModel(' + i + ')" title="工作流里的文件名与模型库不一致：到模型管理按名字搜索下载"><i class="bi bi-search"></i> 搜索</button>';
+}
 function _wfAnaMdlRender() {
   (wfAnaModels || []).forEach(function (m, i) {
-    if (!m || m.exists || !m.id) return;
+    if (!m || m.exists) return;
+    var stEl = document.getElementById('wfAnaMSt' + i);
+    var acEl = document.getElementById('wfAnaMAct' + i);
+    if (!m.id) {
+      if (stEl) stEl.innerHTML = '<span style="color:var(--amber)">库中无</span>';
+      if (acEl) acEl.innerHTML = _wfAnaMdlSearchHtml(i);
+      return;
+    }
     var s = _wfAnaMdlStates[m.id];
-    if (!s) { _wfAnaMdlSet(i, '<span style="color:var(--amber)">未找到</span>'); return; }
+    if (!s) {
+      if (stEl) stEl.innerHTML = '<span style="color:var(--amber)">未找到</span>';
+      if (acEl) acEl.innerHTML = _wfAnaMdlDlHtml(i);
+      return;
+    }
     var head = s.status === 'complete'
       ? '<span style="color:var(--green)">已完成</span>'
       : dlBadge(s.status);
     var pct = s.progress || 0;
-    _wfAnaMdlSet(i, head + (pct > 0 ? ' ' + renderMiniBar(pct) : ''));
-    var b = document.getElementById('wfAnaMDl' + i);
-    if (!b) return;
-    if (s.status === 'error' || s.status === 'removed') {
-      b.style.display = ''; b.disabled = false;
-      b.innerHTML = '<i class="bi bi-arrow-clockwise"></i> 重试';
+    if (stEl) stEl.innerHTML = head + (pct > 0 ? ' ' + renderMiniBar(pct) : '');
+    if (!acEl) return;
+    if (_WFANA_MDL_END[s.status]) {
+      acEl.innerHTML = '<button class="btn btn-teal" style="font-size:11.5px;padding:2px 9px" onclick="wfAnaMdlDl(' + i + ',this)"><i class="bi bi-arrow-clockwise"></i> 重试</button>';
+    } else if (s.status === 'paused') {
+      acEl.innerHTML = _wfAnaMdlActHtml(i, '继续', 'wfAnaMdlResume', 'btn6')
+        + _wfAnaMdlActHtml(i, '取消', 'wfAnaMdlCancel', 'btn3');
+    } else if (s.status === 'active') {
+      acEl.innerHTML = _wfAnaMdlActHtml(i, '暂停', 'wfAnaMdlPause', 'btn6')
+        + _wfAnaMdlActHtml(i, '取消', 'wfAnaMdlCancel', 'btn3');
     } else {
-      b.style.display = 'none';   // 已交给后台，暂停/恢复/取消去「模型管理」页
+      acEl.innerHTML = _wfAnaMdlActHtml(i, '取消', 'wfAnaMdlCancel', 'btn3');
     }
   });
   _wfAnaMdlSyncBtn();
+}
+async function wfAnaMdlPause(i) {
+  var m = (wfAnaModels || [])[i];
+  if (!m || !m.id) return;
+  try {
+    await fetch('/api/download/pause/' + m.id, { method: 'POST' });
+    if (_wfAnaMdlStates[m.id]) _wfAnaMdlStates[m.id].status = 'paused';
+    _wfAnaMdlRender();
+  } catch (e) { notify('暂停失败: ' + e.message); }
+}
+async function wfAnaMdlResume(i) {
+  var m = (wfAnaModels || [])[i];
+  if (!m || !m.id) return;
+  try {
+    await fetch('/api/download/resume/' + m.id, { method: 'POST' });
+    if (_wfAnaMdlStates[m.id]) _wfAnaMdlStates[m.id].status = 'active';
+    _wfAnaMdlRender();
+    _wfAnaMdlPoll();
+  } catch (e) { notify('继续失败: ' + e.message); }
+}
+async function wfAnaMdlCancel(i) {
+  var m = (wfAnaModels || [])[i];
+  if (!m || !m.id) return;
+  var st = _wfAnaMdlStates[m.id];
+  if (!st) return;
+  if (!(await confirmDialog('确认取消「' + m.file + '」的下载？'))) return;
+  var queued = (st.status === 'queue' || st.status === 'waiting');
+  try {
+    await fetch('/api/download/' + (queued ? 'cancel_queue' : 'cancel') + '/' + m.id,
+      { method: 'POST' });
+    delete _wfAnaMdlStates[m.id];
+    _wfAnaMdlRender();
+  } catch (e) { notify('取消失败: ' + e.message); }
+}
+function wfAnaSearchModel(i) {
+  var m = (wfAnaModels || [])[i];
+  if (!m) return;
+  var name = String(m.file || '').replace(/^.*[\\/]/, '').replace(/\.[^.]+$/, '');
+  try { wfAnaClose(); } catch (e) {}
+  var inp = document.getElementById('sinput');
+  if (inp) inp.value = name;
+  try { mPage = 1; } catch (e) {}
+  try { switchPage(null, 'models'); } catch (e) {}  // 内部会 loadModels()
 }
 function _wfAnaMdlSyncBtn() {
   var b = document.getElementById('wfAnaModelDlAllBtn');

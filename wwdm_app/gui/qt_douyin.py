@@ -39,7 +39,7 @@ def _impl():
         def __init__(self, host, port):
             super().__init__(
                 None, "抖音提取",
-                subtitle="粘贴链接 → 解析 → 选择图片/视频，经 aria2c 下载到 ComfyUI/input")
+                subtitle="粘贴链接 → 解析 → 选择图片/视频，经 aria2c 下载（保存目录可临时修改）")
             self.host = host
             self.port = int(port)
             self._groups = []       # [{title, items:[{kind,url,cover}], msg}]
@@ -59,16 +59,36 @@ def _impl():
         # ---------------- 基础 ----------------
         def _default_dir(self):
             from ..core import config
-            d = (config.settings.get("input_dir") or "").strip()
+            for key in ("douyin_save_dir", "input_dir"):
+                d = (config.settings.get(key) or "").strip()
+                if d:
+                    return d
+            return os.path.join(config.get_comfyui_dir(), "input")
+
+        def _default_cookie(self):
+            from ..core import config
+            d = (config.settings.get("douyin_cookie_file") or "").strip()
             if d:
                 return d
-            return os.path.join(config.get_comfyui_dir(), "input")
+            # 不写死本机路径：只在 ComfyUI 根目录找常见文件名
+            root = config.get_comfyui_dir()
+            for name in ("dytest.json", "dy_cookie.json"):
+                p = os.path.join(root, name)
+                if os.path.isfile(p):
+                    return p
+            return ""
 
         def _set_status(self, msg):
             try:
                 self.status.setText(msg)
             except Exception:
                 pass
+
+        def _open_url(self, url):
+            from PyQt6.QtCore import QUrl
+            from PyQt6.QtGui import QDesktopServices
+            if url:
+                QDesktopServices.openUrl(QUrl(url))
 
         def _clear(self, lay):
             while lay.count():
@@ -96,9 +116,23 @@ def _impl():
             row.addWidget(self.btn_parse)
             b.addLayout(row)
 
+            crow = QHBoxLayout()
+            crow.setSpacing(8)
+            labc = QLabel("Cookie")
+            labc.setObjectName("Hint")
+            crow.addWidget(labc)
+            self.cookie_edit = QLineEdit(self._default_cookie())
+            self.cookie_edit.setPlaceholderText("选择 cookie .json 文件")
+            crow.addWidget(self.cookie_edit, 1)
+            b_ck = QPushButton("浏览…")
+            b_ck.setObjectName("Ghost")
+            b_ck.clicked.connect(self._browse_cookie)
+            crow.addWidget(b_ck)
+            b.addLayout(crow)
+
             drow = QHBoxLayout()
             drow.setSpacing(8)
-            lab = QLabel("保存到")
+            lab = QLabel("默认保存目录")
             lab.setObjectName("Hint")
             drow.addWidget(lab)
             self.dir_edit = QLineEdit(self._default_dir())
@@ -170,6 +204,13 @@ def _impl():
             if d:
                 self.dir_edit.setText(d)
 
+        def _browse_cookie(self):
+            p, _f = QFileDialog.getOpenFileName(
+                self, "选择 Cookie 文件", self.cookie_edit.text() or "",
+                "JSON (*.json);;所有文件 (*.*)")
+            if p:
+                self.cookie_edit.setText(p)
+
         def _parse(self):
             text = self.url_edit.text().strip()
             if not text:
@@ -177,12 +218,22 @@ def _impl():
                 return
             self.btn_parse.setEnabled(False)
             self._set_status("解析中…（多链接可能需要一点时间）")
+            cookie = (self.cookie_edit.text() or "").strip()
+            save = (self.dir_edit.text() or "").strip()
 
             def work():
                 try:
+                    if cookie:
+                        actions.set_setting(self.host, self.port,
+                                            "douyin_cookie_file", cookie)
+                    if save:
+                        actions.set_setting(self.host, self.port,
+                                            "douyin_save_dir", save)
                     data = actions.http_json(
                         self.host, self.port, "/api/douyin/fetch",
-                        method="POST", payload={"url": text}, timeout=60)
+                        method="POST",
+                        payload={"url": text, "cookie_file": cookie},
+                        timeout=60)
                 except Exception:
                     data = None
                 self._bridge.parsed.emit(data or {})
@@ -207,9 +258,11 @@ def _impl():
 
         def _group(self, r):
             typ = str(r.get("type") or "")
-            if typ == "error":
-                return {"title": "解析失败", "items": [],
-                        "msg": r.get("msg") or ""}
+            if typ in ("error", "video_blocked"):
+                title = "视频（需浏览器）" if typ == "video_blocked" else "解析失败"
+                return {"title": title, "items": [],
+                        "msg": r.get("msg") or "",
+                        "url": r.get("target_url") or ""}
             title = (r.get("desc") or r.get("aweme_id") or "抖音内容").strip()
             items = []
             if r.get("video_url"):
@@ -256,7 +309,13 @@ def _impl():
             if not g["items"]:
                 lab = QLabel(g.get("msg") or "这个链接没有可下载的内容")
                 lab.setObjectName("Hint")
-                self.grid.addWidget(lab, 0, 0)
+                lab.setWordWrap(True)
+                self.grid.addWidget(lab, 0, 0, 1, 4)
+                if g.get("url"):
+                    b = QPushButton("用浏览器打开链接")
+                    b.clicked.connect(
+                        lambda _=False, u=g["url"]: self._open_url(u))
+                    self.grid.addWidget(b, 1, 0)
                 return
             for idx, it in enumerate(g["items"]):
                 card = QPushButton()
@@ -351,8 +410,18 @@ def _impl():
                 payload = {"urls": [it["url"] for it in sel if it["kind"] == "img"],
                            "save_dir": save_dir}
             self._set_status("已提交下载…")
+            cookie = (self.cookie_edit.text() or "").strip()
+            payload["cookie_file"] = cookie
 
             def work():
+                try:
+                    if cookie:
+                        actions.set_setting(self.host, self.port,
+                                            "douyin_cookie_file", cookie)
+                    actions.set_setting(self.host, self.port,
+                                        "douyin_save_dir", save_dir)
+                except Exception:
+                    pass
                 data = actions.http_json(
                     self.host, self.port, "/api/douyin/download",
                     method="POST", payload=payload, timeout=30)

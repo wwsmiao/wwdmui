@@ -386,15 +386,16 @@ function wfAnalyze(path) {
                 : '<span id="wfAnaMSt' + i + '" style="color:var(--amber)">未找到</span>', '')
             + _wfAnaTd(m.exists
                 ? '<span style="color:var(--text3)">—</span>'
-                : (m.id
-                    ? '<button id="wfAnaMDl' + i + '" class="btn btn-teal" style="font-size:11.5px;padding:2px 9px;white-space:nowrap" onclick="wfAnaMdlDl(' + i + ',this)" title="按「模型管理」里这条记录的下载地址，用 aria2 下载（可暂停/恢复/取消）"><i class="bi bi-download"></i> 下载</button>'
-                    : '<span style="color:var(--text3)" title="模型库里没有这条记录（可到「模型管理」页导入，或手动补上下载地址）">库中无</span>'), '')
+                : '<span id="wfAnaMAct' + i + '">' + (m.id
+                    ? '<button id="wfAnaMDl' + i + '" class="btn btn-teal" style="font-size:11.5px;padding:2px 9px;white-space:nowrap" onclick="wfAnaMdlDl(' + i + ',this)" title="按模型库下载地址，用 aria2 下载（可暂停/恢复/取消）"><i class="bi bi-download"></i> 下载</button>'
+                    : '<button class="btn btn6" style="font-size:11.5px;padding:2px 9px;white-space:nowrap" onclick="wfAnaSearchModel(' + i + ')" title="工作流里的文件名与模型库不一致：到模型管理按名字搜索下载"><i class="bi bi-search"></i> 搜索</button>') + '</span>', '')
             + '</tr>';
         });
         html += '</tbody></table>';
         html += '<div id="wfAnaMdlNote" style="margin-top:8px;font-size:11.5px;color:var(--text3)">'
-          + '「库中无」= 模型库里查不到这条记录，没有下载地址；可到「模型管理」页导入或补地址。'
-          + '下载中的暂停 / 恢复 / 取消请到「模型管理」页操作。</div>';
+          + '「搜索」= 工作流里的模型文件名在模型库中没有匹配（常见于名称不一致）。'
+          + '请点「搜索」到「模型管理」按名字查找并下载，或手动放到对应目录。'
+          + '下载中的暂停 / 继续 / 取消可直接在本页操作。</div>';
       }
 
       // ---------- 需要的插件 ----------
