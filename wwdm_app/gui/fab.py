@@ -30,13 +30,13 @@ v6.0(2) 起与托盘（:mod:`gui.tray`）共生：球窗是**共享 root 的 Top
 """
 import os
 
-from . import actions, pos, tasks_win
+from . import actions, pos, tasks_win, theme
 from . import icoimage
 from .pos import FAB_SIZE
 
 _COLORS = {
-    "bg":      "#4a6fa5",     # 水彩 cyan（基座色，不随 Web 预设变）
-    "bg_hover": "#3d5d8a",
+    "bg":      "#4a6fa5",     # 水彩 --cyan（与网页默认强调色一致）
+    "bg_hover": "#6f92bd",    # 水彩 --cyan2（网页按钮 active 态）
     "fg":      "#ffffff",
     "chroma":  "magenta",     # 透明挖孔色（只出现在被挖掉的区域）
 }
@@ -146,6 +146,7 @@ class FabBall:
         cv.bind("<Leave>", lambda e: self._paint(False))
 
         win.protocol("WM_DELETE_WINDOW", self._on_close)
+        theme.apply_style(root)        # 给共享 root 挂网页水彩 ttk 样式（幂等）
         return win
 
     def start(self, dry_run=False, smoke_ms=0):
@@ -225,9 +226,8 @@ class FabBall:
 
     def _die_no_server(self):
         try:
-            from tkinter import messagebox
-            messagebox.showerror(
-                "管理器没能启动",
+            theme.show_error(
+                self.root, "管理器没能启动",
                 "Web 服务没有起来（端口可能被占用）。\n"
                 "请关掉占用该端口的程序，或在「设置 → 管理器访问」里换个端口。")
         except Exception:
@@ -336,11 +336,12 @@ class FabBall:
         tasks_win.open_tasks(self.host, self.port, self.root)
 
     def _schedule_shutdown(self):
-        # 定时关机：先问分钟数，再回环 POST /api/shutdown（秒）。
-        import tkinter.simpledialog as sd
+        # 定时关机：先问分钟数（网页风格对话框），再回环 POST /api/shutdown（秒）。
         try:
-            mins = sd.askinteger("定时关机", "多少分钟后关机？（0=立即）",
-                                 initialvalue=1, minvalue=0, maxvalue=1440)
+            mins = theme.ask_minutes(
+                self.root, "定时关机",
+                "多少分钟后关机？（0 = 立即，最多 1440）", initial=1, minvalue=0,
+                maxvalue=1440)
         except Exception:
             return
         if mins is None:
@@ -357,20 +358,37 @@ class FabBall:
             config.settings["ui_theme"] = got
 
     # ---------------- 右键菜单 ----------------
+    def _menu_spec(self):
+        """右键菜单的纯描述（label, command），便于无 tkinter 测试断言。
+
+        ⚠️ 悬浮球（主按钮）菜单**只留定时关机**；任务中心与日/夜间切换
+        仅在系统托盘菜单出现（见 tray.py），避免桌面小球菜单过长。
+        ``__sep__`` 表示分隔符。
+        """
+        return [
+            ("打开管理器界面", self._open_ui),
+            ("复制访问地址", self._copy_url),
+            (actions.autostart_label(actions.autostart_enabled()),
+             self._toggle_autostart),
+            ("__sep__", None),
+            ("定时关机…", self._schedule_shutdown),
+            ("__sep__", None),
+            ("隐藏悬浮球", lambda: self.hide(save=True)),
+            ("退出管理器", self._quit),
+        ]
+
     def _on_menu(self, e):
         import tkinter as tk
-        m = tk.Menu(self.root, tearoff=0, font=("Microsoft YaHei", 10))
-        m.add_command(label="打开管理器界面", command=self._open_ui)
-        m.add_command(label="复制访问地址", command=self._copy_url)
-        m.add_command(label=actions.autostart_label(actions.autostart_enabled()),
-                      command=self._toggle_autostart)
-        m.add_separator()
-        m.add_command(label="任务中心", command=self._open_tasks)
-        m.add_command(label="定时关机…", command=self._schedule_shutdown)
-        m.add_command(label=actions.ui_theme_label(), command=self._toggle_ui_theme)
-        m.add_separator()
-        m.add_command(label="隐藏悬浮球", command=lambda: self.hide(save=True))
-        m.add_command(label="退出管理器", command=self._quit)
+        m = tk.Menu(self.root, tearoff=0)
+        try:
+            m.configure(**theme.menu_options())   # 跟随网页明暗/强调色
+        except Exception:
+            pass
+        for label, cmd in self._menu_spec():
+            if label == "__sep__":
+                m.add_separator()
+            else:
+                m.add_command(label=label, command=cmd)
         try:
             m.tk_popup(e.x_root, e.y_root)
         finally:

@@ -25,7 +25,7 @@ import pytest
 
 import wwdm_app.services as svc
 from wwdm_app.core import config
-from wwdm_app.gui import actions, autostart, pos, tray, tasks_win
+from wwdm_app.gui import actions, autostart, pos, tray, tasks_win, theme
 
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -1168,3 +1168,67 @@ class TestFabTrayMenuWiring:
         ic = tray.TrayIcon(7861)
         ic._toggle_ui_theme()
         assert config.settings["ui_theme"] == "dark"
+
+
+# ⑪ 悬浮球菜单项（纯描述，无 tkinter 即可断言）
+# ============================================================
+class TestFabMenuSpec:
+    """回归：悬浮球右键菜单只留「定时关机」，不含任务中心/日夜间切换。
+
+    （任务中心与日夜间切换仅在系统托盘菜单出现；球菜单过长体验差。）
+    """
+
+    def _labels(self):
+        from wwdm_app.gui import fab
+        b = fab.FabBall(7861)
+        return [it[0] for it in b._menu_spec() if it[0] != "__sep__"]
+
+    def test_shutdown_present(self):
+        assert "定时关机…" in self._labels()
+
+    def test_no_tasks_center(self):
+        assert "任务中心" not in self._labels()
+
+    def test_no_theme_toggle(self):
+        labels = self._labels()
+        assert "切换到夜间" not in labels
+        assert "切换到日间" not in labels
+
+    def test_keeps_core_entries(self):
+        labels = self._labels()
+        for need in ("打开管理器界面", "复制访问地址", "隐藏悬浮球", "退出管理器"):
+            assert need in labels
+
+
+# ⑫ 网页水彩主题模块（gui.theme）—— 不建真 Tk
+# ============================================================
+class TestTheme:
+    def test_palette_default_light(self, monkeypatch):
+        monkeypatch.setitem(config.settings, "ui_theme", "light")
+        p = theme.palette()
+        assert p["accent"] == "#4a6fa5"
+        assert p["bg"] == "#faf8f5"
+
+    def test_palette_dark_follows_ui_theme(self, monkeypatch):
+        monkeypatch.setitem(config.settings, "ui_theme", "dark")
+        p = theme.palette()
+        assert p["bg"] == "#171a21"
+        assert p["accent"] == "#8fb3e0"
+
+    def test_menu_options_keys(self):
+        opts = theme.menu_options()
+        for k in ("bg", "fg", "activebackground", "activeforeground", "font"):
+            assert k in opts
+        assert opts["activeforeground"] == "#ffffff"
+
+    def test_theme_defers_tkinter(self):
+        """gui/theme.py 顶层不许 import tkinter（否则无 tkinter 解释器 import 即炸）。"""
+        path = os.path.join(GUI_DIR, "theme.py")
+        with io.open(path, "rb") as f:
+            tree = ast.parse(f.read().decode("utf-8"))
+        for node in tree.body:
+            if isinstance(node, ast.Import):
+                for a in node.names:
+                    assert "tkinter" not in a.name
+            elif isinstance(node, ast.ImportFrom):
+                assert "tkinter" not in (node.module or "")

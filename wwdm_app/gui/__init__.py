@@ -92,9 +92,11 @@ def run(port, token="", autostart_flag=False, server_dead=None,
     import tkinter as tk
     from . import fab as _fab
     from . import tray as _tray
+    from . import theme as _theme
     _fab.enable_dpi_awareness()
     root = tk.Tk()
     root.withdraw()                      # 共享 root 常驻隐藏，专职消息泵
+    _theme.apply_style(root)             # 给整棵 gui 树挂网页水彩 ttk 样式（幂等）
 
     # 🔴 v6.0(5)：无论 fab_visible 都建 FabBall 实例并**先绑共享 root** ——
     # 「只托盘」模式下托盘菜单「显示悬浮球」靠它在现场建窗；此前 ball=None

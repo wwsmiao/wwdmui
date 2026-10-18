@@ -13,6 +13,8 @@
 """
 import threading
 
+from . import theme
+
 _REFRESH_MS = 1500
 
 
@@ -57,8 +59,19 @@ class _TasksWindow:
         self.win = win
         win.title("任务中心")
         win.geometry("560x360")
+        theme.apply_style(self.root)        # 确保 ttk 样式就位（幂等）
         try:
             win.attributes("-topmost", True)
+        except Exception:
+            pass
+        try:
+            from . import icoimage
+            win.iconbitmap(icoimage.default_icon_path())   # 标题栏猫图标，与网页/托盘统一
+        except Exception:
+            pass
+        p = theme.palette()
+        try:
+            win.configure(background=p["bg"])              # 窗外底色跟随网页
         except Exception:
             pass
         cols = ("title", "kind", "status", "progress")
@@ -74,11 +87,11 @@ class _TasksWindow:
         tree.pack(fill="both", expand=True, padx=8, pady=(8, 4))
         self._tree = tree
 
-        bar = tk.Frame(win)
+        bar = ttk.Frame(win)
         bar.pack(fill="x", padx=8, pady=(0, 8))
-        tk.Button(bar, text="刷新", command=self._refresh_now).pack(side="left")
-        tk.Button(bar, text="清终态", command=self._clear_finished).pack(side="left", padx=6)
-        tk.Button(bar, text="关闭", command=self.close).pack(side="right")
+        ttk.Button(bar, text="刷新", command=self._refresh_now).pack(side="left")
+        ttk.Button(bar, text="清终态", command=self._clear_finished).pack(side="left", padx=6)
+        ttk.Button(bar, text="关闭", command=self.close).pack(side="right")
 
         self._alive = True
         win.protocol("WM_DELETE_WINDOW", self.close)
