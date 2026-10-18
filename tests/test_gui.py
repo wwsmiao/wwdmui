@@ -548,6 +548,38 @@ class TestQtNotesPure:
         assert qt_notes._http_json("h", 1, "/api/notes") is None
 
 
+class TestMarkdown:
+    """笔记编辑器用的 Markdown 渲染（纯函数）。"""
+
+    def test_inline(self):
+        out = qt_notes._md_to_html("**b** *i* ~~s~~")
+        assert "<b>b</b>" in out
+        assert "<i>i</i>" in out
+        assert "<s>s</s>" in out
+
+    def test_blocks(self):
+        out = qt_notes._md_to_html("# H\n- a\n1. b\n> q")
+        assert "<h1>H</h1>" in out
+        assert "<li>a</li>" in out
+        assert "<li>b</li>" in out
+        assert "<blockquote>q</blockquote>" in out
+
+    def test_code_and_link(self):
+        out = qt_notes._md_to_html("`x` [y](http://z)")
+        assert "<code>x</code>" in out
+        assert 'href="http://z"' in out
+
+    def test_escapes_html(self):
+        out = qt_notes._md_to_html("<script>")
+        assert "&lt;script&gt;" in out
+
+    def test_render_uses_palette_color(self, monkeypatch):
+        monkeypatch.setitem(config.settings, "ui_theme", "light")
+        out = qt_notes._md_render("**x**")
+        assert "#4a6fa5" in out
+        assert "<b>x</b>" in out
+
+
 # ============================================================
 # ⑫ 依赖方向与延迟 import（结构铁律）
 # ============================================================
