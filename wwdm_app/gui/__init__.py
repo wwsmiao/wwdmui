@@ -8,7 +8,10 @@
   * tkinter 只在**主线程**创建/操作，Flask 由 run.py 放子线程；
   * GUI **不直接调 services**（``comfyui_proc`` 等有 global 重绑定，非线程安全），
     一切业务动作走回环 HTTP 打自己的 API；
-  * 一切从消息循环回到 UI 的动作都经 ``root.after(0, fn)``。
+  * 一切从消息循环回到 UI 的动作都经 ``root.after(0, fn)`` —— **ctypes
+    WndProc 例外**：那里一个 tkinter API 都不许碰，只许纯 Python 入队
+    （``tray._enqueue`` + 25ms 消费定时器，原因见 tray.py 模块 docstring
+    的 GIL 崩溃机理）。
 
 形态（:func:`run` 协调）：一个常驻隐藏的共享 root 负责消息泵 —— 悬浮球是它的
 Toplevel（可收起来），托盘是 ctypes 消息窗（:mod:`gui.tray`）。设置里关掉

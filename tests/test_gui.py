@@ -19,6 +19,7 @@ import ctypes
 import io
 import os
 import threading
+import time
 
 import pytest
 
@@ -29,6 +30,25 @@ from wwdm_app.gui import actions, autostart, pos, tray
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GUI_DIR = os.path.join(ROOT, "wwdm_app", "gui")
+
+
+def _tkinter_usable():
+    """测试解释器（如 ComfyUI 的 python312）可能没装 tkinter。"""
+    try:
+        import tkinter  # noqa: F401
+    except Exception:
+        return False
+    return True
+
+
+def _real_desktop():
+    """Windows 交互式桌面判定（会话 0 / 无头 CI 建不了真托盘）。"""
+    if os.name != "nt" or not _tkinter_usable():
+        return False
+    try:
+        return bool(ctypes.windll.user32.GetShellWindow())
+    except Exception:
+        return False
 
 
 # ============================================================
@@ -279,7 +299,210 @@ class TestSettingsApi:
 class TestTray:
     """托盘的动作路由打在这里：WndProc / Shell_NotifyIcon 走真 Win32 太依赖
     桌面环境（且 CI 无显示会挂），冒烟口子 smoke_ms 留给 D:\\python312 手工跑。
+
+    v6.0(4) 起例外一个：``test_real_tray_messages_survive_mainloop`` 会在
+    **有 tkinter + 交互式桌面**时打真消息跑真 mainloop —— 它守的是一次进程级
+    Fatal Error（WndProc 里调 tkinter），回归了 pytest 会直接死在该测试里。
     """
+
+    @staticmethod
+    def _poison_root():
+        """毒 root：任何 tkinter 调用都炸（WndProc 碰它就现形）。"""
+
+        class _Poison:
+            def after(self, *a, **k):
+                raise AssertionError("WndProc 不许调 tkinter（GIL 崩溃根源）")
+
+            def after_cancel(self, *a, **k):
+                raise AssertionError("WndProc 不许调 tkinter")
+
+        return _Poison()
+
+    @staticmethod
+    def _fake_windll(monkeypatch):
+        class _FakeWindll:
+            class user32:
+                @staticmethod
+                def DefWindowProcW(*a):
+                    return 0
+
+        monkeypatch.setattr(tray.ctypes, "windll", _FakeWindll, raising=False)
+
+    # ---------------- v6.0(4) WndProc GIL 崩溃回归 ----------------
+    def test_wndproc_never_touches_tkinter(self, monkeypatch):
+        """🔴 崩溃回归（单测版）：WndProc 里调 ``root.after`` 会把线程局部
+        ``tcl_tstate`` 置 NULL，同一次 Tcl_DoOneEvent 内随后派发的定时器事件
+        → ``PyEval_RestoreThread(NULL)`` → 进程 Fatal Error（点一次托盘崩一次，
+        已写复现脚本实证）。毒 root 驱动真 _wndproc：它只许纯 Python 入队。
+        """
+        self._fake_windll(monkeypatch)
+        ic = tray.TrayIcon(7861)
+        ic._root = self._poison_root()
+        ic._wndproc(0, tray.WM_TRAY, 1, tray.WM_LBUTTONUP)
+        ic._wndproc(0, tray.WM_TRAY, 1, tray.WM_RBUTTONUP)
+        ic._wndproc(0, tray.WM_COMMAND, tray.CMD_OPEN, 0)
+        assert len(ic._pending) == 3
+        assert all(callable(f) for f in ic._pending)
+
+    def test_wndproc_without_root_is_noop(self, monkeypatch):
+        """没 attach 过（_root=None）时 WndProc 不许炸（冒烟/单测路径）。"""
+        self._fake_windll(monkeypatch)
+        ic = tray.TrayIcon(7861)
+        ic._wndproc(0, tray.WM_TRAY, 1, tray.WM_LBUTTONUP)
+        assert ic._pending == []
+
+    def test_drain_runs_pending_in_order(self):
+        ran = []
+        ic = tray.TrayIcon(7861)
+        ic._root = type("R", (), {"after": lambda *a: None})()
+        ic._enqueue(lambda: ran.append(1))
+        ic._enqueue(lambda: ran.append(2))
+        ic._drain_pending()
+        assert ran == [1, 2]
+        assert ic._pending == []
+
+    def test_drain_failure_does_not_block_rest(self):
+        """单个动作抛异常不许阻断后面的（菜单动作互不相干）。"""
+        ran = []
+
+        def boom():
+            raise RuntimeError("x")
+
+        ic = tray.TrayIcon(7861)
+        ic._root = type("R", (), {"after": lambda *a: None})()
+        ic._enqueue(boom)
+        ic._enqueue(lambda: ran.append("ok"))
+        ic._drain_pending()
+        assert ran == ["ok"]
+
+    def test_drain_reentrancy_guard(self):
+        """模态循环（messagebox / tk_popup 嵌套事件循环）里定时器重入：
+        只放一层消费，且不会挂出双份定时器链。"""
+        order, armed = [], []
+
+        class _Root:
+            def after(self, ms, fn):
+                armed.append(ms)
+                return len(armed)
+
+        ic = tray.TrayIcon(7861)
+        ic._root = _Root()
+
+        def modal():
+            order.append("in")
+            ic._drain_pending()               # 重入：应被卫兵挡掉
+            order.append("out")
+
+        ic._enqueue(modal)
+        ic._drain_pending()
+        assert order == ["in", "out"]
+        assert armed == [tray._DRAIN_MS]
+
+    def test_arm_drain_fast_cadence(self):
+        armed = []
+
+        class _Root:
+            def after(self, ms, fn):
+                armed.append((ms, fn))
+                return 7
+
+        ic = tray.TrayIcon(7861)
+        ic._root = _Root()
+        ic._arm_drain()
+        assert armed[0][0] == tray._DRAIN_MS
+        assert ic._drain_id == 7
+
+    def test_cancel_drain_clears_id(self):
+        cancelled = []
+
+        class _Root:
+            def after_cancel(self, aid):
+                cancelled.append(aid)
+
+        ic = tray.TrayIcon(7861)
+        ic._root = _Root()
+        ic._drain_id = 42
+        ic._cancel_drain()
+        assert cancelled == [42]
+        assert ic._drain_id is None
+
+    @pytest.mark.skipif(os.name != "nt" or not _tkinter_usable(),
+                        reason="需要 Windows + tkinter（假 Menu，不弹真菜单）")
+    def test_drain_runs_post_menu_via_fake_menu(self, monkeypatch):
+        """右键菜单动作在消费上下文里真的跑通（Menu/tk_popup 全打桩）。"""
+        import tkinter
+        built = []
+
+        class _FakeMenu:
+            def __init__(self, *a, **k):
+                built.append(self)
+                self.popped = None
+
+            def add_command(self, **k):
+                pass
+
+            def add_separator(self):
+                pass
+
+            def tk_popup(self, x, y):
+                self.popped = (x, y)
+
+            def grab_release(self):
+                pass
+
+        monkeypatch.setattr(tkinter, "Menu", _FakeMenu)
+        monkeypatch.setattr(tray.actions, "autostart_enabled", lambda: False)
+        ic = tray.TrayIcon(7861, host="127.0.0.1", token="")
+        ic._root = type("R", (), {"after": lambda *a: None})()
+        ic._enqueue(ic._post_menu)
+        ic._drain_pending()
+        assert len(built) == 1
+        assert built[0].popped is not None
+
+    @pytest.mark.skipif(not _real_desktop(),
+                        reason="需要 tkinter + 交互式桌面（会话 0 / CI 跳过）")
+    def test_real_tray_messages_survive_mainloop(self, monkeypatch):
+        """🔴 真·崩溃回归：真托盘 + 真 WM_TRAY 消息 + 真 mainloop。
+
+        修复前（WndProc 里 ``root.after``）：一条 WM_TRAY 就能让整个进程
+        Fatal Error（PyEval_RestoreThread NULL）。谁把 ``root.after`` 写回
+        WndProc，pytest 就会直接死在本测试里 —— 不可能看不见。
+        """
+        import tkinter as tk
+        from ctypes import wintypes
+
+        u32 = ctypes.windll.user32
+        u32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT,
+                                     wintypes.WPARAM, wintypes.LPARAM]
+        u32.PostMessageW.restype = wintypes.BOOL
+
+        ran = []
+        monkeypatch.setattr(tray.actions, "open_ui",
+                            lambda h, p, t="": ran.append((h, p, t)))
+
+        root = tk.Tk()
+        root.withdraw()
+        try:
+            icon = tray.TrayIcon(7861, host="127.0.0.1", token="",
+                                 server_dead=threading.Event())
+            assert icon.attach(root)
+
+            def _driver():
+                for _ in range(20):
+                    u32.PostMessageW(icon._hwnd, tray.WM_TRAY, 1,
+                                     tray.WM_LBUTTONUP)
+                    time.sleep(0.03)
+
+            threading.Thread(target=_driver, daemon=True).start()
+            root.after(1500, root.quit)
+            root.mainloop()
+            assert len(ran) == 20      # 每条消息的动作都被消费执行
+            assert icon._pending == []
+        finally:
+            try:
+                root.destroy()
+            except Exception:
+                pass
 
     def test_tip_truncated(self):
         assert tray.format_tip("abc") == "abc"

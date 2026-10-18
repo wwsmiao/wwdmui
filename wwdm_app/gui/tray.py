@@ -8,8 +8,16 @@
 （``WM_APP+1``）与菜单命令（``WM_COMMAND``）都回到本线程。
 
 与 tkinter 的关系：消息窗口建在 **tkinter 主线程**上，消息泵由共享 root 的
-``mainloop()`` 统一提供（同线程所有窗口共享消息队列）。所有从 WndProc 回到
-UI 的动作都包一层 ``root.after(0, fn)``（铁律同 fab.py）。
+``mainloop()`` 统一提供（同线程所有窗口共享消息队列）。
+
+🔴 v6.0(4) 铁律：**WndProc 里一个 tkinter API 都不许碰**（含 ``root.after``）。
+WndProc 是 ``Tcl_DoOneEvent`` 内经 ``DispatchMessageW`` 调起来的（GIL 释放区
++ ctypes TEMP 线程状态），此时 ``Tkapp_Call``（``root.after`` 内部就走它）
+会把线程局部 ``tcl_tstate`` 覆写成 TEMP 再置 NULL；同一次 ``Tcl_DoOneEvent``
+里随后派发的定时器/命令事件走 ``ENTER_PYTHON`` → ``PyEval_RestoreThread(NULL)``
+→ 进程级 Fatal Error（**点一次托盘图标崩一次**，已写复现脚本实证）。
+WndProc 只许纯 Python 入队（:meth:`TrayIcon._enqueue`），动作由 25ms 消费
+定时器在主循环上下文里执行（:meth:`TrayIcon._drain_pending`）。
 
 菜单（tkinter Menu，与悬浮球右键菜单同款式）：
   打开管理器界面 / 复制访问地址 / 开机自启动切换 / 显示·隐藏悬浮球 / 退出。
@@ -59,6 +67,7 @@ CMD_TOGGLE_FAB = 1004
 CMD_QUIT = 1005
 
 _TIP_MAX = 127                   # szTip 是 128 WCHAR，留一个给 NUL
+_DRAIN_MS = 25                   # WndProc 待办队列消费周期（见 _enqueue 注释）
 
 _ASSET_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                            "assets", "tray.ico")
@@ -177,6 +186,9 @@ class TrayIcon:
         self._hinst = None
         self._dead_notified = False
         self._after_id = None             # 探活定时器 id（销毁时 cancel）
+        self._drain_id = None             # 待办消费定时器 id（销毁时 cancel）
+        self._draining = False            # 消费重入卫兵（模态循环里防重入）
+        self._pending = []                # WndProc → 主循环的安全中转（纯 Python）
 
     # ---------------- 安装 / 卸载 ----------------
     def attach(self, root):
@@ -194,6 +206,7 @@ class TrayIcon:
             self._create_window()
             self._add_icon()
             self._poll_server()
+            self._arm_drain()
             return True
         except Exception:
             self.destroy()
@@ -256,6 +269,7 @@ class TrayIcon:
         if os.name != "nt":
             return
         self._cancel_poll()
+        self._cancel_drain()
         try:
             if self._hwnd:
                 nid = NOTIFYICONDATAW()
@@ -293,23 +307,67 @@ class TrayIcon:
                 # 托盘回调：wParam=uID，lParam 低 16 位是鼠标消息
                 mouse = (lparam or 0) & 0xFFFF
                 if mouse in (WM_LBUTTONUP, WM_LBUTTONDBLCLK):
-                    self._post(self._open_ui)
+                    self._enqueue(self._open_ui)
                 elif mouse == WM_RBUTTONUP:
-                    self._post(self._post_menu)
+                    self._enqueue(self._post_menu)
             elif msg == WM_COMMAND:
-                self._post(lambda: self._dispatch((wparam or 0) & 0xFFFF))
+                self._enqueue(lambda: self._dispatch((wparam or 0) & 0xFFFF))
         except Exception:
             pass
         return ctypes.windll.user32.DefWindowProcW(hwnd, msg, wparam, lparam)
 
-    def _post(self, fn):
-        """把动作丢回 tkinter 主线程执行（铁律：WndProc 不直接碰 UI）。"""
+    def _enqueue(self, fn):
+        """WndProc → 主循环的唯一通道：只入队，绝不碰 tkinter。
+
+        🔴 为什么不能像 fab 那样 ``root.after(0, fn)``：WndProc 是
+        ``Tcl_DoOneEvent`` 内经 ``DispatchMessageW`` 调起来的（GIL 释放区、
+        ctypes TEMP 线程状态），``Tkapp_Call`` 会把线程局部 ``tcl_tstate``
+        覆写成 TEMP 再置 NULL；同一次 ``Tcl_DoOneEvent`` 里随后派发的任何
+        定时器/命令事件走 ``ENTER_PYTHON`` → ``PyEval_RestoreThread(NULL)``
+        → 进程级 Fatal Error（v6.0(4)：点一次托盘图标崩一次，已实证）。
+        入队是纯 Python 操作，任何线程状态下都安全；消费见 _drain_pending。
+        """
+        if self._root is None:
+            return
+        self._pending.append(fn)
+
+    def _drain_pending(self):
+        """把 _enqueue 攒下的动作拿到主循环上下文里执行（tcl_tstate 有效）。
+
+        单个动作抛异常不许阻断后面的（菜单动作互不相干）；重入卫兵防模态
+        循环（messagebox 等）里定时器又打进来导致双份消费/双定时器。
+        """
+        if self._draining:
+            return
+        self._draining = True
+        try:
+            while self._pending:
+                fn = self._pending.pop(0)
+                try:
+                    fn()
+                except Exception:
+                    pass
+        finally:
+            self._draining = False
+        self._arm_drain()
+
+    def _arm_drain(self):
+        """挂/续 25ms 消费定时器（常驻；没有待办时只是一次空转）。"""
         if self._root is None:
             return
         try:
-            self._root.after(0, fn)
+            self._drain_id = self._root.after(_DRAIN_MS, self._drain_pending)
         except Exception:
             pass
+
+    def _cancel_drain(self):
+        """掐掉挂起的消费定时器（root 销毁后它再撞 Tcl 会刷错误日志）。"""
+        aid, self._drain_id = self._drain_id, None
+        if aid and self._root is not None:
+            try:
+                self._root.after_cancel(aid)
+            except Exception:
+                pass
 
     # ---------------- 命令分发 ----------------
     def _dispatch(self, cmd):
