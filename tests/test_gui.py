@@ -358,6 +358,19 @@ class TestUiThemeSetting:
 # ============================================================
 # ⑧ actions 的 HTTP 客户端（关机 / 日夜间）
 # ============================================================
+class TestWebThemeServerRendered:
+    """网页首屏明暗由服务端 ui_theme 直出（球/托盘切换后刷新即生效，不再被 localStorage 挡）。"""
+
+    def test_index_data_theme_follows_setting(self, client):
+        svc.settings["ui_theme"] = "dark"
+        html = client.get("/").get_data(as_text=True)
+        assert 'data-theme="dark"' in html
+        assert 'data-ui-theme="dark"' in html
+        svc.settings["ui_theme"] = "light"
+        html = client.get("/").get_data(as_text=True)
+        assert 'data-theme="light"' in html
+
+
 class TestGuiActionsHttp:
     def test_schedule_shutdown_posts_seconds(self, monkeypatch):
         calls = []

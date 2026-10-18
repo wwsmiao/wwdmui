@@ -17,8 +17,8 @@
                    因为内联脚本顶层直接用了 ui.js / api.js / poll.js / table.js 的全局符号
 -->
 <!DOCTYPE html>
-{# data-theme 由 init.js 按 localStorage 补；data-preset 服务端直出，避免开局先闪一下默认配色 #}
-<html lang="zh-CN" data-preset="{{ theme_preset or 'watercolor' }}" data-ui-theme="{{ ui_theme or 'light' }}">
+{# v6.1：data-theme / data-ui-theme 均由服务端 ui_theme 直出（服务端为准，避免开局闪屏）；init.js 的切换会同步回服务端 #}
+<html lang="zh-CN" data-preset="{{ theme_preset or 'watercolor' }}" data-ui-theme="{{ ui_theme or 'light' }}" data-theme="{{ ui_theme or 'light' }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">

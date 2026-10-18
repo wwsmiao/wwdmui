@@ -14,7 +14,14 @@ import threading
 from . import qt_theme
 
 _COLOR_DEFAULT = "#4a6fa5"
-_COLOR_PRESETS = ["#4a6fa5", "#c38d94", "#2d8f83", "#d4a373", "#d96c6c"]
+# (显示名, 颜色) —— 下拉框显示中文名，取色用 hex
+_COLOR_OPTIONS = [
+    ("水彩蓝", "#4a6fa5"),
+    ("水彩紫", "#c38d94"),
+    ("水彩绿", "#2d8f83"),
+    ("水彩琥珀", "#d4a373"),
+    ("水彩红", "#d96c6c"),
+]
 
 
 def _http_json(host, port, path, method="GET", payload=None):
@@ -56,7 +63,7 @@ def _impl():
     from PyQt6.QtGui import QIcon
     from PyQt6.QtWidgets import (QComboBox, QHBoxLayout, QLabel, QLineEdit,
                                  QListWidget, QListWidgetItem, QPushButton,
-                                 QTextEdit, QVBoxLayout, QWidget)
+                                 QSplitter, QTextEdit, QVBoxLayout, QWidget)
 
     class _Bridge(QObject):
         done = pyqtSignal(str, object)
@@ -73,57 +80,105 @@ def _impl():
 
             self.setWindowTitle("笔记本")
             self.setWindowIcon(QIcon(qt_theme.icon_path()))
-            self.resize(820, 560)
+            self.setMinimumSize(620, 420)
+            self._size_to_screen()
             self._build_ui()
+
+        def _size_to_screen(self):
+            """按屏幕可用区域自适应初始尺寸并居中（小屏不溢出，大屏不局促）。"""
+            from PyQt6.QtWidgets import QApplication
+            scr = QApplication.primaryScreen()
+            g = scr.availableGeometry() if scr is not None else None
+            sw, sh = (g.width(), g.height()) if g is not None else (1280, 800)
+            w = max(680, min(1040, int(sw * 0.52)))
+            h = max(460, min(720, int(sh * 0.60)))
+            self.resize(w, h)
+            if g is not None:
+                self.move(g.x() + (g.width() - w) // 2,
+                          g.y() + (g.height() - h) // 2)
 
         # ---------------- UI ----------------
         def _build_ui(self):
-            root = QHBoxLayout(self)
-            root.setContentsMargins(12, 12, 12, 12)
-            root.setSpacing(12)
+            root = QVBoxLayout(self)
+            root.setContentsMargins(14, 12, 14, 14)
+            root.setSpacing(10)
 
-            left = QVBoxLayout()
+            header = QHBoxLayout()
+            title = QLabel("笔记本")
+            title.setObjectName("DlgTitle")
+            header.addWidget(title)
+            header.addStretch(1)
+            hint = QLabel("Ctrl+S 保存 · Esc 关闭")
+            hint.setObjectName("Hint")
+            header.addWidget(hint)
+            root.addLayout(header)
+
+            splitter = QSplitter(Qt.Orientation.Horizontal)
+            splitter.setChildrenCollapsible(False)
+            root.addWidget(splitter, 1)
+
+            # ---- 左栏：搜索 + 新建/刷新 + 列表 ----
+            left = QWidget()
+            lv = QVBoxLayout(left)
+            lv.setContentsMargins(0, 0, 0, 0)
+            lv.setSpacing(8)
             srow = QHBoxLayout()
+            srow.setSpacing(6)
             self.search = QLineEdit()
             self.search.setPlaceholderText("搜索标题/正文/标签…")
+            self.search.setClearButtonEnabled(True)
             self.search.returnPressed.connect(lambda: self._load_list(False))
             srow.addWidget(self.search, 1)
             b_new = QPushButton("新建")
             b_new.clicked.connect(self._new)
             b_ref = QPushButton("刷新")
+            b_ref.setObjectName("Ghost")
             b_ref.clicked.connect(lambda: self._load_list(False))
             srow.addWidget(b_new)
             srow.addWidget(b_ref)
-            left.addLayout(srow)
+            lv.addLayout(srow)
             self.list = QListWidget()
             self.list.currentRowChanged.connect(self._on_select)
-            left.addWidget(self.list, 1)
-            root.addLayout(left, 2)
+            lv.addWidget(self.list, 1)
+            splitter.addWidget(left)
 
-            right = QVBoxLayout()
+            # ---- 右栏：标题 / 标签·颜色 / 正文 / 操作 ----
+            right = QWidget()
+            rv = QVBoxLayout(right)
+            rv.setContentsMargins(0, 0, 0, 0)
+            rv.setSpacing(8)
             self.title_edit = QLineEdit()
+            self.title_edit.setObjectName("NoteTitle")
             self.title_edit.setPlaceholderText("标题")
-            right.addWidget(self.title_edit)
+            rv.addWidget(self.title_edit)
             meta = QHBoxLayout()
+            meta.setSpacing(8)
             meta.addWidget(QLabel("标签"))
             self.tag_edit = QLineEdit()
             self.tag_edit.setPlaceholderText("可选")
             meta.addWidget(self.tag_edit, 1)
             meta.addWidget(QLabel("颜色"))
             self.color_box = QComboBox()
-            self.color_box.addItems(_COLOR_PRESETS)
+            for _name, _hex in _COLOR_OPTIONS:
+                self.color_box.addItem(_name, _hex)
+            self.color_box.setMinimumWidth(100)
             meta.addWidget(self.color_box)
-            right.addLayout(meta)
+            rv.addLayout(meta)
             self.body = QTextEdit()
             self.body.setPlaceholderText("在这里写笔记…")
-            right.addWidget(self.body, 1)
+            self.body.setAcceptRichText(False)
+            rv.addWidget(self.body, 1)
             foot = QHBoxLayout()
+            foot.setSpacing(8)
             self.status = QLabel("就绪")
+            self.status.setObjectName("Hint")
             foot.addWidget(self.status)
             foot.addStretch(1)
             b_pin = QPushButton("置顶")
+            b_pin.setObjectName("Ghost")
             b_pin.clicked.connect(self._pin)
             b_del = QPushButton("删除")
+            b_del.setObjectName("Ghost")
             b_del.clicked.connect(self._delete)
             b_save = QPushButton("保存")
             b_save.clicked.connect(self._save)
@@ -131,8 +186,12 @@ def _impl():
             foot.addWidget(b_pin)
             foot.addWidget(b_del)
             foot.addWidget(b_save)
-            right.addLayout(foot)
-            root.addLayout(right, 3)
+            rv.addLayout(foot)
+            splitter.addWidget(right)
+
+            splitter.setStretchFactor(0, 1)
+            splitter.setStretchFactor(1, 2)
+            splitter.setSizes([270, 570])
 
         # ---------------- 线程回主线程 ----------------
         def _post(self, kind, payload):
@@ -221,9 +280,11 @@ def _impl():
             self.tag_edit.setText(n.get("tag") or "")
             self.body.setPlainText(n.get("content") or "")
             color = n.get("color") or _COLOR_DEFAULT
-            if color not in _COLOR_PRESETS:
-                self.color_box.addItem(color)
-            self.color_box.setCurrentText(color)
+            cid = self.color_box.findData(color)
+            if cid < 0:
+                self.color_box.addItem(color, color)     # 未知色值：补一项并选中
+                cid = self.color_box.findData(color)
+            self.color_box.setCurrentIndex(cid)
             self.pin_btn.setText("取消置顶" if n.get("pinned") else "置顶")
             self.status.setText("%d 字" % len(n.get("content") or ""))
 
@@ -233,7 +294,7 @@ def _impl():
                 "title": (self.title_edit.text().strip() or "未命名笔记"),
                 "content": self.body.toPlainText(),
                 "tag": self.tag_edit.text().strip(),
-                "color": self.color_box.currentText() or _COLOR_DEFAULT,
+                "color": (self.color_box.currentData() or _COLOR_DEFAULT),
             }
 
         def _new(self):

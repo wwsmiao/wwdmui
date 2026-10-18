@@ -217,9 +217,10 @@ def _fab_class():
             elif key == "autostart":
                 actions.toggle_autostart()
             elif key == "shutdown":
+                # parent=None：球只有 72px，居中于球会贴边；无父窗时居中于屏幕
                 mins = qt_theme.ask_minutes(
-                    self, "定时关机", "多少分钟后关机？（0 = 立即，最多 1440）",
-                    1, 0, 1440)
+                    None, "定时关机",
+                    "多少分钟后关机？（0 = 立即，最多 1440）", 1, 0, 1440)
                 if mins is not None:
                     actions.schedule_shutdown(self.host, self.port, int(mins) * 60)
             elif key == "theme":

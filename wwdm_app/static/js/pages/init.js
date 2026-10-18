@@ -129,24 +129,49 @@ else{cuiCheckStatus()}
 
   // 3. 主题切换（日间/夜间）
   var themeBtn=document.getElementById('fabBtnTheme');
-  function applyTheme(t){
+  // v6.1：明暗以**服务端 ui_theme 为准**（base.html 直出），localStorage 仅作缓存；
+  // 网页里点切换时同步 POST 回服务端，悬浮球/托盘才读得到同一个值。
+  var _themeLocalAt=0;
+  function applyTheme(t,persist){
     document.documentElement.setAttribute('data-theme',t);
+    document.documentElement.setAttribute('data-ui-theme',t);
     try{localStorage.setItem('wwdm_theme',t)}catch(e){}
     themeBtn.title = t==='dark'?'切换到日间':'切换到夜间';
     var sun=themeBtn.querySelector('.ico-sun'),moon=themeBtn.querySelector('.ico-moon');
     if(sun)sun.style.display=t==='dark'?'none':'';
     if(moon)moon.style.display=t==='dark'?'':'none';
+    if(persist){
+      _themeLocalAt=Date.now();
+      try{
+        fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ui_theme:t})}).catch(function(){});
+      }catch(e){}
+    }
   }
   function currentTheme(){
-    try{var t=localStorage.getItem('wwdm_theme'); if(t)return t}catch(e){}
+    // 服务端直出的 data-ui-theme 优先；缺失才回退本地缓存
     var h=document.documentElement.getAttribute('data-ui-theme');
-    return (h==='dark'||h==='light')?h:'light';
+    if(h==='dark'||h==='light')return h;
+    try{var t=localStorage.getItem('wwdm_theme'); if(t)return t}catch(e){}
+    return 'light';
   }
   themeBtn.addEventListener('click',function(){
-    applyTheme(currentTheme()==='dark'?'light':'dark');
+    applyTheme(currentTheme()==='dark'?'light':'dark',true);   // 同步回服务端
     toggleFab(false);
   });
-  applyTheme(currentTheme());
+  applyTheme(currentTheme(),false);
+
+  // 悬浮球/托盘切换 ui_theme 后，已打开的页面无需刷新也能跟随（轻量轮询）
+  function pollTheme(){
+    if(Date.now()-_themeLocalAt<5000)return;          // 刚本地切换，等服务端落盘
+    fetch('/api/settings',{cache:'no-store'}).then(function(r){return r.json()})
+      .then(function(d){
+        var s=(d&&d.ui_theme)||'light';
+        var cur=document.documentElement.getAttribute('data-theme')||currentTheme();
+        if(s!==cur)applyTheme(s,false);
+      }).catch(function(){});
+  }
+  setInterval(pollTheme,3000);
 
   // 4. 定时关机（延迟取自全局设置 sdly；0 = 立即关机）
   function fabDelay(){
