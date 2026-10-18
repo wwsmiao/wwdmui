@@ -1,6 +1,6 @@
 ﻿#!/usr/bin/env python3
 """
-ComfyUI 模型管理器 v4.0 — 入口脚本
+ComfyUI 模型管理器 v5.1 — 入口脚本
 用法: python run.py
 """
 
@@ -29,10 +29,10 @@ def _on_exit():
     if _exited:
         return
     _exited = True
-    print("\n[v4.0] 正在清理子进程...")
+    print("\n[v5.1] 正在清理子进程...")
     cleanup_all()
     _log.info("管理器已退出")
-    print("[v4.0] 已退出")
+    print("[v5.1] 已退出")
 
 
 atexit.register(_on_exit)
@@ -62,12 +62,12 @@ def _lan_ips():
 
 if __name__ == "__main__":
     import platform as _p
-    print("[v4.0] " + _p.system() + ", Python: " + sys.version.split()[0])
-    print("[v4.0] BASE_DIR: " + BASE_DIR)
-    print("[v4.0] DB: " + DB_PATH)
+    print("[v5.1] " + _p.system() + ", Python: " + sys.version.split()[0])
+    print("[v5.1] BASE_DIR: " + BASE_DIR)
+    print("[v5.1] DB: " + DB_PATH)
     if settings.get("auto_start_aria2", True):
         aria2_start()
-    print("\n  === ComfyUI 模型管理器 v4.0 ===\n")
+    print("\n  === ComfyUI 模型管理器 v5.1 ===\n")
 
     # ---- 管理器访问（web_host / web_port 重启后生效）----
     host = (settings.get("web_host") or "0.0.0.0").strip() or "0.0.0.0"
