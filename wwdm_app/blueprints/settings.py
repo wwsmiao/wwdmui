@@ -4,11 +4,12 @@
 包含全局设置读写与重置、访问令牌重生成、壁纸文件投递、退出管理器。
 ⚠️ 改动设置时必须**原地** clear+update config.settings（见 api_reset_settings 注释）。
 """
+import json
 import os
 import time
 import threading
 
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, Response, jsonify, request, send_file
 
 from .. import config
 from .. import security as sec
@@ -16,6 +17,39 @@ from .. import services as svc
 from .. import gui
 
 bp = Blueprint("settings", __name__)
+
+
+# ========== 主题即时推送（SSE） ==========
+@bp.route("/api/theme/stream", methods=["GET"])
+def api_theme_stream():
+    """SSE：ui_theme 变化时立刻推给已打开的网页（延迟 <0.3s）。
+
+    服务端每 0.3s 比对一次内存里的 ui_theme（纯 dict 读，开销可忽略），
+    变化就 yield —— 不引入发布订阅，也不需要新依赖。悬浮球/托盘切主题后，
+    网页几乎立刻跟随；前端仍保留低频轮询兜底（EventSource 不可用时）。
+    """
+    def _gen():
+        last = None
+        last_beat = time.time()
+        try:
+            while True:
+                cur = str(config.settings.get("ui_theme", "light"))
+                if cur != last:
+                    last = cur
+                    yield "data: " + json.dumps({"ui_theme": cur}) + "\n\n"
+                    last_beat = time.time()
+                elif time.time() - last_beat > 20:
+                    yield ": ping\n\n"          # 心跳，防代理/浏览器断连
+                    last_beat = time.time()
+                time.sleep(0.3)
+        except GeneratorExit:
+            return
+        except Exception:
+            return
+    return Response(_gen(), mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache",
+                             "X-Accel-Buffering": "no",
+                             "Connection": "keep-alive"})
 
 
 # ========== 设置 API ==========

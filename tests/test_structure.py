@@ -26,7 +26,7 @@ EXPECTED_BLUEPRINTS = {
 # 含 Flask /static。⚠️ 同一个 rule 字符串若挂了两个 endpoint（如 /api/tasks 的
 # GET 与 DELETE），url_map 里算**两条** Rule —— 所以加了清理端点后是 135 不是 134。
 # v5.1 又加了 /api/github/mirror_fastest → 136，/api/audit → 137。
-EXPECTED_ROUTES = 137
+EXPECTED_ROUTES = 138
 
 
 # ============================================================
@@ -201,7 +201,7 @@ class TestTemplates:
                    "rb").read().decode("utf-8")
         assert '{% extends "base.html" %}' in txt
         assert "<script>" not in txt            # 内联脚本已经全搬走
-        assert txt.count("/static/js/pages/") == 17
+        assert txt.count("/static/js/pages/") == 16
 
     def test_base_has_all_three_blocks(self):
         txt = open(os.path.join(PKG, "templates", "base.html"),
@@ -226,7 +226,7 @@ class TestTemplates:
 
     def test_partials_exist(self):
         d = os.path.join(PKG, "templates", "partials")
-        for name in ("launcher", "models", "plugins", "douyin", "notes",
+        for name in ("launcher", "models", "plugins", "douyin",
                      "workflows", "help", "output", "input", "settings",
                      "repair", "about", "modals"):
             assert os.path.exists(os.path.join(d, name + ".html")), "缺 partial：%s" % name

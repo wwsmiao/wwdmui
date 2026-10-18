@@ -24,7 +24,7 @@
 {% block modals %}
 {% include "partials/modals.html" %}
 {# v5.1：笔记本从页面改为 FAB 唤出的大弹窗，HTML 随之挪到 modals 块 #}
-{% include "partials/notes.html" %}
+{# v6.3 笔记弹窗只保留 PyQt6 悬浮球入口，网页版已移除 #}
 {% endblock %}
 
 {% block scripts %}
@@ -44,12 +44,11 @@
 <script src="/static/js/pages/localfiles.js"></script>
 <script src="/static/js/pages/plugins.js"></script>
 <script src="/static/js/pages/clonelog.js"></script>
-<script src="/static/js/pages/launcher.js"></script>
+<script src="/static/js/pages/launcher.js?v=6.4"></script>
 <script src="/static/js/pages/input.js"></script>
 <script src="/static/js/pages/douyin.js"></script>
 <script src="/static/js/pages/repair.js"></script>
-<script src="/static/js/pages/init.js?v=6.2"></script>
-<script src="/static/js/pages/notes.js"></script>
+<script src="/static/js/pages/init.js?v=6.4"></script>
 <script src="/static/js/pages/workflows.js"></script>
 <script src="/static/js/pages/wfanalyze.js"></script>
 {% endblock %}

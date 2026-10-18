@@ -121,12 +121,6 @@ else{cuiCheckStatus()}
     mainEl.scrollTo({top:0,behavior:'smooth'});toggleFab(false);
   });
 
-  // 2. 笔记本（v5.1 弹窗化：侧边栏入口已取消，改由 FAB 唤出）
-  document.getElementById('fabBtnNotes').addEventListener('click',function(){
-    toggleFab(false);
-    notesOpen();
-  });
-
   // 3. 主题切换（日间/夜间）
   var themeBtn=document.getElementById('fabBtnTheme');
   // v6.1：明暗以**服务端 ui_theme 为准**（base.html 直出），localStorage 仅作缓存；
@@ -161,17 +155,30 @@ else{cuiCheckStatus()}
   });
   applyTheme(currentTheme(),false);
 
-  // 悬浮球/托盘切换 ui_theme 后，已打开的页面无需刷新也能跟随（轻量轮询）
-  function pollTheme(){
+  // v6.3：SSE 即时推送（服务端一变就推，延迟 <0.3s）；
+  // EventSource 不可用/断开时，低频轮询兜底。
+  function _applyRemoteTheme(s){
     if(Date.now()-_themeLocalAt<5000)return;          // 刚本地切换，等服务端落盘
-    fetch('/api/settings',{cache:'no-store'}).then(function(r){return r.json()})
-      .then(function(d){
-        var s=(d&&d.ui_theme)||'light';
-        var cur=document.documentElement.getAttribute('data-theme')||currentTheme();
-        if(s!==cur)applyTheme(s,false);
-      }).catch(function(){});
+    if(s!=='dark'&&s!=='light')return;
+    var cur=document.documentElement.getAttribute('data-theme')||currentTheme();
+    if(s!==cur)applyTheme(s,false);
   }
-  setInterval(pollTheme,3000);
+  try{
+    if(window.EventSource){
+      var _themeES=new EventSource('/api/theme/stream');
+      _themeES.onmessage=function(ev){
+        try{var d=JSON.parse(ev.data||'{}');_applyRemoteTheme(d&&d.ui_theme)}catch(e){}
+      };
+      // onerror 时浏览器会自动重连；下面的轮询继续兜底
+    }
+  }catch(e){}
+
+  function pollTheme(){
+    if(Date.now()-_themeLocalAt<5000)return;
+    fetch('/api/settings',{cache:'no-store'}).then(function(r){return r.json()})
+      .then(function(d){_applyRemoteTheme(d&&d.ui_theme);}).catch(function(){});
+  }
+  setInterval(pollTheme,5000);
 
   // 4. 定时关机（延迟取自全局设置 sdly；0 = 立即关机）
   function fabDelay(){

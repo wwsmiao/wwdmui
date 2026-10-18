@@ -32,7 +32,6 @@ class TestIndex:
         'id="tcDraw"', 'id="tcMask"', 'id="tcList"', 'id="ctxMenu"',
         'id="tcActions"',              # 任务中心清理区
         'id="mbg"', 'id="batmbg"', 'id="pmbg"', 'id="rlogModal"',
-        'id="notesModal"',             # v5.1：笔记本弹窗（原 page-notes 页面）
         'id="presetRow"',              # v5.1：设置页配色预设 swatch 行
     ])
     def test_skeleton_anchors(self, client, anchor):
@@ -51,12 +50,12 @@ class TestIndex:
         first_page = min(html.index("/static/js/pages/%s.js" % n) for n in (
             "banner", "common", "output", "ctxmenu", "preview", "models",
             "localfiles", "plugins", "clonelog", "launcher", "input", "douyin",
-            "repair", "init", "notes", "workflows", "wfanalyze"))
+            "repair", "init", "workflows", "wfanalyze"))
         assert last_common < first_page
 
     def test_all_page_scripts_referenced(self, client):
         html = client.get("/").get_data(as_text=True)
-        assert html.count("/static/js/pages/") == 17
+        assert html.count("/static/js/pages/") == 16
 
     @pytest.mark.parametrize("path", [
         "/static/js/ui.js", "/static/js/api.js", "/static/js/poll.js",

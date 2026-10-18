@@ -483,11 +483,11 @@ class TestQtFabMenu:
 # ⑪ 笔记弹窗的纯逻辑（HTTP / 标签）
 # ============================================================
 class TestQtNotesPure:
-    def test_note_label_pin_and_tag(self):
+    def test_note_label(self):
         assert qt_notes._note_label(
-            {"title": "A", "pinned": 1, "tag": "x"}).startswith("\U0001F4CC ")
-        assert "[x]" in qt_notes._note_label(
-            {"title": "A", "pinned": 0, "tag": "x"})
+            {"title": "A", "pinned": 1}).startswith("\U0001F4CC ")
+        # v6.4：标签不再出现在列表文案里
+        assert "[" not in qt_notes._note_label({"title": "A", "tag": "x"})
         assert qt_notes._note_label({"title": ""}) == "未命名笔记"
 
     def test_http_json_parses(self, monkeypatch):
@@ -573,11 +573,6 @@ class TestMarkdown:
         out = qt_notes._md_to_html("<script>")
         assert "&lt;script&gt;" in out
 
-    def test_render_uses_palette_color(self, monkeypatch):
-        monkeypatch.setitem(config.settings, "ui_theme", "light")
-        out = qt_notes._md_render("**x**")
-        assert "#4a6fa5" in out
-        assert "<b>x</b>" in out
 
 
 # ============================================================

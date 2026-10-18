@@ -207,12 +207,8 @@ class TestNoHardcodedAccentInTemplates:
     # 行级放行。这些行的水彩色是「用户数据 / 外部品牌色 / 预设自身展示」，
     # 刻意不跟随预设（每条理由见右侧注释；新增放行必须连理由一起加）：
     ALLOW_SUBSTR = (
-        "notes-color",       # notes.html 配色板：存进 notes 表 color 字段的用户数据
-        'data-c="#',         # 同上，配色板的 data-c 属性
         "preset-chip",       # settings.html swatch：圆点展示的是预设自身颜色
         "251,114,153",       # help.html 视频教程卡：B站品牌粉 #fb7299，外部品牌色
-        "color:'#",          # notes.js 新建笔记默认色（单引号，用户数据）
-        "var color='#",      # notes.js 新建笔记默认色（变量声明，用户数据）
     )
 
     def _iter_files(self):

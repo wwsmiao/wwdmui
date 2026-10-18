@@ -255,11 +255,11 @@ def ui_classes():
             painter.setClipPath(path)
             alpha = self._alpha
             if alpha is None:
-                alpha = 202 if dark else 186      # 更像玻璃：让水彩透上来
+                alpha = 222 if dark else 232      # 偏实一些：扁平轻量，不发闷
             base = QColor(pal["panel"])
             base.setAlpha(alpha)
             painter.fillRect(rect, base)
-            _paint_blobs(painter, rect, 58 if dark else 48)
+            _paint_blobs(painter, rect, 28 if dark else 22)
             painter.setClipping(False)
             border = QColor(255, 255, 255, 60 if dark else 150)
             painter.setPen(QPen(border, 1.2))
@@ -280,7 +280,7 @@ def ui_classes():
             grad.setColorAt(0.0, QColor(pal["bg"]))
             grad.setColorAt(1.0, QColor(pal["panel2"]))
             painter.fillRect(rect, grad)
-            _paint_blobs(painter, rect, 70 if dark else 60)
+            _paint_blobs(painter, rect, 40 if dark else 34)
             painter.end()
 
     class GlassDialog(QDialog):
@@ -299,9 +299,9 @@ def ui_classes():
             outer.setContentsMargins(26, 24, 26, 30)      # 给投影留白
             self.card = GlassCard(radius=20)
             shadow = QGraphicsDropShadowEffect(self.card)
-            shadow.setBlurRadius(52)
-            shadow.setOffset(0, 14)
-            shadow.setColor(QColor(0, 0, 0, 105))
+            shadow.setBlurRadius(26)
+            shadow.setOffset(0, 6)
+            shadow.setColor(QColor(0, 0, 0, 55))
             self.card.setGraphicsEffect(shadow)
             outer.addWidget(self.card)
 

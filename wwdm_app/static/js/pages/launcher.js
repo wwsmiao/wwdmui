@@ -48,10 +48,14 @@ async function cuiStop(){
 async function cuiPollLogs(){
   if(document.hidden)return;
   try{var r=await fetch('/api/comfyui/logs?since='+cuiLogIdx);var d=await r.json();
-    if(d.lines&&d.lines.length>0){var log=document.getElementById('cuiLog');
+    var log=document.getElementById('cuiLog');
+    if(d.reset&&log){log.textContent=''}          // 服务端日志环形缓冲已裁旧行
+    if(d.lines&&d.lines.length>0&&log){
       log.appendChild(document.createTextNode(d.lines.join('\n')+'\n'));
-      if(log.textContent.length>500000){log.textContent=log.textContent.slice(-250000)}
-      if(cuiAutoScroll)log.scrollTop=log.scrollHeight;cuiLogIdx=d.next_index}
+      if(log.textContent.length>400000){log.textContent=log.textContent.slice(-200000)}
+      if(cuiAutoScroll)log.scrollTop=log.scrollHeight;
+    }
+    if(typeof d.next_index==='number')cuiLogIdx=d.next_index;
   }catch(e){}
 }
 cuiCheckStatus();async function cuiCmdPreview2(){

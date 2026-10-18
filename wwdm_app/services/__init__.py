@@ -435,8 +435,29 @@ def parse_git_progress(line):
 # ComfyUI 启动器
 # ============================================================
 comfyui_proc = None
-comfyui_logs = []
+comfyui_logs = []            # 仅保留最近 _COMFY_LOG_CAP 行（环形缓冲）
+comfyui_log_base = 0         # 已被裁掉的行数（绝对索引偏移）
 comfyui_log_lock = threading.Lock()
+_COMFY_LOG_CAP = 2000
+_COMFY_READ_CHUNK = 8192
+
+
+def _comfy_log_append(line):
+    """追加一行到环形日志缓冲：超上限裁旧行，用 base 记录绝对偏移。
+
+    必须**有上限**：ComfyUI 跑几小时后日志几十万行，客户端一次 since=0
+    的拉取会把整表切片 + JSON 化，Flask 线程长时间持锁 → 读管道线程被堵 →
+    ComfyUI 的 print 写满管道 → 主线程卡住（点「运行」几十秒不生效的真凶之一）。
+    """
+    global comfyui_log_base
+    if not line:
+        return
+    with comfyui_log_lock:
+        comfyui_logs.append(line)
+        extra = len(comfyui_logs) - _COMFY_LOG_CAP
+        if extra > 0:
+            del comfyui_logs[:extra]
+            comfyui_log_base += extra
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
 
 # 清理日志中的不可见字符（UTF-8 解码失败残渣、孤立的 surrogate）
@@ -512,7 +533,7 @@ def _is_safe_env_key(k):
 
 
 def start_comfyui(python_path, comfyui_dir):
-    global comfyui_proc, comfyui_logs
+    global comfyui_proc, comfyui_logs, comfyui_log_base
     if comfyui_proc and comfyui_proc.poll() is None:
         return {"ok": False, "msg": "ComfyUI 已在运行中"}
     if not os.path.isfile(python_path):
@@ -531,6 +552,7 @@ def start_comfyui(python_path, comfyui_dir):
         shell = False
     with comfyui_log_lock:
         comfyui_logs = []
+        comfyui_log_base = 0
     creationflags = subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0
     try:
         comfyui_proc = subprocess.Popen(
@@ -540,9 +562,7 @@ def start_comfyui(python_path, comfyui_dir):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             stdin=subprocess.DEVNULL,
-            text=True,
-            encoding="utf-8",
-            errors="surrogateescape",
+            bufsize=0,                 # 二进制无缓冲，配合 os.read 分块读
             creationflags=creationflags,
         )
     except FileNotFoundError as e:
@@ -551,11 +571,32 @@ def start_comfyui(python_path, comfyui_dir):
         return {"ok": False, "msg": "启动失败: " + str(e)}
 
     def _reader():
-        global comfyui_logs
+        # 🔴 分块读 + 按 \r/\n 切：ComfyUI 的 tqdm 进度条用 \r 刷新，
+        # 逐行读（等 \n）会把 \r 数据留在管道里 → 管道写满 → ComfyUI 主线程
+        # 在 print 上阻塞（典型症状：点「运行」几十秒到几分钟才真正开始）。
         try:
-            for line in comfyui_proc.stdout:
-                with comfyui_log_lock:
-                    comfyui_logs.append(_strip_ansi(line.rstrip()))
+            fd = comfyui_proc.stdout.fileno()
+        except Exception:
+            return
+        buf = ""
+        while True:
+            try:
+                chunk = os.read(fd, _COMFY_READ_CHUNK)
+            except Exception:
+                break
+            if not chunk:
+                break
+            try:
+                buf += chunk.decode("utf-8", "replace")
+                parts = re.split(r"[\r\n]", buf)
+                buf = parts.pop()
+                for part in parts:
+                    _comfy_log_append(_strip_ansi(part).rstrip())
+            except Exception:
+                buf = ""          # 解析失败也继续抽干管道，绝不能让读线程退出
+        try:
+            if buf.strip():
+                _comfy_log_append(_strip_ansi(buf).rstrip())
         except Exception:
             pass
 
@@ -593,11 +634,20 @@ def get_comfyui_status():
 
 def get_comfyui_logs(since=0):
     with comfyui_log_lock:
-        total = len(comfyui_logs)
-        if since >= total:
-            return {"lines": [], "next_index": since, "total": total}
-        new_lines = comfyui_logs[since:]
-        return {"lines": new_lines, "next_index": total, "total": total}
+        base = comfyui_log_base
+        total = base + len(comfyui_logs)
+        try:
+            since = int(since)
+        except (TypeError, ValueError):
+            since = 0
+        if since < base:
+            # 客户端索引早于缓冲起点（旧行已裁掉）→ 重置，返回当前全部（≤cap）
+            return {"lines": list(comfyui_logs), "next_index": total,
+                    "total": total, "reset": True}
+        start = max(0, since - base)
+        if start >= len(comfyui_logs):
+            return {"lines": [], "next_index": total, "total": total}
+        return {"lines": comfyui_logs[start:], "next_index": total, "total": total}
 
 
 # ============================================================
