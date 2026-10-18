@@ -234,7 +234,8 @@ class TestAboutPage:
         base = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                             "wwdm_app", "templates", "partials")
         html = io.open(os.path.join(base, "about.html"), encoding="utf-8").read()
-        for s in ("关于和更新", "使用指南", "视频教程", "帮助文档",
-                  "支持作者", "版本更新"):
+        for s in ("关于和更新", "使用指南", "软件更新", "帮助文档",
+                  "支持作者", "版本更新",
+                  "pan.baidu.com/s/1dV0IR8KLl9tADUj5M7C3cw"):
             assert s in html, s
         assert not os.path.exists(os.path.join(base, "help.html"))
