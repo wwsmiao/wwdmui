@@ -31,6 +31,7 @@ v6.0(2) 起与托盘（:mod:`gui.tray`）共生：球窗是**共享 root 的 Top
 import os
 
 from . import actions, pos
+from . import icoimage
 from .pos import FAB_SIZE
 
 _COLORS = {
@@ -78,6 +79,9 @@ class FabBall:
         self._win = None                    # 球窗本体（Toplevel）
         self._canvas = None
         self._oval = None
+        self._img_normal = None      # 悬浮球图标（wwdm_cat.ico），贴图模式
+        self._img_hover = None
+        self._img_item = None
         self._drag = None            # (x_root, y_root, moved) 拖动状态
         self._grab = (0, 0)
         self._standalone = False     # True=自建 root（单球模式/冒烟），销毁时连根拔
@@ -115,19 +119,31 @@ class FabBall:
         cv = tk.Canvas(win, width=FAB_SIZE, height=FAB_SIZE,
                        bg=_COLORS["chroma"], highlightthickness=0)
         self._canvas = cv
-        self._oval = cv.create_oval(2, 2, FAB_SIZE - 2, FAB_SIZE - 2,
-                                    fill=_COLORS["bg"], outline="")
-        cv.create_text(FAB_SIZE // 2, FAB_SIZE // 2, text="设",
-                       fill=_COLORS["fg"],
-                       font=("Microsoft YaHei", 18, "bold"))
+        # v6.0(5)：优先贴 wwdm_cat 图标（exe / 托盘 / 球统一）；ico 解不出
+        #（非 PNG 条目 / 资源缺失）→ 回退旧的纯色圆 + 「设」字，任何环境都能用。
+        self._img_item = None
+        self._oval = None
+        imgs = icoimage.ball_images(icoimage.default_icon_path(), FAB_SIZE,
+                                    master=win)
+        if imgs is not None:
+            self._img_normal, self._img_hover = imgs
+            self._img_item = cv.create_image(FAB_SIZE // 2, FAB_SIZE // 2,
+                                             image=self._img_normal)
+        else:
+            self._img_normal = self._img_hover = None
+            self._oval = cv.create_oval(2, 2, FAB_SIZE - 2, FAB_SIZE - 2,
+                                        fill=_COLORS["bg"], outline="")
+            cv.create_text(FAB_SIZE // 2, FAB_SIZE // 2, text="设",
+                           fill=_COLORS["fg"],
+                           font=("Microsoft YaHei", 18, "bold"))
         cv.pack(fill="both", expand=True)
 
         cv.bind("<ButtonPress-1>", self._on_press)
         cv.bind("<B1-Motion>", self._on_motion)
         cv.bind("<ButtonRelease-1>", self._on_release)
         cv.bind("<Button-3>", self._on_menu)
-        cv.bind("<Enter>", lambda e: self._paint(_COLORS["bg_hover"]))
-        cv.bind("<Leave>", lambda e: self._paint(_COLORS["bg"]))
+        cv.bind("<Enter>", lambda e: self._paint(True))
+        cv.bind("<Leave>", lambda e: self._paint(False))
 
         win.protocol("WM_DELETE_WINDOW", self._on_close)
         return win
@@ -216,12 +232,19 @@ class FabBall:
                 "请关掉占用该端口的程序，或在「设置 → 管理器访问」里换个端口。")
         except Exception:
             pass
-        self._hide(save=False)
+        self.hide(save=False)
 
     # ---------------- 绘制 ----------------
-    def _paint(self, color):
-        if self._canvas is not None and getattr(self, "_oval", None):
-            self._canvas.itemconfig(self._oval, fill=color)
+    def _paint(self, hover):
+        if self._canvas is None:
+            return
+        if self._img_item is not None:
+            self._canvas.itemconfig(
+                self._img_item,
+                image=self._img_hover if hover else self._img_normal)
+        elif self._oval is not None:
+            self._canvas.itemconfig(
+                self._oval, fill=_COLORS["bg_hover"] if hover else _COLORS["bg"])
 
     # ---------------- 鼠标 ----------------
     def _on_press(self, e):
@@ -253,7 +276,7 @@ class FabBall:
 
     def _on_close(self):
         # 点右下角「关闭」只有一种来路：菜单里没有关闭，这里是系统兜底
-        self._hide(save=False)
+        self.hide(save=False)
 
     # ---------------- 动作（本体在 gui/actions，托盘共用） ----------------
     def _open_ui(self):
@@ -278,11 +301,17 @@ class FabBall:
             self.autostart_flag = want
 
     def _hide(self, save=True):
+        # 🔴 v6.0(5)：公开为 ``hide``（托盘 _toggle_fab 调用；此前叫 _hide 缺失
+        # 公开名 → AttributeError 被 except 吞掉 → 菜单「显示悬浮球」无功能）。
+        self.hide(save=save)
+
+    def hide(self, save=True):
         if save:
             _save_flag("fab_visible", False)
         win, self._win = self._win, None
         self._canvas = None
         self._oval = None
+        self._img_normal = self._img_hover = self._img_item = None
         try:
             if win is not None:
                 win.destroy()               # 只销球窗；共享 root 要留给托盘
@@ -311,7 +340,7 @@ class FabBall:
         m.add_command(label=actions.autostart_label(actions.autostart_enabled()),
                       command=self._toggle_autostart)
         m.add_separator()
-        m.add_command(label="隐藏悬浮球", command=lambda: self._hide(save=True))
+        m.add_command(label="隐藏悬浮球", command=lambda: self.hide(save=True))
         m.add_command(label="退出管理器", command=self._quit)
         try:
             m.tk_popup(e.x_root, e.y_root)

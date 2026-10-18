@@ -71,20 +71,20 @@ class TestPos:
 
     def test_clamp_keeps_on_screen(self):
         # 4K 上拖到右下角的坐标，换到 1080p 笔记本必须被钳回来
-        assert pos.clamp_pos(99999, 99999, (1920, 1080)) == (1856, 1016)
+        assert pos.clamp_pos(99999, 99999, (1920, 1080)) == (1848, 1008)
         assert pos.clamp_pos(-50, -50, (1920, 1080)) == (8, 8)
         assert pos.clamp_pos(500, 500, (1920, 1080)) == (500, 500)
 
     def test_default_is_bottom_right_with_taskbar(self):
-        assert pos.default_pos((1920, 1080)) == (1856, 976)
+        assert pos.default_pos((1920, 1080)) == (1848, 968)
         # 极小屏幕：x 还能放下就贴右下，y 放不下就贴顶，绝不出负数
-        assert pos.default_pos((100, 100)) == (36, 0)
+        assert pos.default_pos((100, 100)) == (28, 0)
 
     def test_resolve_saved_vs_fallback(self):
         assert pos.resolve_pos("300,400", (1920, 1080)) == (300, 400)
         assert pos.resolve_pos("", (1920, 1080)) == pos.default_pos((1920, 1080))
         assert pos.resolve_pos("垃圾", (1920, 1080)) == pos.default_pos((1920, 1080))
-        assert pos.resolve_pos("99999,99999", (1920, 1080)) == (1856, 1016)
+        assert pos.resolve_pos("99999,99999", (1920, 1080)) == (1848, 1008)
 
 
 # ============================================================
@@ -617,6 +617,161 @@ class TestTray:
 # ============================================================
 # ⑥ 托盘/悬浮球公共动作（gui.actions）
 # ============================================================
+# ============================================================
+# ⑥-b 图标解码（gui.icoimage，纯函数无 tkinter）与悬浮球可见性 / run 绑定
+# ============================================================
+class TestIcoImage:
+    """icoimage 纯函数（无 tkinter）：解码 / hover 变体 / 资源文件。"""
+
+    def test_asset_is_png_ico(self):
+        from wwdm_app.gui import icoimage
+        png = icoimage.ico_png_bytes(icoimage.default_icon_path())
+        assert png is not None and png[:8] == b"\x89PNG\r\n\x1a\n"
+
+    def test_decode_yields_rgba(self):
+        from wwdm_app.gui import icoimage
+        png = icoimage.ico_png_bytes(icoimage.default_icon_path())
+        dec = icoimage.decode_png(png)
+        assert dec is not None
+        w, h, rgba = dec
+        assert w == 64 and h == 64
+        assert len(rgba) == 64 * 64 * 4
+        # 中心白猫脸不透明；角落透明
+        i_center = (32 * 64 + 32) * 4
+        assert rgba[i_center + 3] == 255
+        assert rgba[3] == 0
+
+    def test_recolor_keeps_alpha_darkens_rgb(self):
+        from wwdm_app.gui import icoimage
+        png = icoimage.ico_png_bytes(icoimage.default_icon_path())
+        dec = icoimage.decode_png(png)
+        w, h, rgba = dec
+        hover = icoimage.recolor(png, 0.85)
+        assert hover is not None and hover[:8] == b"\x89PNG\r\n\x1a\n"
+        hd = icoimage.decode_png(hover)
+        assert hd is not None
+        i_center = (32 * 64 + 32) * 4
+        # R 暗化（<255）、alpha 不变
+        assert hd[2][i_center] < rgba[i_center]
+        assert hd[2][i_center + 3] == rgba[i_center + 3]
+
+    @pytest.mark.skipif(not _tkinter_usable(),
+                        reason="需要 tkinter（PhotoImage 创建依赖真 Tk）")
+    def test_ball_images_returns_pair(self):
+        import tkinter as tk
+        from wwdm_app.gui import icoimage
+        tk.Tk().withdraw()           # 提供默认 root（PhotoImage 需要）
+        imgs = icoimage.ball_images(icoimage.default_icon_path(), 64)
+        assert imgs is not None and len(imgs) == 2
+
+
+class TestFabVisibility:
+    """悬浮球可见性 API（v6.0(5) 修的回归：tray 调 fab.hide 曾缺失 →
+    菜单「显示悬浮球」点了没反应）。"""
+
+    def test_show_requires_root(self):
+        from wwdm_app.gui import fab as _fab
+        b = _fab.FabBall(7861)
+        assert b.show() is False        # root 未绑（gui.run 必须先绑）
+
+    def test_hide_without_window_is_safe(self, monkeypatch):
+        from wwdm_app.gui import fab as _fab
+        saved = {}
+        monkeypatch.setattr(_fab, "_save_flag", lambda k, v: saved.update({k: v}))
+        monkeypatch.setattr(_fab.icoimage, "ball_images", lambda *a: None)
+        b = _fab.FabBall(7861)
+        b.hide(save=True)               # 没建过窗也不许炸
+        assert saved == {"fab_visible": False}
+
+    def test_tray_hide_calls_real_fab_hide(self, monkeypatch):
+        """端到端：托盘 _toggle_fab 必须走 fab.hide（此前调缺失的 _hide →
+        AttributeError 被 except 吞掉，回归闸门）。"""
+        from wwdm_app.gui import fab as _fab, tray as _tray
+        saved = {}
+        monkeypatch.setattr(_fab, "_save_flag", lambda k, v: saved.update({k: v}))
+        monkeypatch.setattr(_fab.icoimage, "ball_images", lambda *a: None)
+        b = _fab.FabBall(7861)
+        monkeypatch.setattr(b, "is_visible", lambda: True)
+        ic = tray.TrayIcon(7861, fab=b)
+        ic._toggle_fab()                # 可见 → 隐藏并存盘
+        assert saved == {"fab_visible": False}
+
+
+class TestRunBindsBall:
+    """v6.0(5) 回归：fab_visible=False 也必须建 FabBall 实例并绑 root，
+    否则托盘「显示悬浮球」fab=None 永远无功能。"""
+
+    def test_run_always_creates_ball_and_binds_root(self, monkeypatch):
+        import sys
+        import types
+        from wwdm_app import gui
+        from wwdm_app.gui import fab as _fab, tray as _tray
+
+        fake_tk = types.ModuleType("tkinter")
+
+        class _Stop(Exception):
+            pass
+
+        class _Root:
+            def withdraw(self):
+                pass
+
+            def after(self, *a):
+                return 1
+
+            def after_cancel(self, *a):
+                pass
+
+            def mainloop(self):
+                raise _Stop()           # 让 run() 在 mainloop 处立刻返回
+
+            def destroy(self):
+                pass
+
+        fake_tk.Tk = lambda: _Root()
+        monkeypatch.setitem(sys.modules, "tkinter", fake_tk)
+
+        made = {}
+
+        class _Ball:
+            def __init__(self, *args, **kw):
+                made["ball"] = self
+                self.root = None
+                self._win = None
+
+            def build(self, root):
+                made["built_root"] = root
+
+            def is_visible(self):
+                return "built_root" in made
+
+        monkeypatch.setattr(_fab, "FabBall", _Ball)
+        monkeypatch.setattr(_fab, "enable_dpi_awareness", lambda: True)
+
+        class _Icon:
+            def __init__(self, *args, **kw):
+                made["icon_fab"] = kw.get("fab")
+
+            def attach(self, root):
+                made["icon_attach_root"] = root
+                made["attached"] = True
+                return True
+
+            def destroy(self):
+                pass
+
+        monkeypatch.setattr(_tray, "TrayIcon", _Icon)
+
+        with pytest.raises(_Stop):
+            gui.run(port=7861, fab_visible=False)
+        assert made["ball"] is not None           # 实例必须建
+        assert made["ball"].root is not None      # root 必须绑（菜单可拉球）
+        assert "built_root" not in made           # fab_visible=False 不建窗
+        assert made["icon_fab"] is made["ball"]   # 托盘拿得到球
+        # 真绑上的 root 与 attach 收到的 root 是同一个对象（共享 root 链）
+        assert made["ball"].root is made["icon_attach_root"]
+
+
 class TestActions:
     def test_ui_url_token(self):
         assert actions.ui_url("h", 1, "t") == "http://h:1/?t=t"
@@ -742,6 +897,17 @@ class TestStructure:
     def test_package_defers_tkinter(self):
         """__init__.py 的 run() 里才 import tkinter，顶层不许。"""
         self._assert_no_top_tkinter("__init__.py")
+
+    def test_icon_assets_exist_and_unified(self):
+        """exe/托盘/球/网页 favicon 图标统一为 wwdm_cat.ico。"""
+        from wwdm_app.gui import icoimage
+        base = os.path.join(ROOT, "wwdm_app")
+        for rel in ("gui/assets/wwdm_cat.ico", "static/favicon.ico"):
+            p = os.path.join(base, rel)
+            assert os.path.isfile(p), "缺图标资源: " + rel
+        # 随包资产必须含 PNG 条目（托盘 LoadImageW / 球 PhotoImage 都用它）
+        png = icoimage.ico_png_bytes(os.path.join(base, "gui/assets/wwdm_cat.ico"))
+        assert png is not None, "托盘/球图标必须含 PNG 条目"
 
     def test_run_py_has_gui_branch(self):
         """run.py 入口三分支：--no-gui / GUI 悬浮球+托盘 / 降级主线程。"""

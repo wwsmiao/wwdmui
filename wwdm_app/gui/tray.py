@@ -70,7 +70,7 @@ _TIP_MAX = 127                   # szTip 是 128 WCHAR，留一个给 NUL
 _DRAIN_MS = 25                   # WndProc 待办队列消费周期（见 _enqueue 注释）
 
 _ASSET_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                           "assets", "tray.ico")
+                           "assets", "wwdm_cat.ico")
 
 _bound = False                   # argtypes 只绑一次（幂等，防重复设置）
 
@@ -239,7 +239,7 @@ class TrayIcon:
         self._hwnd = hwnd
 
     def _load_hicon(self):
-        """图标加载：自带 assets/tray.ico → 回退系统应用图标。"""
+        """图标加载：自带 assets/wwdm_cat.ico（exe/托盘/球统一）→ 回退系统应用图标。"""
         u32 = ctypes.windll.user32
         if os.path.isfile(_ASSET_ICON):
             h = u32.LoadImageW(None, _ASSET_ICON, IMAGE_ICON, 0, 0,

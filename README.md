@@ -38,9 +38,28 @@ python make_release_settings.py --check <文件>      # 体检一份现成的 se
 `aria2c_path` / `comfyui_dir`（买家首启自动探测）与 `access_token`（买家首启自动
 生成）**强制排除**。规则写在 `wwdm_app/release.py`，新增设置项默认不进包。
 
+## 📦 打包成 exe（维护者）
+
+图标统一：**exe / 系统托盘 / 悬浮球 / 网页 favicon 全部取自 `icons/wwdm_cat.ico`**（已复制到 `wwdm_app/gui/assets/wwdm_cat.ico` 与 `wwdm_app/static/favicon.ico`）。
+
+在本机 D:\\python312（含 tkinter）解释器下用 Nuitka 打包：
+
+```bash
+python -m nuitka --onefile --windows-console-mode=disable ^
+    --enable-plugin=tk-interpreter ^
+    --include-data-dir=wwdm_app/gui/assets=wwdm_app/gui/assets ^
+    --windows-icon-from-ico=wwdm_app/gui/assets/wwdm_cat.ico ^
+    run.py
+```
+
+- `--onefile`：单 exe；`--windows-console-mode=disable`：启动不弹黑框；
+- `--enable-plugin=tk-interpreter`：把 tkinter/Tcl 一起打进去；
+- ⚠️ **`--include-data-dir=wwdm_app/gui/assets` 必须带** —— 否则打包后找不到悬浮球/托盘图标；
+- `--windows-icon-from-ico=...`：指定 exe 文件图标（猫图标）。
+
 ## 📜 版本历史
 
-- **v6.0**：桌面悬浮球 + 系统托盘双形态（圆球可拖动并记忆位置，托盘右键全菜单，设置页可只留托盘）；开机自启动选项；退出时自动清理下载 / 克隆子进程；新增托盘与图形界面测试
+- **v6.0**：桌面悬浮球 + 系统托盘双形态（圆球可拖动并记忆位置，托盘右键全菜单，设置页可只留托盘）；开机自启动选项；退出时自动清理下载 / 克隆子进程；新增托盘与图形界面测试；托盘菜单可实时唤出/隐藏悬浮球（修复此前「显示悬浮球」点了没反应）；exe / 系统托盘 / 悬浮球 / 网页 favicon 图标统一为猫图标（`icons/wwdm_cat.ico`）
 - **v5.1**：HuggingFace 渠道可切换（官方 / hf-mirror，ComfyUI 运行时拉模型自动同步）；Git 代理候选扩充 + 「测速自动选最快」；新增操作审计日志；笔记本弹窗化；壁纸与配色主题预设（5 套配色 × 明暗自由组合）
 - **v5.0**：整体架构重构（后端 core / services / blueprints 分层，前端每页独立脚本）；任务中心统一展示下载 / 克隆 / 关机任务进度；夜间主题全面适配；新增 213 项自动化测试
 - **v4.0**：增加了更多插件和模型；实现了工作流模型、插件的完整分析，可以通过工作流补充模型和插件；修复若干细节问题

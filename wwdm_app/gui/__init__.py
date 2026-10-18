@@ -96,18 +96,26 @@ def run(port, token="", autostart_flag=False, server_dead=None,
     root = tk.Tk()
     root.withdraw()                      # 共享 root 常驻隐藏，专职消息泵
 
-    ball = None
+    # 🔴 v6.0(5)：无论 fab_visible 都建 FabBall 实例并**先绑共享 root** ——
+    # 「只托盘」模式下托盘菜单「显示悬浮球」靠它在现场建窗；此前 ball=None
+    # 导致 _toggle_fab 直接 return，菜单点了没反应（悬浮球「无法显示」）。
+    ball = _fab.FabBall(port, token=token, autostart_flag=autostart_flag,
+                        server_dead=server_dead)
+    ball.root = root                          # 绑定共享 root（菜单可随时拉起球）
     if fab_visible:
-        ball = _fab.FabBall(port, token=token, autostart_flag=autostart_flag,
-                            server_dead=server_dead)
         try:
             ball.build(root)
         except Exception:
-            ball = None                  # 球建不起来还有托盘，别整体降级
+            pass                              # 建不起来还有托盘，别整体降级
 
     icon = _tray.TrayIcon(port, token=token, fab=ball, server_dead=server_dead)
     attached = icon.attach(root)
-    if ball is None and not attached:
+    if not attached and not ball.is_visible():
+        # 托盘没挂上、球也没建起来 → 没有任何入口，整体无意义
+        try:
+            icon.destroy()
+        except Exception:
+            pass
         root.destroy()
         raise RuntimeError("悬浮球与托盘都没建起来，GUI 无入口可用")
 
