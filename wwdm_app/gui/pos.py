@@ -10,7 +10,7 @@
 
 约定 screen_wh = (屏幕宽, 屏幕高)，球为边长 size 的正方形 hitbox。
 """
-FAB_SIZE = 64           # 悬浮球直径（px），与 wwdm_cat.ico 图标 1:1；fab.py 画布一致
+FAB_SIZE = 64           # 悬浮球直径（px），与 app.ico 图标 1:1；fab.py 画布一致
 FAB_MARGIN = 8          # 拖拽后距屏幕边缘的最小留白
 TASKBAR_RESERVE = 48    # 默认位置距屏幕底部的预留（任务栏粗略高度）
 

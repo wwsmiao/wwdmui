@@ -650,13 +650,19 @@ class TestStructure:
                     "%s 顶层 import 了 PyQt6，必须延迟到方法内" % fn
 
     def test_icon_assets_exist_and_unified(self):
-        """exe/托盘/球/网页 favicon 图标统一为 wwdm_cat.ico。"""
+        """exe/托盘/球/网页 favicon 图标统一为 static/images/app.ico。"""
         base = os.path.join(ROOT, "wwdm_app")
-        for rel in ("gui/assets/wwdm_cat.ico", "static/favicon.ico"):
+        for rel in ("static/images/app.ico", "static/images/logo-16.ico",
+                    "static/images/logo-32.ico", "static/images/logo-256.ico",
+                    "static/images/logo.png"):
             p = os.path.join(base, rel)
             assert os.path.isfile(p), "缺图标资源: " + rel
             assert os.path.getsize(p) > 0
         assert os.path.isfile(qt_theme.icon_path())
+        assert os.path.basename(qt_theme.icon_path()) == "app.ico"
+        for old in ("gui/assets/wwdm_cat.ico", "static/favicon.ico",
+                    "static/images/wwdm_cat.ico"):
+            assert not os.path.exists(os.path.join(base, old)), "旧图标未删除: " + old
 
     def test_run_py_has_gui_branch(self):
         """run.py 入口三分支：--no-gui / GUI 悬浮球+托盘 / 降级主线程。"""

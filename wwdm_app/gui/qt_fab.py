@@ -19,7 +19,7 @@
 from . import actions, pos, qt_theme
 
 _BALL = 72       # 窗口边长（含投影留白）
-_ICON = 52       # 猫图标绘制边长
+_ICON = 52       # 图标绘制边长（裁成圆形）
 _MARGIN = 10     # 投影留白
 
 
@@ -137,8 +137,8 @@ def _fab_class():
         return _FAB_CLASS
 
     from PyQt6.QtCore import QPoint, QRectF, QSize, Qt
-    from PyQt6.QtGui import (QBrush, QColor, QIcon, QPainter, QPen,
-                             QRadialGradient)
+    from PyQt6.QtGui import (QBrush, QColor, QIcon, QPainter, QPainterPath,
+                             QPen, QRadialGradient)
     from PyQt6.QtWidgets import QApplication, QMenu, QWidget
 
     class FabBall(QWidget):
@@ -212,7 +212,16 @@ def _fab_class():
             if not self._pix.isNull():
                 cxp = int(r.center().x() - _ICON / 2)
                 cyp = int(r.center().y() - _ICON / 2)
+                # 新 logo 是方图：裁成圆形，保持悬浮球观感
+                clip = QPainterPath()
+                clip.addEllipse(QRectF(cxp, cyp, _ICON, _ICON))
+                p.save()
+                p.setClipPath(clip)
                 p.drawPixmap(cxp, cyp, self._pix)
+                p.restore()
+                p.setBrush(Qt.BrushStyle.NoBrush)
+                p.setPen(QPen(QColor(255, 255, 255, 90), 1.2))
+                p.drawEllipse(QRectF(cxp, cyp, _ICON, _ICON))
             else:
                 grad = QRadialGradient(r.center() - QPoint(int(r.width() * 0.22),
                                                            int(r.height() * 0.25)),

@@ -40,7 +40,7 @@ python make_release_settings.py --check <文件>      # 体检一份现成的 se
 
 ## 📦 打包成 exe（维护者）
 
-图标统一：**exe / 系统托盘 / 悬浮球 / 网页 favicon 全部取自 `icons/wwdm_cat.ico`**（已复制到 `wwdm_app/gui/assets/wwdm_cat.ico` 与 `wwdm_app/static/favicon.ico`）。
+图标统一：**exe / 系统托盘 / 悬浮球 / 网页 favicon 全部取自 `wwdm_app/static/images/app.ico`**（另有 `logo-16.ico` … `logo-256.ico` 与网页头像 `logo.png`）。
 
 GUI 已迁移到 **PyQt6**（v6.1 起不再依赖 tkinter）。先在打包解释器里装好依赖，再用 Nuitka 打包：
 
@@ -48,20 +48,20 @@ GUI 已迁移到 **PyQt6**（v6.1 起不再依赖 tkinter）。先在打包解�
 pip install PyQt6
 python -m nuitka --onefile --windows-console-mode=disable ^
     --enable-plugin=pyqt6 ^
-    --include-data-dir=wwdm_app/gui/assets=wwdm_app/gui/assets ^
-    --windows-icon-from-ico=wwdm_app/gui/assets/wwdm_cat.ico ^
+    --include-data-dir=wwdm_app/static=wwdm_app/static ^
+    --windows-icon-from-ico=wwdm_app/static/images/app.ico ^
     run.py
 ```
 
 - `--onefile`：单 exe；`--windows-console-mode=disable`：启动不弹黑框；
 - `--enable-plugin=pyqt6`：把 PyQt6 / Qt 插件一起打进去（**不再用 tk-interpreter**）；
-- ⚠️ **`--include-data-dir=wwdm_app/gui/assets` 必须带** —— 否则打包后找不到悬浮球/托盘图标；
-- `--windows-icon-from-ico=...`：指定 exe 文件图标（猫图标）。
+- ⚠️ **`--include-data-dir=wwdm_app/static` 必须带** —— 否则打包后网页资源与悬浮球/托盘图标都找不到；
+- `--windows-icon-from-ico=...`：指定 exe 文件图标（`static/images/app.ico`）。
 
 ## 📜 版本历史
 
 - **v6.1**：桌面 GUI 从 tkinter **整体重写为 PyQt6** —— 悬浮球改为无边框半透明圆球（自绘投影/猫图标/hover 光晕，可拖动记忆位置，左键开网页、右键菜单）；系统托盘改用 `QSystemTrayIcon`（彻底移除 ctypes 消息窗，根除 v6.0(4) 那类 GIL 崩溃）；右键菜单含 定时关机 / 网页日夜间切换 / 笔记本弹窗 / 打开页面 / 复制地址 / 开机自启 / 显示悬浮球 / 退出；Qt 弹窗与菜单统一套用网页水彩主题（QSS）；新增 `PyQt6` 依赖
-- **v6.0**：桌面悬浮球 + 系统托盘双形态（圆球可拖动并记忆位置，托盘右键全菜单，设置页可只留托盘）；开机自启动选项；退出时自动清理下载 / 克隆子进程；新增托盘与图形界面测试；托盘菜单可实时唤出/隐藏悬浮球（修复此前「显示悬浮球」点了没反应）；exe / 系统托盘 / 悬浮球 / 网页 favicon 图标统一为猫图标（`icons/wwdm_cat.ico`）
+- **v6.0**：桌面悬浮球 + 系统托盘双形态（圆球可拖动并记忆位置，托盘右键全菜单，设置页可只留托盘）；开机自启动选项；退出时自动清理下载 / 克隆子进程；新增托盘与图形界面测试；托盘菜单可实时唤出/隐藏悬浮球（修复此前「显示悬浮球」点了没反应）；exe / 系统托盘 / 悬浮球 / 网页 favicon 图标统一（v6.4 起换为新 logo `static/images/app.ico`）
 - **v5.1**：HuggingFace 渠道可切换（官方 / hf-mirror，ComfyUI 运行时拉模型自动同步）；Git 代理候选扩充 + 「测速自动选最快」；新增操作审计日志；笔记本弹窗化；壁纸与配色主题预设（5 套配色 × 明暗自由组合）
 - **v5.0**：整体架构重构（后端 core / services / blueprints 分层，前端每页独立脚本）；任务中心统一展示下载 / 克隆 / 关机任务进度；夜间主题全面适配；新增 213 项自动化测试
 - **v4.0**：增加了更多插件和模型；实现了工作流模型、插件的完整分析，可以通过工作流补充模型和插件；修复若干细节问题

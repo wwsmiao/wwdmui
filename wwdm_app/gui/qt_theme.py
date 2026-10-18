@@ -56,10 +56,10 @@ def is_dark(pal=None):
 
 
 def icon_path():
-    """统一图标（exe / 托盘 / 悬浮球 / 网页 favicon 同一只猫）的 .ico 路径。"""
+    """统一图标（exe / 托盘 / 悬浮球 / 网页 favicon）的 .ico 路径。"""
     import os
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "assets", "wwdm_cat.ico")
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # wwdm_app
+    return os.path.join(base, "static", "images", "app.ico")
 
 
 def qss():
