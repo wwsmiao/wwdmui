@@ -13,6 +13,7 @@ from flask import Blueprint, jsonify, request, send_file
 from .. import config
 from .. import security as sec
 from .. import services as svc
+from .. import gui
 
 bp = Blueprint("settings", __name__)
 
@@ -95,6 +96,15 @@ def api_save_settings():
     _tp = str(d.get("theme_preset",
                     config.settings.get("theme_preset", "watercolor")) or "watercolor").strip()
     d["theme_preset"] = _tp if config.theme_preset_known(_tp) else "watercolor"
+    # ---- 桌面悬浮球（v6.0；仅 exe GUI 形态有，--no-gui 降级时无意义但仍存设置）----
+    d["fab_visible"] = bool(d.get("fab_visible",
+                                  config.settings.get("fab_visible", True)))
+    # fab_pos：合法 "x,y" 原样保留；脏值一律回退空串（=默认右下角）。
+    # ⚠️ 这里只存设置，**不碰注册表** —— autostart 的注册表同步放在 run.py
+    # 启动时做（测试里 POST /api/settings 会真写进用户注册表，不能忍）。
+    _fp = str(d.get("fab_pos", config.settings.get("fab_pos", "")) or "").strip()
+    d["fab_pos"] = _fp if gui.pos.parse_pos(_fp) else ""
+    d["autostart"] = bool(d.get("autostart", config.settings.get("autostart", False)))
     # GitHub 镜像：仅接受已知 key，非法值回退官方
     _gm = str(d.get("github_mirror", config.settings.get("github_mirror", "official")) or "official").strip()
     d["github_mirror"] = _gm if _gm in svc._GITHUB_MIRROR_MAP else "official"

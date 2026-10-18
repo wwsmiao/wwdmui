@@ -23,16 +23,15 @@ def _on_exit():
     """退出时强制清理所有子进程。
 
     ⚠️ 必须幂等：atexit 与 ``finally`` 都会调它，否则每次退出都会清理两遍、
-    控制台也会把「管理器已退出」打两遍。
+    日志也会把「管理器已退出」打两遍。
     """
     global _exited
     if _exited:
         return
     _exited = True
-    print("\n[v5.1] 正在清理子进程...")
+    _log.info("正在清理子进程...")
     cleanup_all()
     _log.info("管理器已退出")
-    print("[v5.1] 已退出")
 
 
 atexit.register(_on_exit)
@@ -62,12 +61,25 @@ def _lan_ips():
 
 if __name__ == "__main__":
     import platform as _p
-    print("[v5.1] " + _p.system() + ", Python: " + sys.version.split()[0])
-    print("[v5.1] BASE_DIR: " + BASE_DIR)
-    print("[v5.1] DB: " + DB_PATH)
+    from wwdm_app.core import logging as wwdm_logging
+    wwdm_logging.setup()                      # 控制台 + logs/wwdm.log 双写
+    _log = wwdm_logging.get_logger("wwdm.run")
+
+    _no_gui = "--no-gui" in sys.argv          # 开发 / 无头服务器显式降级
+    _minimized = "--minimized" in sys.argv    # 开机自启传入：不自动弹浏览器
+
+    _log.info("%s, Python: %s", _p.system(), sys.version.split()[0])
+    _log.info("BASE_DIR: %s", BASE_DIR)
+    _log.info("DB: %s", DB_PATH)
     if settings.get("auto_start_aria2", True):
         aria2_start()
-    print("\n  === ComfyUI 模型管理器 v5.1 ===\n")
+    # 开机自启动同步注册表：**只在启动时做**。保存设置时不碰注册表 ——
+    # 测试里 POST /api/settings 会真写进用户注册表，不能忍（v6.0 约定）。
+    try:
+        from wwdm_app import gui as _gui
+        _gui.autostart.sync(bool(settings.get("autostart", False)))
+    except Exception as _e:                    # noqa: BLE001
+        _log.warning("开机自启动同步失败（不影响本次启动）：%s", _e)
 
     # ---- 管理器访问（web_host / web_port 重启后生效）----
     host = (settings.get("web_host") or "0.0.0.0").strip() or "0.0.0.0"
@@ -85,23 +97,58 @@ if __name__ == "__main__":
     RUNTIME_INFO.update({"host": host, "port": port, "lan_ips": lan_ips,
                          "started_at": time.time(), "token_enabled": token_on})
 
-    print("  本机访问: http://127.0.0.1:%d" % port)
+    _log.info("=== ComfyUI 模型管理器 v5.1 ===")
+    _log.info("本机访问: http://127.0.0.1:%d", port)
     if host == "0.0.0.0":
         for _ip in lan_ips:
-            print("  局域网访问: http://%s:%d%s"
-                  % (_ip, port, ("/?t=" + token) if token_on else ""))
+            _log.info("局域网访问: http://%s:%d%s",
+                      _ip, port, ("/?t=" + token) if token_on else "")
     else:
-        print("  已设为仅本机访问（可到管理器「设置 → 管理器访问」改成局域网可访问）")
+        _log.info("已设为仅本机访问（可到管理器「设置 → 管理器访问」改成局域网可访问）")
     if token_on:
-        print("  访问令牌: " + token)
-    _log.info("管理器启动 host=%s port=%s token_required=%s", host, port, token_on)
-    print("  提示: 改监听地址/端口需要重启管理器；访问令牌改动立即生效\n")
+        _log.info("访问令牌: %s", token)
+    _log.info("提示: 改监听地址/端口需要重启管理器；访问令牌改动立即生效")
 
-    # 自动打开浏览器（延迟 1.5s 等待 Flask 就绪）
-    def _open_browser():
-        time.sleep(1.5)
-        webbrowser.open("http://127.0.0.1:%d" % port)
-    threading.Thread(target=_open_browser, daemon=True).start()
+    # 自动打开浏览器（延迟 1.5s 等待 Flask 就绪）；--minimized 不弹
+    if not _minimized:
+        def _open_browser():
+            time.sleep(1.5)
+            webbrowser.open("http://127.0.0.1:%d" % port)
+        threading.Thread(target=_open_browser, daemon=True).start()
+
+    # ---- 路径 A：GUI 悬浮球（exe 双击的正常形态）----
+    # Flask 挪到子线程，主线程留给 tkinter mainloop（tkinter 必须主线程）。
+    # 服务起不来时 server_dead 事件置位，球会弹提示后自行消失 —— GUI 模式下
+    # 没有控制台，球是唯一反馈渠道。
+    if not _no_gui:
+        from wwdm_app import gui
+        if gui.should_run_gui():
+            dead = threading.Event()
+
+            def _serve():
+                try:
+                    app.run(host=host, port=port, debug=False, threaded=True)
+                except OSError as e:
+                    code = getattr(e, "winerror", None) or getattr(e, "errno", None)
+                    if code in (10048, 98, 48):
+                        _log.error("端口 %d 已被占用，管理器没能启动", port)
+                    else:
+                        _log.exception("启动失败：%s", e)
+                    dead.set()
+                except Exception as e:                   # noqa: BLE001
+                    _log.exception("Flask 启动异常：%s", e)
+                    dead.set()
+
+            threading.Thread(target=_serve, daemon=True).start()
+            try:
+                gui.fab.start(port=port, token=token,
+                              autostart_flag=bool(settings.get("autostart", False)),
+                              server_dead=dead)
+            finally:
+                _on_exit()
+            sys.exit(0)
+
+    # ---- 路径 B：降级（--no-gui / 无显示 / tkinter 缺失）：主线程直接跑 Flask ----
     try:
         # threaded=True：Werkzeug 默认单线程串行，一个慢请求（扫盘统计 / 上传大模型 /
         # 拉取 ComfyUI 日志）会把其它请求一起掐断，浏览器表现为偶发 ERR_CONNECTION_RESET。
@@ -110,12 +157,11 @@ if __name__ == "__main__":
     except OSError as e:
         code = getattr(e, "winerror", None) or getattr(e, "errno", None)
         if code in (10048, 98, 48):        # Windows / Linux / macOS 的「端口被占用」
-            print("\n  [ERROR] 端口 %d 已被占用，管理器没能启动。" % port)
-            print("  处理办法：关掉占用该端口的程序，或者在「设置 → 管理器访问」里"
-                  "换一个端口再重启。")
-            print("  查占用：netstat -ano | findstr :%d" % port)
+            _log.error("端口 %d 已被占用，管理器没能启动", port)
+            _log.error("处理办法：关掉占用该端口的程序，或在「设置 → 管理器访问」里换端口")
+            _log.error("查占用：netstat -ano | findstr :%d", port)
         else:
-            print("\n  [ERROR] 启动失败：%s" % e)
+            _log.exception("启动失败：%s", e)
         sys.exit(1)
     finally:
         _on_exit()

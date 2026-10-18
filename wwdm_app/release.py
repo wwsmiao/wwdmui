@@ -74,6 +74,10 @@ RELEASE_KEYS = (
     "wallpaper_path",
     "wallpaper_blur",
     "theme_preset",
+    # —— 桌面悬浮球（v6.0；autostart 同时进 BLANK，见下）——
+    "fab_visible",
+    "fab_pos",
+    "autostart",
     # —— 抖音素材提取 ——
     "douyin_cookie_file",
     "douyin_save_dir",
@@ -106,6 +110,9 @@ RELEASE_BLANK = (
     "wallpaper_path",
     "douyin_cookie_file",
     "douyin_save_dir",
+    # 开机自启：不能替买家决定「开机就启动管理器」，出包置空（=不开），
+    # 买家想用自己在设置里勾（v6.0）。
+    "autostart",
 )
 
 # --------------------------------------------------------------------------

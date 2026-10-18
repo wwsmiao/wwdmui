@@ -70,6 +70,10 @@ DEFAULT_SETTINGS = {
     "wallpaper_blur": 0,  # 壁纸毛玻璃效果：0=无玻璃，1-10=毛玻璃像素
     # 配色主题预设（与明暗 data-theme **正交**：preset 管强调色，theme 管明暗基底）
     "theme_preset": "watercolor",  # 见下方 THEME_PRESETS
+    # ---- 桌面悬浮球（v6.0；仅 exe GUI 模式有，--no-gui/无显示环境下降级不存在）----
+    "fab_visible": True,   # 启动后是否显示悬浮球（False=只留托盘图标）
+    "fab_pos": "",         # 悬浮球位置 "x,y"（空=默认右下角）；用户拖动后自动保存
+    "autostart": False,    # 开机自启动（写 Windows 注册表 Run 键，卸载/退出不清理）
     # 抖音提取
     "douyin_cookie_file": "",    # dy_cookie.json 文件路径
     "douyin_save_dir": "",       # 图片/视频保存目录
