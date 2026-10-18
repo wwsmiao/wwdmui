@@ -116,10 +116,11 @@ if __name__ == "__main__":
             webbrowser.open("http://127.0.0.1:%d" % port)
         threading.Thread(target=_open_browser, daemon=True).start()
 
-    # ---- 路径 A：GUI 悬浮球（exe 双击的正常形态）----
+    # ---- 路径 A：GUI 悬浮球 + 托盘（exe 双击的正常形态）----
     # Flask 挪到子线程，主线程留给 tkinter mainloop（tkinter 必须主线程）。
-    # 服务起不来时 server_dead 事件置位，球会弹提示后自行消失 —— GUI 模式下
-    # 没有控制台，球是唯一反馈渠道。
+    # 服务起不来时 server_dead 事件置位，球会弹提示后自行消失、托盘 tooltip
+    # 变「服务已停止」—— GUI 模式下没有控制台，它们是唯一反馈渠道。
+    # fab_visible=False（设置里关掉悬浮球）→ 只剩托盘，入口不丢。
     if not _no_gui:
         from wwdm_app import gui
         if gui.should_run_gui():
@@ -141,9 +142,10 @@ if __name__ == "__main__":
 
             threading.Thread(target=_serve, daemon=True).start()
             try:
-                gui.fab.start(port=port, token=token,
-                              autostart_flag=bool(settings.get("autostart", False)),
-                              server_dead=dead)
+                gui.run(port=port, token=token,
+                        autostart_flag=bool(settings.get("autostart", False)),
+                        server_dead=dead,
+                        fab_visible=bool(settings.get("fab_visible", True)))
             finally:
                 _on_exit()
             sys.exit(0)

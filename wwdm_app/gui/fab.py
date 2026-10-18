@@ -10,6 +10,10 @@
   * **左键拖动** → 移动位置，松手时钳制在屏幕内并写回 settings.json；
   * **右键** → 菜单：打开界面 / 复制访问地址 / 开机自启动切换 / 隐藏悬浮球 / 退出。
 
+v6.0(2) 起与托盘（:mod:`gui.tray`）共生：球窗是**共享 root 的 Toplevel**，
+托盘菜单可随时把球收起来/再拉起来（:meth:`FabBall.show` / :meth:`FabBall.hide`）。
+菜单动作本体在 :mod:`gui.actions`，两边共用一份。
+
 铁律（改动前必读）
 ----------------
 1. **tkinter 只在主线程创建/操作**。本模块不自己起线程；run.py 把 Flask 放
@@ -25,11 +29,8 @@
 环境冒烟。正常路径见 :func:`gui.should_run_gui`。
 """
 import os
-import sys
-import time
-import webbrowser
 
-from . import autostart, pos
+from . import actions, pos
 from .pos import FAB_SIZE
 
 _COLORS = {
@@ -73,44 +74,45 @@ class FabBall:
         self.token = token or ""
         self.autostart_flag = bool(autostart_flag)
         self.server_dead = server_dead      # threading.Event：Flask 子线程死了置位
-        self.root = None
+        self.root = None                    # tkinter 根（可能是与托盘共享的）
+        self._win = None                    # 球窗本体（Toplevel）
         self._canvas = None
         self._oval = None
         self._drag = None            # (x_root, y_root, moved) 拖动状态
         self._grab = (0, 0)
+        self._standalone = False     # True=自建 root（单球模式/冒烟），销毁时连根拔
+        self._after_id = None        # 探活定时器 id（销毁时 cancel）
 
     # ---------------- URL ----------------
     def ui_url(self, with_token=True):
-        base = "http://%s:%d" % (self.host, self.port)
-        if with_token and self.token:
-            base += "/?t=" + self.token
-        return base
+        return actions.ui_url(self.host, self.port, self.token,
+                              with_token=with_token)
 
     # ---------------- 启动 ----------------
-    def start(self, dry_run=False, smoke_ms=0):
-        """建窗并进入消息循环（阻塞，占用调用线程 —— 必须是主线程）。
+    def build(self, root):
+        """在给定 tkinter root 上建球窗（Toplevel）。幂等：已建则直接返回。
 
-        dry_run=True 只验参数不建窗；smoke_ms>0 建真窗但 N 毫秒后自毁
-        （无头 CI / 打包后冒烟「窗能建、属性不炸、几何正确」用，生产不传）。
+        与 :meth:`start` 的区别：不建自己的 root、不进 mainloop —— 供托盘
+        共享 root（v6.0(2)）与「只托盘」模式下由菜单重新拉起球用。
         """
-        if dry_run:
-            return True
+        if self._win is not None:
+            return self._win
         import tkinter as tk
-        enable_dpi_awareness()
-        root = tk.Tk()
         self.root = root
+        win = tk.Toplevel(root)
+        self._win = win
         sw, sh = root.winfo_screenwidth(), root.winfo_screenheight()
         x, y = pos.resolve_pos(_saved_pos(), (sw, sh))
-        root.overrideredirect(True)
-        root.attributes("-topmost", True)
-        root.geometry("%dx%d+%d+%d" % (FAB_SIZE, FAB_SIZE, x, y))
+        win.overrideredirect(True)
+        win.attributes("-topmost", True)
+        win.geometry("%dx%d+%d+%d" % (FAB_SIZE, FAB_SIZE, x, y))
         try:
             # Windows 专属：magenta 区域全透明 → 圆形 hitbox
-            root.wm_attributes("-transparentcolor", _COLORS["chroma"])
+            win.wm_attributes("-transparentcolor", _COLORS["chroma"])
         except Exception:
             pass                        # macOS/Linux 不支持：退化为圆角矩形
 
-        cv = tk.Canvas(root, width=FAB_SIZE, height=FAB_SIZE,
+        cv = tk.Canvas(win, width=FAB_SIZE, height=FAB_SIZE,
                        bg=_COLORS["chroma"], highlightthickness=0)
         self._canvas = cv
         self._oval = cv.create_oval(2, 2, FAB_SIZE - 2, FAB_SIZE - 2,
@@ -127,26 +129,83 @@ class FabBall:
         cv.bind("<Enter>", lambda e: self._paint(_COLORS["bg_hover"]))
         cv.bind("<Leave>", lambda e: self._paint(_COLORS["bg"]))
 
-        root.protocol("WM_DELETE_WINDOW", self._on_close)
+        win.protocol("WM_DELETE_WINDOW", self._on_close)
+        return win
+
+    def start(self, dry_run=False, smoke_ms=0):
+        """自建隐藏 root + 建球 + mainloop 阻塞（单球模式/冒烟用）。
+
+        dry_run=True 只验参数不建窗；smoke_ms>0 建真窗但 N 毫秒后自毁
+        （无头 CI / 打包后冒烟「窗能建、属性不炸、几何正确」用，生产不传）。
+        与托盘共生的正常路径走 :func:`gui.run`（共享 root），不经过这里。
+        """
+        if dry_run:
+            return True
+        import tkinter as tk
+        enable_dpi_awareness()
+        root = tk.Tk()
+        root.withdraw()                      # 根常驻隐藏，球是它的 Toplevel
+        self._standalone = True
+        self.build(root)
         if smoke_ms and int(smoke_ms) > 0:
             # 冒烟口子（见 start docstring）：到点自毁，不用人肉关
-            root.after(int(smoke_ms), root.destroy)
+            def _bye():
+                self._cancel_poll()
+                root.destroy()
+            root.after(int(smoke_ms), _bye)
         if self.server_dead is not None:
             self._poll_server()
         root.mainloop()
         return True
 
+    def is_visible(self):
+        """球窗是否在桌上（托盘菜单据此切「显示/隐藏」文案）。"""
+        if self._win is None:
+            return False
+        try:
+            return bool(self._win.winfo_exists())
+        except Exception:
+            return False
+
+    def show(self):
+        """显示悬浮球（托盘「显示悬浮球」用）；被隐藏过则重建并记住选择。"""
+        if self.is_visible():
+            return True
+        if self.root is None:
+            return False
+        try:
+            self.build(self.root)
+            _save_flag("fab_visible", True)
+            return True
+        except Exception:
+            return False
+
     def _poll_server(self):
         """每 500ms 看 Flask 子线程是否还活着；死了就收球并弹提示。
 
         GUI 模式下控制台不存在 —— 服务起不来（端口占用等）时球是唯一的
-        反馈渠道，不能留一个打不开界面的球在桌上。
+        反馈渠道，不能留一个打不开界面的球在桌上。``server_dead=None``
+        （冒烟/单测）时不轮询。
         """
-        if self.server_dead is not None and self.server_dead.is_set():
+        if self.server_dead is None:
+            return
+        if self.server_dead.is_set():
             self._die_no_server()
             return
-        if self.root is not None:
-            self.root.after(500, self._poll_server)
+        try:
+            if self.root is not None:
+                self._after_id = self.root.after(500, self._poll_server)
+        except Exception:
+            pass                        # root 已销毁（冒烟自毁/退出）：安静退出轮询
+
+    def _cancel_poll(self):
+        """掐掉挂起的探活定时器（root 销毁后它还撞 Tcl 会刷错误日志）。"""
+        aid, self._after_id = self._after_id, None
+        if aid and self.root is not None:
+            try:
+                self.root.after_cancel(aid)
+            except Exception:
+                pass
 
     def _die_no_server(self):
         try:
@@ -180,9 +239,9 @@ class FabBall:
             return
         gx, gy = getattr(self, "_grab", (0, 0))
         nx, ny = e.x_root - gx, e.y_root - gy
-        sw, sh = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
+        sw, sh = self._win.winfo_screenwidth(), self._win.winfo_screenheight()
         nx, ny = pos.clamp_pos(nx, ny, (sw, sh))
-        self.root.geometry("+%d+%d" % (nx, ny))
+        self._win.geometry("+%d+%d" % (nx, ny))
 
     def _on_release(self, e):
         moved = bool(self._drag and self._drag[2])
@@ -196,22 +255,15 @@ class FabBall:
         # 点右下角「关闭」只有一种来路：菜单里没有关闭，这里是系统兜底
         self._hide(save=False)
 
-    # ---------------- 动作 ----------------
+    # ---------------- 动作（本体在 gui/actions，托盘共用） ----------------
     def _open_ui(self):
-        try:
-            webbrowser.open(self.ui_url())
-        except Exception:
-            pass
+        actions.open_ui(self.host, self.port, self.token)
 
     def _copy_url(self):
-        try:
-            self.root.clipboard_clear()
-            self.root.clipboard_append(self.ui_url())
-        except Exception:
-            pass
+        actions.copy_url(self.root, self.host, self.port, self.token)
 
     def _persist_pos(self):
-        g = self.root.geometry()             # "56x56+x+y"
+        g = self._win.geometry()            # "56x56+x+y"
         try:
             xy = g.split("+", 1)[1]
             sx, sy = xy.split("+")
@@ -221,38 +273,34 @@ class FabBall:
             pass
 
     def _toggle_autostart(self):
-        want = not self.autostart_flag
-        ok = autostart.sync(want)
-        if ok:
+        want = actions.toggle_autostart()
+        if want is not None:
             self.autostart_flag = want
-            _save_flag("autostart", want)
 
     def _hide(self, save=True):
         if save:
             _save_flag("fab_visible", False)
+        win, self._win = self._win, None
+        self._canvas = None
+        self._oval = None
         try:
-            self.root.destroy()
+            if win is not None:
+                win.destroy()               # 只销球窗；共享 root 要留给托盘
         except Exception:
             pass
+        if self._standalone:
+            # 单球模式（无托盘）：球没了 root 也没有存在意义
+            try:
+                if self.root is not None:
+                    self._cancel_poll()
+                    self.root.destroy()
+            except Exception:
+                pass
 
     def _quit(self):
         # 铁律：不直接调 services.cleanup_all（global 重绑定非线程安全），
         # 走回环 HTTP 让 Flask 那侧自己清理后 os._exit。
-        self._http_post("/api/system/quit")
-
-    def _http_post(self, path):
-        import json
-        import urllib.request
-        url = "http://%s:%d%s" % (self.host, self.port, path)
-        data = json.dumps({}).encode("utf-8")
-        req = urllib.request.Request(url, data=data, method="POST",
-                                     headers={"Content-Type": "application/json"})
-        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        try:
-            opener.open(req, timeout=3).read()
-        except Exception:
-            # 回环失败（服务没起来/端口错）也别让球卡在桌上：直接退
-            os._exit(0)
+        actions.quit_app(self.host, self.port)
 
     # ---------------- 右键菜单 ----------------
     def _on_menu(self, e):
@@ -260,7 +308,7 @@ class FabBall:
         m = tk.Menu(self.root, tearoff=0, font=("Microsoft YaHei", 10))
         m.add_command(label="打开管理器界面", command=self._open_ui)
         m.add_command(label="复制访问地址", command=self._copy_url)
-        m.add_command(label=("关闭开机自启动" if self.autostart_flag else "开机自动启动"),
+        m.add_command(label=actions.autostart_label(actions.autostart_enabled()),
                       command=self._toggle_autostart)
         m.add_separator()
         m.add_command(label="隐藏悬浮球", command=lambda: self._hide(save=True))
@@ -278,12 +326,7 @@ def _saved_pos():
 
 
 def _save_flag(key, value):
-    from ..core import config
-    config.settings[key] = value
-    try:
-        config.save_settings(config.settings)
-    except Exception:
-        pass
+    actions.save_flag(key, value)
 
 
 def start(port, token="", autostart_flag=False, dry_run=False, server_dead=None,

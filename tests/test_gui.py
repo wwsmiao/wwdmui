@@ -1,24 +1,30 @@
 # -*- coding: utf-8 -*-
-"""v6.0 桌面悬浮球：位置纯函数 / GUI 降级判定 / 开机自启 / 设置校验 / 依赖方向。
+"""v6.0 桌面悬浮球 + 托盘：位置纯函数 / GUI 降级判定 / 开机自启 / 设置校验 /
+托盘命令路由 / 依赖方向。
 
-GUI 本身（tkinter 窗口）**不可单测**，这里只测能测的：
+GUI 本身（tkinter 窗口、Shell_NotifyIcon 托盘）**不可单测**，这里只测能测的：
   * pos 的位置解析、钳制、默认值（纯函数，换分辨率不丢球靠它）；
   * should_run_gui 的三条降级路径；
   * autostart 的注册表读写（winreg 打桩，绝不碰真注册表）；
   * 设置 API 对三个新键的校验 —— 特别是 **保存设置不许写注册表**
     （测试跑 POST 会真改用户环境，这个断言是防回归的闸门）；
+  * 托盘的纯逻辑：tooltip 截断、NOTIFYICONDATAW 字段、命令路由
+    （打桩 actions / 假 fab，不建真托盘）、dry_run；
   * 依赖方向：gui → core，**不许 import services/blueprints**；
-    fab.py 顶层不许 import tkinter（延迟到 start()，否则 import 包就要 Tk）。
+    fab/tray/__init__ 顶层不许 import tkinter（延迟到方法内，否则 import
+    包就要 Tk，无 tkinter 的测试解释器直接炸）。
 """
 import ast
+import ctypes
 import io
 import os
+import threading
 
 import pytest
 
 import wwdm_app.services as svc
 from wwdm_app.core import config
-from wwdm_app.gui import autostart, pos
+from wwdm_app.gui import actions, autostart, pos, tray
 
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -268,7 +274,187 @@ class TestSettingsApi:
 
 
 # ============================================================
-# ⑤ 发布包白名单
+# ⑤ 托盘（Shell_NotifyIcon ctypes）—— 只测不建真托盘的部分
+# ============================================================
+class TestTray:
+    """托盘的动作路由打在这里：WndProc / Shell_NotifyIcon 走真 Win32 太依赖
+    桌面环境（且 CI 无显示会挂），冒烟口子 smoke_ms 留给 D:\\python312 手工跑。
+    """
+
+    def test_tip_truncated(self):
+        assert tray.format_tip("abc") == "abc"
+        assert tray.format_tip(None) == "None"
+        assert len(tray.format_tip("x" * 300)) == 127
+
+    def test_tip_shows_dead_server(self):
+        ev = threading.Event()
+        ic = tray.TrayIcon(7861, server_dead=ev)
+        assert "服务已停止" not in ic._tip_text()
+        ev.set()
+        assert "服务已停止" in ic._tip_text()
+
+    def test_command_ids_unique(self):
+        ids = [tray.CMD_OPEN, tray.CMD_COPY, tray.CMD_AUTOSTART,
+               tray.CMD_TOGGLE_FAB, tray.CMD_QUIT]
+        assert len(set(ids)) == 5
+
+    def test_nid_fields(self):
+        """NOTIFYICONDATAW 字段顺序/容量（cbSize 错 → Shell_NotifyIcon 静默失败）。
+
+        超长串赋值是 **ValueError 而非静默截断** —— 这就是 format_tip 必须
+        先把 tooltip 钳到 127 的原因（否则一条长 tip 直接炸托盘）。
+        """
+        nid = tray.NOTIFYICONDATAW()
+        nid.cbSize = ctypes.sizeof(tray.NOTIFYICONDATAW)
+        nid.szTip = "hi"
+        assert nid.szTip == "hi"
+        assert nid.cbSize > 0
+        with pytest.raises(ValueError):
+            nid.szTip = "x" * 500
+
+    def test_dry_run(self):
+        assert tray.TrayIcon(7861).start(dry_run=True) is True
+
+    def test_dispatch_open(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(tray.actions, "open_ui",
+                            lambda h, p, t="": calls.append((h, p, t)) or True)
+        tray.TrayIcon(7861, host="127.0.0.1", token="tk")._dispatch(tray.CMD_OPEN)
+        assert calls == [("127.0.0.1", 7861, "tk")]
+
+    def test_dispatch_copy_uses_root(self):
+        class _Clip:
+            def __init__(self):
+                self.buf = None
+
+            def clipboard_clear(self):
+                self.buf = ""
+
+            def clipboard_append(self, s):
+                self.buf = s
+
+        clip = _Clip()
+        ic = tray.TrayIcon(7861, host="127.0.0.1", token="")
+        ic._root = clip
+        ic._dispatch(tray.CMD_COPY)
+        assert clip.buf == "http://127.0.0.1:7861"
+
+    def test_dispatch_autostart_syncs_fab(self, monkeypatch):
+        monkeypatch.setattr(tray.actions, "toggle_autostart", lambda: True)
+        fab_stub = type("F", (), {"autostart_flag": False})()
+        tray.TrayIcon(7861, fab=fab_stub)._dispatch(tray.CMD_AUTOSTART)
+        assert fab_stub.autostart_flag is True
+
+    def test_dispatch_autostart_none_keeps_fab(self, monkeypatch):
+        """注册表写失败（toggle 返回 None）不许把 fab 缓存改成相反值。"""
+        monkeypatch.setattr(tray.actions, "toggle_autostart", lambda: None)
+        fab_stub = type("F", (), {"autostart_flag": True})()
+        tray.TrayIcon(7861, fab=fab_stub)._dispatch(tray.CMD_AUTOSTART)
+        assert fab_stub.autostart_flag is True
+
+    def test_dispatch_quit(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(tray.actions, "quit_app",
+                            lambda h, p: calls.append((h, p)))
+        tray.TrayIcon(7861, host="h")._dispatch(tray.CMD_QUIT)
+        assert calls == [("h", 7861)]
+
+    def test_toggle_fab_show_hide(self):
+        state = {"visible": False, "saved": None}
+
+        class _Fab:
+            def is_visible(self):
+                return state["visible"]
+
+            def show(self):
+                state["visible"] = True
+
+            def hide(self, save=True):
+                state["visible"] = False
+                state["saved"] = save
+
+        ic = tray.TrayIcon(7861, fab=_Fab())
+        ic._toggle_fab()                       # 不可见 → 显示
+        assert state["visible"] is True
+        ic._toggle_fab()                       # 可见 → 隐藏并存盘
+        assert state["visible"] is False
+        assert state["saved"] is True
+
+    def test_toggle_fab_no_fab_is_noop(self):
+        tray.TrayIcon(7861, fab=None)._toggle_fab()   # 不许抛
+
+    def test_fab_label_follows_visibility(self):
+        vis = type("F", (), {"is_visible": lambda self: True})()
+        hid = type("F", (), {"is_visible": lambda self: False})()
+        assert tray.TrayIcon(7861, fab=vis)._fab_label() == "隐藏悬浮球"
+        assert tray.TrayIcon(7861, fab=hid)._fab_label() == "显示悬浮球"
+        assert tray.TrayIcon(7861, fab=None)._fab_label() == "显示悬浮球"
+
+
+# ============================================================
+# ⑥ 托盘/悬浮球公共动作（gui.actions）
+# ============================================================
+class TestActions:
+    def test_ui_url_token(self):
+        assert actions.ui_url("h", 1, "t") == "http://h:1/?t=t"
+        assert actions.ui_url("h", 1, "") == "http://h:1"
+        assert actions.ui_url("h", 1, "t", with_token=False) == "http://h:1"
+
+    def test_autostart_label(self):
+        assert actions.autostart_label(True) == "关闭开机自启动"
+        assert actions.autostart_label(False) == "开机自动启动"
+
+    def test_toggle_autostart_writes_registry_and_settings(self, monkeypatch):
+        calls = []
+
+        class _FakeAS:
+            @staticmethod
+            def sync(desired):
+                calls.append(desired)
+                return True
+
+        monkeypatch.setattr(tray.actions, "_autostart", _FakeAS)
+        svc.settings["autostart"] = False
+        want = tray.actions.toggle_autostart()
+        assert want is True
+        assert calls == [True]
+        assert svc.settings["autostart"] is True
+
+    def test_toggle_autostart_registry_fail_returns_none(self, monkeypatch):
+        class _FakeAS:
+            @staticmethod
+            def sync(desired):
+                return False
+
+        monkeypatch.setattr(tray.actions, "_autostart", _FakeAS)
+        assert tray.actions.toggle_autostart() is None
+
+    def test_quit_falls_back_to_exit(self, monkeypatch):
+        """回环失败 → 直接 os._exit，不把 GUI 留在桌上。
+
+        ⚠️ os._exit 是**立即终止进程**（不抛异常、不走 finally）—— 直接调会把
+        pytest 本身杀掉（症状：进度条停在中途、无汇总无 junit）。必须打桩成
+        抛 SystemExit 才能观测。
+        """
+        monkeypatch.setattr(tray.actions, "http_post", lambda *a: False)
+
+        def _fake_exit(code):
+            raise SystemExit(code)
+
+        monkeypatch.setattr(tray.actions.os, "_exit", _fake_exit)
+        with pytest.raises(SystemExit):
+            tray.actions.quit_app("127.0.0.1", 7861)
+
+    def test_quit_posts_loopback(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(tray.actions, "http_post",
+                            lambda h, p, path: calls.append((h, p, path)) or True)
+        tray.actions.quit_app("127.0.0.1", 7861)
+        assert calls == [("127.0.0.1", 7861, "/api/system/quit")]
+
+
+# ============================================================
+# ⑦ 发布包白名单
 # ============================================================
 class TestReleaseWhitelist:
     def test_in_release_keys(self):
@@ -287,7 +473,7 @@ class TestReleaseWhitelist:
 
 
 # ============================================================
-# ⑥ 依赖方向与延迟 import（结构铁律）
+# ⑧ 依赖方向与延迟 import（结构铁律）
 # ============================================================
 class TestStructure:
     def _imports(self, path):
@@ -310,10 +496,10 @@ class TestStructure:
                 assert "services" not in mod and "blueprints" not in mod, \
                     "%s 不许 import 业务层：%s" % (fn, mod)
 
-    def test_fab_defers_tkinter(self):
-        """fab.py 顶层不许 import tkinter —— 否则 import wwdm_app.gui 就要 Tk，
-        pytest / 无头环境直接炸。tkinter 只许出现在 start() 函数体里。"""
-        path = os.path.join(GUI_DIR, "fab.py")
+    def _assert_no_top_tkinter(self, fn):
+        """顶层不许 import tkinter —— 否则 import wwdm_app.gui 就要 Tk，
+        pytest / 无 tkinter 的精简解释器直接炸。tkinter 只许出现在方法体里。"""
+        path = os.path.join(GUI_DIR, fn)
         with io.open(path, "rb") as f:
             tree = ast.parse(f.read().decode("utf-8"))
         top = {n for n in tree.body if isinstance(n, (ast.Import, ast.ImportFrom))}
@@ -321,16 +507,30 @@ class TestStructure:
             names = ([a.name for a in node.names]
                      if isinstance(node, ast.Import) else [node.module or ""])
             assert not any("tkinter" in n for n in names), \
-                "fab.py 顶层 import 了 tkinter，必须延迟到 start()"
+                "%s 顶层 import 了 tkinter，必须延迟到方法内" % fn
+
+    def test_fab_defers_tkinter(self):
+        self._assert_no_top_tkinter("fab.py")
+
+    def test_tray_defers_tkinter(self):
+        """tray.py 同理：ctypes 消息窗 + tkinter 菜单都只在方法里建。"""
+        self._assert_no_top_tkinter("tray.py")
+
+    def test_package_defers_tkinter(self):
+        """__init__.py 的 run() 里才 import tkinter，顶层不许。"""
+        self._assert_no_top_tkinter("__init__.py")
 
     def test_run_py_has_gui_branch(self):
-        """run.py 入口三分支：--no-gui / GUI 悬浮球 / 降级主线程。"""
+        """run.py 入口三分支：--no-gui / GUI 悬浮球+托盘 / 降级主线程。"""
         with io.open(os.path.join(ROOT, "run.py"), "rb") as f:
             src = f.read().decode("utf-8")
         assert "gui.should_run_gui()" in src
         assert '"--no-gui" in sys.argv' in src
         assert '"--minimized" in sys.argv' in src
         assert "server_dead=dead" in src
+        # v6.0(2)：GUI 分支走 gui.run 协调入口，且 fab_visible 真正生效
+        assert "gui.run(port=port" in src
+        assert 'settings.get("fab_visible", True)' in src
         # 降级路径仍在：app.run 主线程（两处 except 里的日志是同一模式的两次出现）
         assert src.count("app.run(host=host, port=port, debug=False, threaded=True)") == 2
 
@@ -340,6 +540,8 @@ class TestStructure:
         v6.0 踩过：写成 ``.core`` 解析成 ``wwdm_app.gui.core`` 直接
         ModuleNotFoundError，而 dry_run 冒烟在建窗之前就返回、覆盖不到 ——
         这个用例就是堵那个盲区的（打桩在 conftest，不会写真 settings.json）。
+        v6.0(2) 起 fab/tray 的 settings 访问都走 :mod:`gui.actions`，桥只剩
+        这一处，更要盯死。
         """
         from wwdm_app.gui import fab
         from wwdm_app import gui
@@ -351,3 +553,7 @@ class TestStructure:
         fab._save_flag("fab_visible", False)
         assert svc.settings["fab_visible"] is False
         svc.settings["fab_visible"] = True      # 还原，别污染同文件后续用例
+        svc.settings["autostart"] = True
+        assert tray.actions.autostart_enabled() is True
+        svc.settings["autostart"] = False
+        assert tray.actions.autostart_enabled() is False
