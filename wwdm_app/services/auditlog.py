@@ -27,6 +27,7 @@ AUDIT_ACTIONS = {
     "localfile.move":    "移动本地文件",
     "localfile.mkdir":   "新建文件夹",
     "localfile.upload":  "上传文件",
+    "localfile.save":    "保存本地文件",
     "plugin.delete":     "删除插件记录",
     "comfyui.start":     "启动 ComfyUI",
     "comfyui.stop":      "停止 ComfyUI",
@@ -55,13 +56,58 @@ def _client_ip():
     return ""
 
 
-def audit(action, target="", detail="", ok=True):
-    """记一条审计日志。**永不抛异常、永不阻塞业务**。"""
+def _audit_log_path():
+    """审计文件日志路径：``wwdm_app/static/logs/audit.log``。"""
+    import os
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    d = os.path.join(base, "static", "logs")
     try:
-        coredb.audit_log_add(action, target=target, detail=detail,
-                             ip=_client_ip(), ok=bool(ok))
+        os.makedirs(d, exist_ok=True)
+    except Exception:
+        return None
+    return os.path.join(d, "audit.log")
+
+
+def _write_file_log(action, target, detail, ip, ok):
+    """静默追加一行 JSONL；超过 5MB 轮转成 .1。任何失败都吞掉。"""
+    try:
+        import json
+        import os
+        import time
+        path = _audit_log_path()
+        if not path:
+            return
+        try:
+            if os.path.getsize(path) > 5 * 1024 * 1024:
+                os.replace(path, path + ".1")
+        except OSError:
+            pass
+        rec = {
+            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "action": action,
+            "target": str(target or "")[:500],
+            "detail": str(detail or "")[:2000],
+            "ip": ip or "",
+            "ok": bool(ok),
+        }
+        with open(path, "a", encoding="utf-8", newline="\n") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     except Exception:
         pass
+
+
+def audit(action, target="", detail="", ok=True):
+    """记一条审计：内部 DB 保留（兼容 /api/audit），并静默写 static/logs/。
+
+    v6.4：界面不再展示审计，改为**静默文件日志**（默认 static/logs/audit.log）。
+    """
+    ip = _client_ip()
+    try:
+        coredb.audit_log_add(action, target=target, detail=detail,
+                             ip=ip, ok=bool(ok))
+    except Exception:
+        pass
+    _write_file_log(action, target, detail, ip, bool(ok))
 
 
 def audit_result(action, r, target="", extra=""):

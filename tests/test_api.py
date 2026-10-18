@@ -32,7 +32,6 @@ class TestIndex:
         'id="tcDraw"', 'id="tcMask"', 'id="tcList"', 'id="ctxMenu"',
         'id="tcActions"',              # 任务中心清理区
         'id="mbg"', 'id="batmbg"', 'id="pmbg"', 'id="rlogModal"',
-        'id="presetRow"',              # v5.1：设置页配色预设 swatch 行
     ])
     def test_skeleton_anchors(self, client, anchor):
         assert anchor in client.get("/").get_data(as_text=True)

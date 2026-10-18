@@ -207,7 +207,9 @@ def aria2_stop():
 def _do_start(rid, m, use_mirror):
     d = os.path.join(get_comfyui_dir(), m["save_path"])
     os.makedirs(d, exist_ok=True)
-    url = convert_to_mirror(m["download_url"]) if use_mirror else m["download_url"]
+    # v6.4：HF 链接一律按全局 hf_channel 改写；convert_to_mirror 内部已判
+    # 非 huggingface.co 原样返回，所以不用再区分「国内/官方」按钮。
+    url = convert_to_mirror(m["download_url"])
     r, e = aria2_rpc("aria2.addUri", [[url], {"dir": d, "out": m["name"], "continue": "true"}])
     if e:
         log.error("[下载失败] %s: %s", m["name"], e)
@@ -1754,6 +1756,7 @@ from .files import (                                              # noqa: E402,F
     _send_to_trash, _unique_path, open_path_in_explorer,
     local_models_delete, local_models_rename, local_models_upload,
     local_models_mkdir, local_models_move, local_models_folder_tree, local_models_open,
+    local_abs_path, local_text_read, local_text_save, TEXT_LOCAL_EXTS,
 )
 
 # ---- 域 7/11：workflows ----

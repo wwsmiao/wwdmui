@@ -45,6 +45,52 @@ def menu_entries(state):
     ]
 
 
+def add_look_menu(menu, host, port):
+    """给右键菜单追加「外观主题 / 背景壁纸 / 毛玻璃」。
+
+    这三项已从网页「全局设置」移除，统一由悬浮球右键配置；写 server 后
+    网页经 SSE 即时跟随（init.js 会调 applyPreset / applyWallpaper）。
+    """
+    from PyQt6.QtWidgets import QFileDialog
+
+    from ..core import config
+    from ..core.config import THEME_PRESETS
+
+    def _set(key, value):
+        if actions.set_setting(host, port, key, value):
+            try:
+                config.settings[key] = value
+            except Exception:
+                pass
+
+    sub = menu.addMenu("外观主题")
+    cur = str(config.settings.get("theme_preset", "watercolor"))
+    for key, name in THEME_PRESETS.items():
+        act = sub.addAction(("\u2713 " if key == cur else "\u3000") + name)
+        act.triggered.connect(lambda _=False, k=key: _set("theme_preset", k))
+
+    wp = menu.addMenu("背景壁纸")
+    if str(config.settings.get("wallpaper_path", "") or "").strip():
+        wp.addAction("移除壁纸").triggered.connect(
+            lambda: _set("wallpaper_path", ""))
+    def _pick():
+        path, _f = QFileDialog.getOpenFileName(
+            None, "选择壁纸", "",
+            "图片/视频 (*.png *.jpg *.jpeg *.webp *.gif *.mp4 *.webm);;所有文件 (*.*)")
+        if path:
+            _set("wallpaper_path", path)
+    wp.addAction("选择图片/视频…").triggered.connect(_pick)
+
+    blur = menu.addMenu("毛玻璃")
+    try:
+        cur_b = int(config.settings.get("wallpaper_blur", 0) or 0)
+    except Exception:
+        cur_b = 0
+    for label, val in (("关", 0), ("弱", 2), ("中", 5), ("强", 8)):
+        act = blur.addAction(("\u2713 " if val == cur_b else "\u3000") + label)
+        act.triggered.connect(lambda _=False, v=val: _set("wallpaper_blur", v))
+
+
 _FAB_CLASS = None
 
 
@@ -207,6 +253,7 @@ def _fab_class():
                 act = m.addAction(label)
                 act.triggered.connect(
                     lambda checked=False, k=key: self._on_action(k))
+            add_look_menu(m, self.host, self.port)
             m.exec(gpos)
 
         def _on_action(self, key):

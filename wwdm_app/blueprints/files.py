@@ -4,7 +4,9 @@
 只放路由，不含业务逻辑；业务实现见 services/files.py。
 `_scope_arg` 原先定义在 routes.py 模块级，只被这 10 条路由使用，一并搬过来。
 """
-from flask import Blueprint, jsonify, request
+import os
+
+from flask import Blueprint, jsonify, request, send_file
 
 from .. import services as svc
 
@@ -112,3 +114,29 @@ def api_local_mkdir():
                      target=str(d.get("rel") or "")[:200],
                      extra="→ %s" % (d.get("name") or ""))
     return jsonify(r)
+
+@bp.route("/api/models/local/text", methods=["GET", "POST"])
+def api_local_text():
+    """读/写文本文件（本地插件代码查看与编辑）。
+
+    GET  ?rel=&scope=  → {ok, text, path, name}
+    POST JSON {rel, scope, text} → {ok, msg}
+    路径统一走 services 的 ``_local_abs``（内含 ``_safe_path`` 根目录校验）。
+    """
+    if request.method == "GET":
+        return jsonify(svc.local_text_read(
+            request.args.get("rel", ""), _scope_arg(request.args.get("scope"))))
+    d = request.get_json(force=True, silent=True) or {}
+    r = svc.local_text_save(d.get("rel", ""), _scope_arg(d.get("scope")),
+                            d.get("text", ""))
+    svc.audit_result("localfile.save", r, target=str(d.get("rel") or "")[:200])
+    return jsonify(r)
+
+@bp.route("/api/models/local/raw", methods=["GET"])
+def api_local_raw():
+    """原样输出文件（图片 / 视频预览、二进制下载）。"""
+    p = svc.local_abs_path(request.args.get("rel", ""),
+                           _scope_arg(request.args.get("scope")))
+    if not p or not os.path.isfile(p):
+        return jsonify({"ok": False, "msg": "文件不存在"}), 404
+    return send_file(p)

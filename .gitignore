@@ -59,3 +59,5 @@ Thumbs.db
 
 # 运行日志（logs/wwdm.log，自动滚动）
 logs/
+# 审计静默日志（static/logs/audit.log，v6.4）
+wwdm_app/static/logs/

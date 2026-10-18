@@ -73,7 +73,7 @@
         <option value="name_asc">名称 A-Z</option><option value="name_desc">名称 Z-A</option>
         <option value="mtime_desc">修改时间：最新在前</option><option value="mtime_asc">修改时间：最早在前</option>
       </select>
-      <span class="mlhint"><i class="bi bi-mouse2"></i> 右键可新建文件夹 / 上传文件 / 上传文件夹 / 重命名 / 移动 / 删除，空白处右键同样可用</span>
+      <span class="mlhint"><i class="bi bi-mouse2"></i> 右键可新建文件夹 / 上传文件 / 上传文件夹 / 重命名 / 移动 / 删除；<b>双击代码文件可编辑（带行号），双击图片可直接查看</b></span>
       <span style="flex:1"></span>
       <span style="font-size:11.5px;color:var(--text3)">已选 <strong id="lplSelCnt" style="color:var(--cyan)">0</strong></span>
       <span id="lplStat" style="color:var(--text3);font-size:12px"></span>
@@ -86,4 +86,21 @@
       </tr></thead><tbody id="lplTbody"></tbody></table>
     </div></div>
   </div><!-- /#plmode-local -->
+
+  <!-- v6.4 本地插件代码编辑器（双击代码文件打开；图片双击直接预览） -->
+  <div class="lgmodal-mask" id="lpCodeModal" style="display:none;position:fixed;z-index:1200">
+    <div style="width:min(1040px,94vw);height:min(78vh,760px);display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 18px 60px rgba(0,0,0,.28)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div id="lpCodeTitle" style="font-weight:700;font-size:14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">编辑代码</div>
+        <button class="btn btn6 btn-sm" onclick="lpCodeReload()"><i class="bi bi-arrow-clockwise"></i> 重新载入</button>
+        <button class="btn btn1 btn-sm" onclick="lpCodeSave()"><i class="bi bi-save"></i> 保存</button>
+        <button class="btn btn2 btn-sm" onclick="lpCodeClose()">关闭</button>
+      </div>
+      <div style="flex:1;min-height:0;display:flex;background:var(--panel2);border-radius:10px;overflow:hidden">
+        <pre id="lpCodeNo" style="margin:0;padding:10px 8px;text-align:right;color:var(--text3);background:transparent;user-select:none;overflow:hidden;font:12px/1.5 Consolas,monospace"></pre>
+        <textarea id="lpCode" spellcheck="false" style="flex:1;border:none;outline:none;padding:10px 12px 10px 8px;background:transparent;color:var(--text);font:12px/1.5 Consolas,monospace;resize:none;white-space:pre;overflow:auto"></textarea>
+      </div>
+      <div id="lpCodeMsg" style="margin-top:8px;color:var(--text3);font-size:12px">双击本地插件里的代码文件即可打开</div>
+    </div>
+  </div>
 </div>

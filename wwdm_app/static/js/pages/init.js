@@ -163,11 +163,26 @@ else{cuiCheckStatus()}
     var cur=document.documentElement.getAttribute('data-theme')||currentTheme();
     if(s!==cur)applyTheme(s,false);
   }
+  var _wpSig='';
+  function _applyRemoteState(d){
+    if(!d)return;
+    _applyRemoteTheme(d.ui_theme);
+    try{
+      if(typeof applyPreset==='function' && d.theme_preset){
+        if(document.documentElement.getAttribute('data-preset')!==d.theme_preset)
+          applyPreset(d.theme_preset);
+      }
+      if(typeof applyWallpaper==='function' && d.wallpaper_path!==undefined){
+        var sig=(d.wallpaper_path||'')+'|'+(d.wallpaper_blur||0);
+        if(sig!==_wpSig){_wpSig=sig;applyWallpaper(d.wallpaper_path,d.wallpaper_blur);}
+      }
+    }catch(e){}
+  }
   try{
     if(window.EventSource){
       var _themeES=new EventSource('/api/theme/stream');
       _themeES.onmessage=function(ev){
-        try{var d=JSON.parse(ev.data||'{}');_applyRemoteTheme(d&&d.ui_theme)}catch(e){}
+        try{var d=JSON.parse(ev.data||'{}');_applyRemoteState(d)}catch(e){}
       };
       // onerror 时浏览器会自动重连；下面的轮询继续兜底
     }
@@ -176,7 +191,7 @@ else{cuiCheckStatus()}
   function pollTheme(){
     if(Date.now()-_themeLocalAt<5000)return;
     fetch('/api/settings',{cache:'no-store'}).then(function(r){return r.json()})
-      .then(function(d){_applyRemoteTheme(d&&d.ui_theme);}).catch(function(){});
+      .then(function(d){_applyRemoteState(d);}).catch(function(){});
   }
   setInterval(pollTheme,5000);
 

@@ -74,3 +74,102 @@ async function fetchClAllStatus(){
     if(!any){clearInterval(plProgTimer);plProgTimer=null;plLogStatus('空闲')}
   }catch(e){}
 }
+
+// ============================================================
+// v6.4 本地插件：双击代码文件 → 行号编辑器（可保存）；图片/其他 → 直出预览
+// ============================================================
+var _lpCodeRel = '', _lpCodeScope = 'plugins';
+
+function lpIsImg(rel) {
+  return /\.(png|jpe?g|gif|webp|bmp|svg|ico|avif)$/i.test(rel || '');
+}
+function lpIsText(rel) {
+  return /\.(py|json|txt|md|ya?ml|toml|ini|cfg|js|css|html?|xml|csv|log|bat|cmd|ps1|sh|gitignore|gitattributes|env|sql)$/i.test(rel || '');
+}
+function lpOpenRaw(rel, scope) {
+  window.open('/api/models/local/raw?scope=' + encodeURIComponent(scope || 'plugins')
+    + '&rel=' + encodeURIComponent(rel), '_blank');
+}
+function lpOnFileDblClick(rel, scope) {
+  if (!rel) return;
+  if (lpIsImg(rel)) { lpOpenRaw(rel, scope); return; }
+  if (lpIsText(rel)) { lpCodeOpen(rel, scope); return; }
+  lpOpenRaw(rel, scope);
+}
+function lpCodeSync() {
+  var ta = document.getElementById('lpCode');
+  var no = document.getElementById('lpCodeNo');
+  if (!ta || !no) return;
+  var n = ta.value.split('\n').length;
+  var arr = [];
+  for (var i = 1; i <= n; i++) arr.push(i);
+  no.textContent = arr.join('\n');
+  no.scrollTop = ta.scrollTop;
+}
+function lpCodeOpen(rel, scope) {
+  _lpCodeRel = rel || '';
+  _lpCodeScope = scope || 'plugins';
+  var m = document.getElementById('lpCodeModal');
+  if (!m) return;
+  m.style.display = 'flex';
+  document.getElementById('lpCodeTitle').textContent = '编辑：' + _lpCodeRel;
+  document.getElementById('lpCodeMsg').textContent = '加载中…';
+  document.getElementById('lpCode').value = '';
+  document.getElementById('lpCodeNo').textContent = '';
+  fetch('/api/models/local/text?scope=' + encodeURIComponent(_lpCodeScope)
+    + '&rel=' + encodeURIComponent(_lpCodeRel))
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (!j.ok) {
+        document.getElementById('lpCodeMsg').textContent = j.msg || '读取失败';
+        return;
+      }
+      document.getElementById('lpCode').value = j.text || '';
+      document.getElementById('lpCodeMsg').textContent = (j.name || '') + ' · Ctrl+S 保存';
+      lpCodeSync();
+    }).catch(function (e) {
+      document.getElementById('lpCodeMsg').textContent = '读取失败: ' + e.message;
+    });
+}
+function lpCodeClose() {
+  var m = document.getElementById('lpCodeModal');
+  if (m) m.style.display = 'none';
+}
+function lpCodeReload() {
+  if (_lpCodeRel) lpCodeOpen(_lpCodeRel, _lpCodeScope);
+}
+function lpCodeSave() {
+  var ta = document.getElementById('lpCode');
+  if (!ta) return;
+  var msg = document.getElementById('lpCodeMsg');
+  msg.textContent = '保存中…';
+  fetch('/api/models/local/text', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rel: _lpCodeRel, scope: _lpCodeScope, text: ta.value })
+  }).then(function (r) { return r.json(); }).then(function (j) {
+    msg.textContent = j.ok ? '已保存' : ('保存失败: ' + (j.msg || ''));
+    if (j.ok) notify('已保存 ' + (j.path || ''));
+  }).catch(function (e) { msg.textContent = '保存失败: ' + e.message; });
+}
+(function () {
+  document.addEventListener('dblclick', function (e) {
+    var tr = e.target && e.target.closest ? e.target.closest('#lplTbody tr[data-rel]') : null;
+    if (!tr || tr.getAttribute('data-kind') === 'folder') return;
+    lpOnFileDblClick(tr.getAttribute('data-rel'), 'plugins');
+  });
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && String(e.key).toLowerCase() === 's') {
+      var m = document.getElementById('lpCodeModal');
+      if (m && m.style.display !== 'none') { e.preventDefault(); lpCodeSave(); }
+    }
+    if (e.key === 'Escape') lpCodeClose();
+  });
+  var ta = document.getElementById('lpCode');
+  if (ta) {
+    ta.addEventListener('input', lpCodeSync);
+    ta.addEventListener('scroll', function () {
+      var no = document.getElementById('lpCodeNo');
+      if (no) no.scrollTop = ta.scrollTop;
+    });
+  }
+})();

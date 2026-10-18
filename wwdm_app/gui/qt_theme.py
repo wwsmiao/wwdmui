@@ -137,7 +137,8 @@ def qss():
     QLabel#Hint { color: %(text2)s; font-size: 9pt; }
     QLabel#Dirty { color: %(amber)s; font-size: 9pt; }
     QLabel#DlgBody { color: %(text)s; }
-    QLineEdit#NoteTitle { font-size: 13pt; font-weight: 600; }
+    QLineEdit#NoteTitle { font-size: 13pt; font-weight: 600; border: none; background: transparent; }
+    QLineEdit#NoteSearch, QTextEdit#NoteBody, QListWidget#NoteList { border: none; }
     QPushButton#DlgClose {
         background: transparent; border: none; color: %(text2)s;
         font-size: 12pt; border-radius: 7px;
@@ -261,10 +262,7 @@ def ui_classes():
             painter.fillRect(rect, base)
             _paint_blobs(painter, rect, 28 if dark else 22)
             painter.setClipping(False)
-            border = QColor(255, 255, 255, 60 if dark else 150)
-            painter.setPen(QPen(border, 1.2))
-            painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.drawPath(path)
+            # v6.4：不描边 —— 少框少线，靠半透明底与留白区分层级
             painter.end()
 
     class WashBackground(QWidget):

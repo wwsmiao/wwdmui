@@ -3,6 +3,24 @@
 // 工作流管理
 // ============================================================
 
+// 列表格式化（v6.4：此前误用了未定义的 fmtSize/fmtTime，导致整页报错）
+function fmtSize(b) {
+  b = Number(b) || 0;
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
+  return (b / 1073741824).toFixed(1) + ' GB';
+}
+function fmtTime(t) {
+  try {
+    var d = new Date(t);
+    if (isNaN(d.getTime())) return '';
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+      + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  } catch (e) { return ''; }
+}
+
 function wfInit() { wfDoBrowse(); }
 
 function wfDoBrowse() {

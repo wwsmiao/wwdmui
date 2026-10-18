@@ -200,6 +200,7 @@ def _impl():
             srow = QHBoxLayout()
             srow.setSpacing(6)
             self.search = QLineEdit()
+            self.search.setObjectName("NoteSearch")
             self.search.setPlaceholderText("搜索标题/正文…")
             self.search.setClearButtonEnabled(True)
             self.search.returnPressed.connect(lambda: self._load_list(False))
@@ -222,6 +223,7 @@ def _impl():
             lv.addLayout(brow)
 
             self.list = QListWidget()
+            self.list.setObjectName("NoteList")
             self.list.currentRowChanged.connect(self._on_select)
             lv.addWidget(self.list, 1)
             splitter.addWidget(left)
@@ -276,6 +278,7 @@ def _impl():
             rv.addLayout(tb)
 
             self.body = QTextEdit()
+            self.body.setObjectName("NoteBody")
             self.body.setAcceptRichText(True)
             self.body.setPlaceholderText("在这里写笔记…可直接加粗、插图、插代码")
             self.body.textChanged.connect(self._on_edit)

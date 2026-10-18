@@ -26,7 +26,7 @@ EXPECTED_BLUEPRINTS = {
 # 含 Flask /static。⚠️ 同一个 rule 字符串若挂了两个 endpoint（如 /api/tasks 的
 # GET 与 DELETE），url_map 里算**两条** Rule —— 所以加了清理端点后是 135 不是 134。
 # v5.1 又加了 /api/github/mirror_fastest → 136，/api/audit → 137。
-EXPECTED_ROUTES = 138
+EXPECTED_ROUTES = 140
 
 
 # ============================================================

@@ -152,28 +152,29 @@ class TestDictCssConsistency:
 # ============================================================
 # ② 字典 ↔ 设置页 swatch
 # ============================================================
-class TestSwatchConsistency:
+class TestAppearanceMovedToFab:
+    """v6.4：外观主题 / 壁纸 / 毛玻璃 / 悬浮球 / 关机延迟 / 退出 已从网页设置
+    迁到**悬浮球右键**；网页设置里必须不再出现这些控件。"""
+
     def _html(self):
         return io.open(SETTINGS_HTML, "rb").read().decode("utf-8")
 
-    def test_chip_for_every_preset(self):
-        chips = set(re.findall(r'data-p="(\w+)"', self._html()))
-        assert chips == set(config.THEME_PRESETS), \
-            "设置页 swatch 与 THEME_PRESETS 不一致：html=%s dict=%s" % (
-                sorted(chips), sorted(config.THEME_PRESETS))
-
-    def test_chip_calls_pick_preset(self):
-        """swatch 走 onclick="pickPreset(this)"（普通 script，函数必须挂全局）。"""
+    def test_appearance_controls_removed(self):
         html = self._html()
-        assert html.count('onclick="pickPreset(this)"') == len(config.THEME_PRESETS)
+        for frag in ('id="presetRow"', 'id="swall"', 'id="swallo"',
+                     'id="sfabv"', 'id="sauto"', 'id="sdly"',
+                     'sg-title">外观主题', 'sg-title">桌面悬浮球',
+                     'sg-title">关机功能', "accQuit()"):
+            assert frag not in html, "网页设置里仍有 %s（应迁到悬浮球右键）" % frag
 
-    def test_wallpaper_rows_live_in_appearance_group(self):
-        """壁纸两行归「外观主题」sg（v5.1 从「其他」迁入），别又散回去。"""
+    def test_audit_display_removed(self):
         html = self._html()
-        i_appearance = html.index('sg-title">外观主题')
-        i_other = html.index('sg-title">其他')
-        assert html.index('id="swall"') > i_appearance and html.index('id="swall"') < i_other
-        assert html.index('id="swallo"') > i_appearance and html.index('id="swallo"') < i_other
+        for frag in ('id="auditBox"', 'id="auditAction"', "操作审计"):
+            assert frag not in html, "审计展示未移除：%s" % frag
+
+    def test_fab_menu_has_look_entries(self):
+        from wwdm_app.gui import qt_fab
+        assert hasattr(qt_fab, "add_look_menu")
 
 
 # ============================================================
@@ -207,7 +208,6 @@ class TestNoHardcodedAccentInTemplates:
     # 行级放行。这些行的水彩色是「用户数据 / 外部品牌色 / 预设自身展示」，
     # 刻意不跟随预设（每条理由见右侧注释；新增放行必须连理由一起加）：
     ALLOW_SUBSTR = (
-        "preset-chip",       # settings.html swatch：圆点展示的是预设自身颜色
         "251,114,153",       # help.html 视频教程卡：B站品牌粉 #fb7299，外部品牌色
     )
 

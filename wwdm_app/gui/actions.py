@@ -145,6 +145,13 @@ def shutdown_status(host, port):
     return http_json(host, port, "/api/shutdown/status", method="GET")
 
 
+def set_setting(host, port, key, value):
+    """改单个设置项（悬浮球右键配置用：配色预设 / 壁纸 / 毛玻璃）。"""
+    r = http_json(host, port, "/api/settings", method="POST",
+                  payload={key: value})
+    return bool(r and r.get("ok"))
+
+
 def set_ui_theme(host, port, theme):
     """切换网页明暗：回环 POST /api/settings {"ui_theme": theme}。
 

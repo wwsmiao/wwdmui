@@ -725,3 +725,52 @@ def local_models_open(rel="", select=False, scope="models"):
     if not p:
         return {"ok": False, "msg": "非法路径"}
     return open_path_in_explorer(p, select)
+
+
+# ---- 文本读写 / 原图直出（v6.4：本地插件代码查看与编辑）----
+_LOCAL_TEXT_MAX = 2 * 1024 * 1024
+TEXT_LOCAL_EXTS = {
+    ".py", ".json", ".txt", ".md", ".yaml", ".yml", ".toml", ".ini", ".cfg",
+    ".js", ".css", ".html", ".htm", ".xml", ".csv", ".log", ".bat", ".cmd",
+    ".ps1", ".sh", ".gitignore", ".gitattributes", ".env", ".sql",
+}
+
+
+def local_abs_path(rel="", scope="models"):
+    """相对路径 → 绝对路径（已做根目录校验）；非法/越界返回 None。"""
+    return _local_abs(rel, scope)
+
+
+def local_text_read(rel="", scope="plugins"):
+    """读文本文件（≤2MB，UTF-8/GBK 自适应）。只用于查看/编辑代码。"""
+    p = _local_abs(rel, scope)
+    if not p or not os.path.isfile(p):
+        return {"ok": False, "msg": "文件不存在或路径非法"}
+    try:
+        if os.path.getsize(p) > _LOCAL_TEXT_MAX:
+            return {"ok": False, "msg": "文件过大（>2MB），请用外部编辑器"}
+        with open(p, "rb") as f:
+            raw = f.read()
+    except Exception as e:
+        return {"ok": False, "msg": "读取失败: " + str(e)}
+    for enc in ("utf-8-sig", "utf-8", "gbk"):
+        try:
+            return {"ok": True, "text": raw.decode(enc), "path": p,
+                    "name": os.path.basename(p), "rel": rel, "scope": scope}
+        except UnicodeDecodeError:
+            continue
+    return {"ok": False, "msg": "无法识别文本编码（可能是二进制文件）"}
+
+
+def local_text_save(rel="", scope="plugins", text=""):
+    """保存文本文件（UTF-8 覆盖写）。路径同样过 ``_safe_path``。"""
+    p = _local_abs(rel, scope)
+    if not p or not os.path.isfile(p):
+        return {"ok": False, "msg": "文件不存在或路径非法"}
+    try:
+        data = text if isinstance(text, str) else str(text or "")
+        with open(p, "w", encoding="utf-8", newline="") as f:
+            f.write(data)
+        return {"ok": True, "msg": "已保存", "path": p, "size": len(data)}
+    except Exception as e:
+        return {"ok": False, "msg": "保存失败: " + str(e)}

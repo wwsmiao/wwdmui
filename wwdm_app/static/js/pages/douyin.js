@@ -268,28 +268,26 @@ async function loadSF(){
     setVal('soutd',s.output_dir||s.comfyui_dir+'\\output');
     setVal('sind',s.input_dir||s.comfyui_dir+'\\input');
     setVal('swfbd',s.workflow_backup_dir);
-    setVal('swall',s.wallpaper_path);
-    setVal('swallo',s.wallpaper_blur==null?0:s.wallpaper_blur);
-    (document.getElementById('sfabv')||{}).checked=s.fab_visible!==false;
-    (document.getElementById('sauto')||{}).checked=!!s.autostart;
+    _wallPath=s.wallpaper_path||'';
+    _wallBlur=(s.wallpaper_blur==null?0:s.wallpaper_blur);
     setVal('dyCookieFile',s.douyin_cookie_file);setVal('dySaveDirSet',s.douyin_save_dir);
-    setVal('sdly',s.shutdown_delay==null?60:s.shutdown_delay);
     accLoad(s);
     cuiCmdPreview();applyWallpaper();applyPreset(s.theme_preset||'watercolor');
-    auditLoad();   // 顺手刷新操作审计（S7）；失败只在审计卡片里显示，不影响设置表单
   }catch(e){}
 }
-function applyWallpaper(){
-  var path=(gv('swall')||'').trim();
-  var blur=gvi('swallo',0);
+function applyWallpaper(path,blur){
+  if(path!==undefined)_wallPath=path||'';
+  if(blur!==undefined)_wallBlur=parseInt(blur)||0;
+  var p=(_wallPath||'').trim();
+  var b=_wallBlur||0;
   var old=document.getElementById('wallpaper');
   if(old)old.remove();
-  var hasWp=!!path;
+  var hasWp=!!p;
   document.body.classList.toggle('has-wallpaper',hasWp);
   // 毛玻璃像素：0=无玻璃，1-10=像素。用 CSS 变量传给所有表面
-  document.body.style.setProperty('--wp-blur',(blur>0?blur:0)+'px');
-  if(!path){return}
-  var lower=path.toLowerCase();
+  document.body.style.setProperty('--wp-blur',(b>0?b:0)+'px');
+  if(!p){return}
+  var lower=p.toLowerCase();
   var el;
   if(/\.(mp4|webm|mov|m4v)$/.test(lower)){
     el=document.createElement('video');
@@ -310,6 +308,7 @@ function setVal(id,v){var e=document.getElementById(id);if(e)e.value=(v===undefi
 // 初值取服务端直出的 <html data-preset>（routes.py 渲染时带上）：万一 loadSF 的
 // fetch 挂了，内存里的预设与页面实际配色、swatch 高亮也仍然一致
 var _preset=(document.documentElement.getAttribute('data-preset'))||'watercolor';
+var _wallPath='',_wallBlur=0;   // v6.4：壁纸/毛玻璃改由悬浮球右键配置
 function curPreset(){return _preset}
 function applyPreset(p){
   _preset=(typeof p==='string'&&p)?p:'watercolor';
@@ -338,15 +337,12 @@ async function saveS(){
     comfyui_cors_origin:gv('sclc'),comfyui_extra_args:gv('sclx'),
     comfyui_presets:collectPresets(),
     input_dir:gv('sind'),output_dir:gv('soutd'),workflow_backup_dir:gv('swfbd'),
-    wallpaper_path:gv('swall'),wallpaper_blur:gvi('swallo',0),theme_preset:curPreset(),
-    fab_visible:!!(document.getElementById('sfabv')||{}).checked,
-    autostart:!!(document.getElementById('sauto')||{}).checked,
-    pip_mirror:gv('spm')||'default',github_mirror:gv('sghm')||'official',hf_channel:gv('shfc')||'hf-mirror',hf_env_inject:!!(document.getElementById('shfEnv')||{}).checked,douyin_cookie_file:gv('dyCookieFile'),douyin_save_dir:gv('dySaveDirSet'),shutdown_delay:gviClamp('sdly',60,0,3600),web_host:_accV('swh')||'0.0.0.0',web_port:_accI('swp',7860),access_token:_accV('stok'),token_required:!!(document.getElementById('stokreq')||{}).checked,max_upload_gb:gvf('smu',8)};
+    pip_mirror:gv('spm')||'default',github_mirror:gv('sghm')||'official',hf_channel:gv('shfc')||'hf-mirror',hf_env_inject:!!(document.getElementById('shfEnv')||{}).checked,douyin_cookie_file:gv('dyCookieFile'),douyin_save_dir:gv('dySaveDirSet'),web_host:_accV('swh')||'0.0.0.0',web_port:_accI('swp',7860),access_token:_accV('stok'),token_required:!!(document.getElementById('stokreq')||{}).checked,max_upload_gb:gvf('smu',8)};
   try{var r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});var j=await r.json();
     if(j.ok){document.getElementById('mcd').textContent=d.max_concurrent_downloads;document.getElementById('cld').textContent=d.max_concurrent_clones;cuiCmdPreview();applyWallpaper();repairLoadMirrorInfo();accStatus();notify(j.msg)}else{notify('保存失败: '+j.msg)}}catch(e){notify('保存失败: '+e.message)}
 }
-function gv(id){return document.getElementById(id).value.trim()}
-function gvi(id,d){return parseInt(document.getElementById(id).value)||d}
+function gv(id){var e=document.getElementById(id);return e?e.value.trim():''}
+function gvi(id,d){var e=document.getElementById(id);if(!e)return d;var v=parseInt(e.value);return isNaN(v)?d:v}
 function gviClamp(id,d,lo,hi){var v=parseInt(document.getElementById(id).value,10);if(isNaN(v))return d;return Math.max(lo,Math.min(hi,v))}
 function gvf(id,d){var v=parseFloat(document.getElementById(id).value);return isNaN(v)?d:v}
 // ================= 管理器访问（监听地址 / 端口 / 访问令牌） =================

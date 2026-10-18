@@ -74,6 +74,7 @@ class _TrayImpl:
                 continue
             act = self._menu.addAction(label)
             act.triggered.connect(lambda checked=False, k=key: self._on_action(k))
+        qt_fab.add_look_menu(self._menu, self.host, self.port)
 
     def _on_activated(self, reason):
         R = self._QSystemTrayIcon.ActivationReason

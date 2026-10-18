@@ -33,10 +33,15 @@ def api_theme_stream():
         last_beat = time.time()
         try:
             while True:
-                cur = str(config.settings.get("ui_theme", "light"))
+                cur = {
+                    "ui_theme": str(config.settings.get("ui_theme", "light")),
+                    "theme_preset": str(config.settings.get("theme_preset", "watercolor")),
+                    "wallpaper_path": str(config.settings.get("wallpaper_path", "") or ""),
+                    "wallpaper_blur": int(config.settings.get("wallpaper_blur", 0) or 0),
+                }
                 if cur != last:
-                    last = cur
-                    yield "data: " + json.dumps({"ui_theme": cur}) + "\n\n"
+                    last = dict(cur)
+                    yield "data: " + json.dumps(cur) + "\n\n"
                     last_beat = time.time()
                 elif time.time() - last_beat > 20:
                     yield ": ping\n\n"          # 心跳，防代理/浏览器断连

@@ -169,33 +169,6 @@
         <div class="srow"><div class="slabel-block"><div class="slabel">启动时自动运行aria2c</div></div><input type="checkbox" id="sas" checked></div>
       </div>
 
-      <div class="sg sg-wide"><div class="sg-title">外观主题</div>
-        <div class="srow"><div class="slabel-block"><div class="slabel">配色预设</div><div class="shint">与日间/夜间正交：这里只换强调色（按钮、标题、悬停、描边、发光），明暗基底用右下角「主题」按钮切换。点一下立即预览，保存后固定</div></div>
-          <div class="preset-row" id="presetRow">
-            <button type="button" class="preset-chip" data-p="watercolor" onclick="pickPreset(this)"><span class="pc-dot" style="background:#4a6fa5"></span><span class="pc-dot" style="background:#c38d94"></span>水彩</button>
-            <button type="button" class="preset-chip" data-p="forest" onclick="pickPreset(this)"><span class="pc-dot" style="background:#2f8f6b"></span><span class="pc-dot" style="background:#c98a5e"></span>森林</button>
-            <button type="button" class="preset-chip" data-p="sunset" onclick="pickPreset(this)"><span class="pc-dot" style="background:#c2703f"></span><span class="pc-dot" style="background:#c25e6e"></span>暮霞</button>
-            <button type="button" class="preset-chip" data-p="violet" onclick="pickPreset(this)"><span class="pc-dot" style="background:#6a5fb8"></span><span class="pc-dot" style="background:#b078c8"></span>紫罗兰</button>
-            <button type="button" class="preset-chip" data-p="mono" onclick="pickPreset(this)"><span class="pc-dot" style="background:#5b6472"></span><span class="pc-dot" style="background:#8b8f99"></span>墨灰</button>
-          </div>
-        </div>
-        <div class="srow"><div class="slabel-block"><div class="slabel">背景壁纸</div><div class="shint">网页背景壁纸路径，支持图片(jpg/png/webp)或视频(mp4)，留空则使用当前配色预设的默认背景</div></div>
-          <input type="text" class="sinput sinput-wide" id="swall" placeholder="C:\wallpaper.png 或 C:\wallpaper.mp4（留空使用默认背景）">
-        </div>
-        <div class="srow"><div class="slabel-block"><div class="slabel">壁纸毛玻璃效果</div><div class="shint">设置壁纸后启用玻璃模糊：0=无玻璃（完全透明），1~10 为模糊像素（数值越大越模糊）</div></div>
-          <input type="number" id="swallo" class="sinput" style="width:140px" min="0" max="10" step="1" placeholder="0">
-        </div>
-      </div>
-
-      <div class="sg sg-wide"><div class="sg-title">桌面悬浮球 <span style="font-size:11px;font-weight:400;color:var(--text3)">仅安装版（exe）有效；python run.py 开发模式请加 --no-gui</span></div>
-        <div class="srow"><div class="slabel-block"><div class="slabel">显示悬浮球</div><div class="shint">启动后桌面右下角出现圆形按钮：左键打开管理器界面，右键菜单（复制访问地址 / 开机自启 / 隐藏 / 退出）。关闭后仅保留系统托盘图标（右键托盘可随时唤出），改此选项重启后生效</div></div>
-          <input type="checkbox" id="sfabv">
-        </div>
-        <div class="srow"><div class="slabel-block"><div class="slabel">开机自动启动</div><div class="shint">写入当前用户注册表 Run 键，登录 Windows 时自动启动管理器（不弹浏览器，只出悬浮球）。下次启动管理器时生效</div></div>
-          <input type="checkbox" id="sauto">
-        </div>
-      </div>
-
       <div class="sg"><div class="sg-title">其他</div>
         <div class="srow"><div class="slabel-block"><div class="slabel">输入预览文件夹</div><div class="shint">文件管理预览的根目录，默认为 ComfyUI 目录下的 input 文件夹</div></div>
           <input type="text" class="sinput sinput-wide" id="sind" placeholder="C:\ComfyUI\ComfyUI\input">
@@ -220,32 +193,9 @@
         <option value="jpg">JPG</option>
       </select>
 
-      <h2 class="sg-title">关机功能</h2>
-      <div class="srow"><div class="slabel-block"><div class="slabel">默认关机延迟(秒)</div><div class="shint">点击右下角菜单的关机按钮后，等待多少秒执行关机。1-3600 = 可随时取消的倒计时；0 = 立即关机（不可取消）</div></div>
-        <input type="number" id="sdly" class="sinput" style="width:140px" min="0" max="3600" placeholder="60">
-      </div>
-
-      <div class="srow srow-full" style="border-top:1px dashed var(--border);padding-top:14px">
-        <div class="slabel-block"><div class="slabel">退出管理器</div><div class="shint">只关闭管理器本身，不影响 ComfyUI。改过监听地址/端口后，需要退出再重新双击启动器才会生效 —— 本工具不做「一键重启」，因为 Windows 下新旧进程会同时占用同一端口</div></div>
-        <div><button class="btn btn6" onclick="accQuit()"><i class="bi bi-power"></i> 退出管理器</button></div>
-      </div>
-
       <div class="sacts"><button class="btn btn6" onclick="resetS()"><i class="bi bi-arrow-counterclockwise"></i> 恢复默认</button><button class="btn btn1" onclick="saveS()"><i class="bi bi-save"></i> 保存设置</button><button class="btn btn5" onclick="saveSRestart()"><i class="bi bi-arrow-repeat"></i> 保存并重启 aria2c</button></div>
       <div class="snote">设置保存后需重启 aria2c 生效；监听地址 / 端口改动需要重启管理器才生效</div>
     </div>
 
-    <div class="card scard" style="margin-top:16px">
-      <div class="sg sg-wide">
-        <div class="sg-title">操作审计 <span style="font-size:11px;font-weight:400;color:var(--text3)">删除 / 关机 / 装依赖 / 改设置等危险操作的流水，只保留最近 2000 条</span></div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-          <select id="auditAction" class="sinput" style="width:170px" onchange="auditLoad()">
-            <option value="">全部动作</option>
-          </select>
-          <input type="text" id="auditKw" class="sinput" style="width:220px" placeholder="搜对象 / 详情" oninput="auditDebounce()">
-          <button class="btn btn6" onclick="auditLoad()"><i class="bi bi-arrow-repeat"></i> 刷新</button>
-        </div>
-        <div id="auditBox"><div style="font-size:12px;color:var(--text3);padding:8px 2px">加载中…</div></div>
-      </div>
-    </div>
   </div>
 </div>
