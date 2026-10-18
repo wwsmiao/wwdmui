@@ -70,6 +70,8 @@ DEFAULT_SETTINGS = {
     "wallpaper_blur": 0,  # 壁纸毛玻璃效果：0=无玻璃，1-10=毛玻璃像素
     # 配色主题预设（与明暗 data-theme **正交**：preset 管强调色，theme 管明暗基底）
     "theme_preset": "watercolor",  # 见下方 THEME_PRESETS
+    # 网页明暗基底（light/dark）：球/托盘菜单可切换；页面 localStorage 可覆盖
+    "ui_theme": "light",
     # ---- 桌面悬浮球（v6.0；仅 exe GUI 模式有，--no-gui/无显示环境下降级不存在）----
     "fab_visible": True,   # 启动后是否显示悬浮球（False=只留托盘图标）
     "fab_pos": "",         # 悬浮球位置 "x,y"（空=默认右下角）；用户拖动后自动保存

@@ -18,7 +18,7 @@
 -->
 <!DOCTYPE html>
 {# data-theme 由 init.js 按 localStorage 补；data-preset 服务端直出，避免开局先闪一下默认配色 #}
-<html lang="zh-CN" data-preset="{{ theme_preset or 'watercolor' }}">
+<html lang="zh-CN" data-preset="{{ theme_preset or 'watercolor' }}" data-ui-theme="{{ ui_theme or 'light' }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">

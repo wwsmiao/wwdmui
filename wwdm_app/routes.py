@@ -74,5 +74,6 @@ def register(app):
         # theme_preset 服务端直出到 <html data-preset>：配色是首屏视觉的一部分，
         # 等前端 fetch 完 /api/settings 再套色会先闪一下默认水彩
         return render_template("index.html",
-                               theme_preset=config.settings.get("theme_preset", "watercolor"))
+                               theme_preset=config.settings.get("theme_preset", "watercolor"),
+                               ui_theme=config.settings.get("ui_theme", "light"))
 

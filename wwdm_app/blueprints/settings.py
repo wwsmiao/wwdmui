@@ -96,6 +96,9 @@ def api_save_settings():
     _tp = str(d.get("theme_preset",
                     config.settings.get("theme_preset", "watercolor")) or "watercolor").strip()
     d["theme_preset"] = _tp if config.theme_preset_known(_tp) else "watercolor"
+    # ---- 网页明暗基底（v6.0，与 theme_preset 正交：ui_theme 管明暗）----
+    _ut = str(d.get("ui_theme", config.settings.get("ui_theme", "light")) or "light").strip().lower()
+    d["ui_theme"] = _ut if _ut in ("light", "dark") else "light"
     # ---- 桌面悬浮球（v6.0；仅 exe GUI 形态有，--no-gui 降级时无意义但仍存设置）----
     d["fab_visible"] = bool(d.get("fab_visible",
                                   config.settings.get("fab_visible", True)))

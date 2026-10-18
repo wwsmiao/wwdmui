@@ -30,7 +30,7 @@ v6.0(2) 起与托盘（:mod:`gui.tray`）共生：球窗是**共享 root 的 Top
 """
 import os
 
-from . import actions, pos
+from . import actions, pos, tasks_win
 from . import icoimage
 from .pos import FAB_SIZE
 
@@ -331,6 +331,31 @@ class FabBall:
         # 走回环 HTTP 让 Flask 那侧自己清理后 os._exit。
         actions.quit_app(self.host, self.port)
 
+    def _open_tasks(self):
+        # 任务中心：懒开独立 tkinter 窗口（不在球里塞列表），数据走回环 HTTP。
+        tasks_win.open_tasks(self.host, self.port, self.root)
+
+    def _schedule_shutdown(self):
+        # 定时关机：先问分钟数，再回环 POST /api/shutdown（秒）。
+        import tkinter.simpledialog as sd
+        try:
+            mins = sd.askinteger("定时关机", "多少分钟后关机？（0=立即）",
+                                 initialvalue=1, minvalue=0, maxvalue=1440)
+        except Exception:
+            return
+        if mins is None:
+            return
+        actions.schedule_shutdown(self.host, self.port, int(mins) * 60)
+
+    def _toggle_ui_theme(self):
+        # 日/夜间：翻转服务端 ui_theme（页面 localStorage 可覆盖，刷新即生效）。
+        from ..core import config
+        cur = str(config.settings.get("ui_theme", "light")).strip().lower()
+        nxt = "dark" if cur != "dark" else "light"
+        got = actions.set_ui_theme(self.host, self.port, nxt)
+        if got:
+            config.settings["ui_theme"] = got
+
     # ---------------- 右键菜单 ----------------
     def _on_menu(self, e):
         import tkinter as tk
@@ -339,6 +364,10 @@ class FabBall:
         m.add_command(label="复制访问地址", command=self._copy_url)
         m.add_command(label=actions.autostart_label(actions.autostart_enabled()),
                       command=self._toggle_autostart)
+        m.add_separator()
+        m.add_command(label="任务中心", command=self._open_tasks)
+        m.add_command(label="定时关机…", command=self._schedule_shutdown)
+        m.add_command(label=actions.ui_theme_label(), command=self._toggle_ui_theme)
         m.add_separator()
         m.add_command(label="隐藏悬浮球", command=lambda: self.hide(save=True))
         m.add_command(label="退出管理器", command=self._quit)

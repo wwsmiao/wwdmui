@@ -36,6 +36,7 @@ from ctypes import wintypes
 
 from . import actions
 from . import fab as _fab        # 只用 enable_dpi_awareness；fab 顶层不碰 tkinter
+from . import tasks_win
 
 # ---------------- Win32 常量 ----------------
 WM_APP = 0x8000
@@ -409,6 +410,29 @@ class TrayIcon:
     def _quit(self):
         actions.quit_app(self.host, self.port)
 
+    def _open_tasks(self):
+        # 任务中心：与球共用 tasks_win（按 host:port 单实例）。
+        tasks_win.open_tasks(self.host, self.port, self._root)
+
+    def _schedule_shutdown(self):
+        import tkinter.simpledialog as sd
+        try:
+            mins = sd.askinteger("定时关机", "多少分钟后关机？（0=立即）",
+                                 initialvalue=1, minvalue=0, maxvalue=1440)
+        except Exception:
+            return
+        if mins is None:
+            return
+        actions.schedule_shutdown(self.host, self.port, int(mins) * 60)
+
+    def _toggle_ui_theme(self):
+        from ..core import config
+        cur = str(config.settings.get("ui_theme", "light")).strip().lower()
+        nxt = "dark" if cur != "dark" else "light"
+        got = actions.set_ui_theme(self.host, self.port, nxt)
+        if got:
+            config.settings["ui_theme"] = got
+
     # ---------------- 右键菜单 ----------------
     def _fab_label(self):
         if self.fab is not None:
@@ -428,6 +452,10 @@ class TrayIcon:
         m.add_command(label="复制访问地址", command=self._copy_url)
         m.add_command(label=actions.autostart_label(actions.autostart_enabled()),
                       command=self._toggle_autostart)
+        m.add_separator()
+        m.add_command(label="任务中心", command=self._open_tasks)
+        m.add_command(label="定时关机…", command=self._schedule_shutdown)
+        m.add_command(label=actions.ui_theme_label(), command=self._toggle_ui_theme)
         m.add_separator()
         m.add_command(label=self._fab_label(), command=self._toggle_fab)
         m.add_command(label="退出管理器", command=self._quit)

@@ -138,7 +138,9 @@ else{cuiCheckStatus()}
     if(moon)moon.style.display=t==='dark'?'':'none';
   }
   function currentTheme(){
-    try{return localStorage.getItem('wwdm_theme')||'light'}catch(e){return 'light'}
+    try{var t=localStorage.getItem('wwdm_theme'); if(t)return t}catch(e){}
+    var h=document.documentElement.getAttribute('data-ui-theme');
+    return (h==='dark'||h==='light')?h:'light';
   }
   themeBtn.addEventListener('click',function(){
     applyTheme(currentTheme()==='dark'?'light':'dark');

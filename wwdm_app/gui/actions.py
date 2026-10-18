@@ -101,6 +101,71 @@ def http_post(host, port, path):
         return False
 
 
+def http_json(host, port, path, method="GET", payload=None, timeout=3):
+    """回环 HTTP 取 JSON（GET/POST 通用）。**必须禁代理**。
+
+    成功返回解析后的 dict；任何失败（连不上 / 非 2xx / 非 JSON / 超时）
+    返回 None —— 菜单动作拿不到数据时静默降级，不该让球/托盘卡死。
+    """
+    import json
+    import urllib.request
+    url = "http://%s:%d%s" % (host, port, path)
+    data = None
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(url, data=data, method=method,
+                                 headers={"Content-Type": "application/json"})
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with opener.open(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8", "replace"))
+    except Exception:
+        return None
+
+
+def schedule_shutdown(host, port, delay):
+    """定时关机：回环 POST /api/shutdown。delay 单位为秒；返回后端回包 dict 或 None。"""
+    try:
+        delay = int(delay)
+    except (TypeError, ValueError):
+        delay = 60
+    return http_json(host, port, "/api/shutdown", method="POST",
+                     payload={"delay": delay})
+
+
+def cancel_shutdown(host, port):
+    """取消定时关机：回环 POST /api/shutdown/cancel。返回 dict 或 None。"""
+    return http_json(host, port, "/api/shutdown/cancel", method="POST")
+
+
+def shutdown_status(host, port):
+    """查定时关机状态：回环 GET /api/shutdown/status。返回 dict 或 None。"""
+    return http_json(host, port, "/api/shutdown/status", method="GET")
+
+
+def set_ui_theme(host, port, theme):
+    """切换网页明暗：回环 POST /api/settings {"ui_theme": theme}。
+
+    返回切换后的主题字符串（'light' / 'dark'），失败返回 None。
+    球/托盘在调用成功后自行把本地 ``config.settings['ui_theme']`` 翻成同值，
+    仅供菜单文案即时翻转（真值仍以服务端落盘为准）。
+    """
+    if theme not in ("light", "dark"):
+        theme = "light"
+    r = http_json(host, port, "/api/settings", method="POST",
+                 payload={"ui_theme": theme})
+    if r and r.get("ok"):
+        return theme
+    return None
+
+
+def ui_theme_label():
+    """菜单文案：按当前 ui_theme 反转为下一动作（"切换到夜间"/"切换到日间"）。"""
+    from ..core import config
+    cur = str(config.settings.get("ui_theme", "light")).strip().lower()
+    return "切换到夜间" if cur != "dark" else "切换到日间"
+
+
 def quit_app(host, port):
     """退出管理器：回环让 Flask 侧 cleanup_all + os._exit。
 

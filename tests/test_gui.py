@@ -25,7 +25,7 @@ import pytest
 
 import wwdm_app.services as svc
 from wwdm_app.core import config
-from wwdm_app.gui import actions, autostart, pos, tray
+from wwdm_app.gui import actions, autostart, pos, tray, tasks_win
 
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -946,3 +946,225 @@ class TestStructure:
         assert tray.actions.autostart_enabled() is True
         svc.settings["autostart"] = False
         assert tray.actions.autostart_enabled() is False
+
+
+# ============================================================
+# ⑨ ui_theme 设置键（球/托盘菜单切日/夜间）
+# ============================================================
+class TestUiThemeSetting:
+    def test_default_present(self):
+        assert config.DEFAULT_SETTINGS["ui_theme"] == "light"
+
+    def test_release_whitelist(self):
+        from wwdm_app import release
+        assert "ui_theme" in release.RELEASE_KEYS
+        assert "ui_theme" not in release.RELEASE_BLANK
+
+    def test_save_roundtrip(self, client, origin):
+        r = client.post("/api/settings", headers=origin, json={"ui_theme": "dark"})
+        assert r.status_code == 200
+        assert svc.settings["ui_theme"] == "dark"
+        # 非法值回退 light
+        r = client.post("/api/settings", headers=origin, json={"ui_theme": "neon"})
+        assert r.status_code == 200
+        assert svc.settings["ui_theme"] == "light"
+
+    def test_get_includes_ui_theme(self, client):
+        data = client.get("/api/settings").get_json()
+        assert data.get("ui_theme") in ("light", "dark")
+
+
+class TestGuiActionsHttp:
+    """actions 新增的 HTTP 客户端（关机 / 日夜间）。全部走禁代理回环，失败返回 None。"""
+
+    def test_schedule_shutdown_posts_seconds(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(actions, "http_json",
+                            lambda h, p, path, method="GET", payload=None, timeout=3:
+                            calls.append((h, p, path, method, payload)) or {"ok": True})
+        assert actions.schedule_shutdown("h", 7861, 120) == {"ok": True}
+        assert calls == [("h", 7861, "/api/shutdown", "POST", {"delay": 120})]
+
+    def test_cancel_shutdown_posts(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(actions, "http_json",
+                            lambda h, p, path, method="GET", payload=None, timeout=3:
+                            calls.append((path, method)) or {"ok": True})
+        actions.cancel_shutdown("h", 7861)
+        assert ("/api/shutdown/cancel", "POST") in calls
+
+    def test_shutdown_status_get(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(actions, "http_json",
+                            lambda h, p, path, method="GET", payload=None, timeout=3:
+                            calls.append((path, method)) or {})
+        actions.shutdown_status("h", 7861)
+        assert ("/api/shutdown/status", "GET") in calls
+
+    def test_set_ui_theme_ok(self, monkeypatch):
+        monkeypatch.setattr(actions, "http_json", lambda *a, **k: {"ok": True})
+        assert actions.set_ui_theme("h", 7861, "dark") == "dark"
+
+    def test_set_ui_theme_fail_returns_none(self, monkeypatch):
+        monkeypatch.setattr(actions, "http_json", lambda *a, **k: {"ok": False})
+        assert actions.set_ui_theme("h", 7861, "dark") is None
+
+    def test_set_ui_theme_invalid_normalized(self, monkeypatch):
+        seen = {}
+        monkeypatch.setattr(actions, "http_json",
+                            lambda h, p, path, method="GET", payload=None, timeout=3:
+                            seen.update(payload) or {"ok": True})
+        assert actions.set_ui_theme("h", 7861, "rainbow") == "light"
+        assert seen == {"ui_theme": "light"}
+
+    def test_ui_theme_label_reflects_settings(self, monkeypatch):
+        monkeypatch.setitem(config.settings, "ui_theme", "light")
+        assert actions.ui_theme_label() == "切换到夜间"
+        monkeypatch.setitem(config.settings, "ui_theme", "dark")
+        assert actions.ui_theme_label() == "切换到日间"
+
+
+# ============================================================
+# ⑩ 任务中心窗口（gui.tasks_win）—— 仅测逻辑，不建真 Tk
+# ============================================================
+class TestTasksWin:
+    def test_open_tasks_none_root_noop(self):
+        tasks_win.open_tasks("127.0.0.1", 7861, None)        # 不许抛
+        assert ("127.0.0.1:7861") not in tasks_win._WINS
+
+    def test_http_json_parses(self, monkeypatch):
+        import urllib.request as ureq
+
+        class _Resp:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def read(self):
+                return b'{"tasks":[]}'
+
+        class _Opener:
+            def open(self, req, timeout=3):
+                return _Resp()
+
+        monkeypatch.setattr(ureq, "build_opener", lambda *a, **k: _Opener())
+        assert tasks_win._http_json("h", 1, "/api/tasks") == {"tasks": []}
+
+    def test_http_json_failure_returns_none(self, monkeypatch):
+        import urllib.request as ureq
+
+        class _Boom:
+            def open(self, req, timeout=3):
+                raise OSError("boom")
+
+        monkeypatch.setattr(ureq, "build_opener", lambda *a, **k: _Boom())
+        assert tasks_win._http_json("h", 1, "/api/tasks") is None
+
+    def test_render_maps_rows(self):
+        class _Tree:
+            def __init__(self):
+                self.rows = []
+                self.deletes = 0
+
+            def get_children(self, *a):
+                return []
+
+            def delete(self, *a):
+                self.deletes += 1
+
+            def insert(self, *a, **k):
+                self.rows.append(k.get("values"))
+
+        class _Win:
+            def __init__(self):
+                self.tree = _Tree()
+                self.exists = True
+
+            def winfo_exists(self):
+                return self.exists
+
+        w = tasks_win._TasksWindow("127.0.0.1", 7861, None)
+        fw = _Win()
+        w.win = fw
+        w._tree = fw.tree
+        data = {"tasks": [
+            {"task_id": "d1", "kind": "download", "title": "下模型",
+             "status": "running", "progress": 42.0},
+            {"task_id": "c1", "kind": "clone", "title": "克隆插件",
+             "status": "done", "progress": None},
+        ]}
+        w._render(data)
+        assert fw.tree.rows[0] == ("下模型", "download", "running", "42%")
+        assert fw.tree.rows[1] == ("克隆插件", "clone", "done", "—")
+
+    def test_render_no_data_shows_unreachable_and_stops_poll(self):
+        class _Tree:
+            def __init__(self):
+                self.rows = []
+                self.deletes = 0
+
+            def get_children(self, *a):
+                return []
+
+            def delete(self, *a):
+                self.deletes += 1
+
+            def insert(self, *a, **k):
+                self.rows.append(k.get("values"))
+
+        w = tasks_win._TasksWindow("127.0.0.1", 7861, None)
+        w.win = type("W", (), {"winfo_exists": lambda self: True})()
+        w._tree = _Tree()
+        w._alive = True
+        w._render(None)
+        assert w._tree.rows[0][0] == "服务未启动或无法连接"
+        assert w._alive is False
+
+    def test_clear_finished_calls_delete(self, monkeypatch):
+        import time
+        calls = []
+        monkeypatch.setattr(tasks_win, "_http_json",
+                            lambda h, p, path, method="GET":
+                            calls.append((path, method)) or {"tasks": []})
+        w = tasks_win._TasksWindow("127.0.0.1", 7861, None)
+        w._clear_finished()           # 走 worker 线程
+        time.sleep(0.15)
+        assert ("/api/tasks", "DELETE") in calls
+
+
+class TestFabTrayMenuWiring:
+    """回归：球/托盘菜单项确实调用新动作（别像 v6.0(5) 那样漏接）。"""
+
+    def test_fab_open_tasks_wired(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(tasks_win, "open_tasks",
+                            lambda h, p, root: calls.append((h, p, root)))
+        from wwdm_app.gui import fab
+        b = fab.FabBall(7861)
+        b._open_tasks()
+        assert calls == [("127.0.0.1", 7861, None)]
+
+    def test_fab_toggle_ui_theme_wired(self, monkeypatch):
+        monkeypatch.setattr(actions, "set_ui_theme", lambda h, p, t: t)
+        monkeypatch.setitem(config.settings, "ui_theme", "light")
+        from wwdm_app.gui import fab
+        b = fab.FabBall(7861)
+        b._toggle_ui_theme()
+        assert config.settings["ui_theme"] == "dark"
+
+    def test_tray_open_tasks_wired(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(tasks_win, "open_tasks",
+                            lambda h, p, root: calls.append((h, p, root)))
+        ic = tray.TrayIcon(7861)
+        ic._open_tasks()
+        assert calls == [("127.0.0.1", 7861, None)]
+
+    def test_tray_toggle_ui_theme_wired(self, monkeypatch):
+        monkeypatch.setattr(actions, "set_ui_theme", lambda h, p, t: t)
+        monkeypatch.setitem(config.settings, "ui_theme", "light")
+        ic = tray.TrayIcon(7861)
+        ic._toggle_ui_theme()
+        assert config.settings["ui_theme"] == "dark"

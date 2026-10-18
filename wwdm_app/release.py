@@ -74,6 +74,7 @@ RELEASE_KEYS = (
     "wallpaper_path",
     "wallpaper_blur",
     "theme_preset",
+    "ui_theme",
     # —— 桌面悬浮球（v6.0；autostart 同时进 BLANK，见下）——
     "fab_visible",
     "fab_pos",
