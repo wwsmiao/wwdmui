@@ -1,6 +1,6 @@
 ﻿#!/usr/bin/env python3
 """
-ComfyUI 模型管理器 v5.1 — 入口脚本
+ComfyUI 模型管理器 v6.0 — 入口脚本
 用法: python run.py
 """
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     RUNTIME_INFO.update({"host": host, "port": port, "lan_ips": lan_ips,
                          "started_at": time.time(), "token_enabled": token_on})
 
-    _log.info("=== ComfyUI 模型管理器 v5.1 ===")
+    _log.info("=== ComfyUI 模型管理器 v6.0 ===")
     _log.info("本机访问: http://127.0.0.1:%d", port)
     if host == "0.0.0.0":
         for _ip in lan_ips:
