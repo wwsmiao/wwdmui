@@ -68,13 +68,8 @@ class _TrayImpl:
 
     def _rebuild_menu(self):
         self._menu.clear()
-        for label, key in qt_fab.menu_entries(self._state()):
-            if not label:
-                self._menu.addSeparator()
-                continue
-            act = self._menu.addAction(label)
-            act.triggered.connect(lambda checked=False, k=key: self._on_action(k))
-        qt_fab.add_look_menu(self._menu, self.host, self.port)
+        qt_fab.build_menu(self._menu, self._state(), self.host, self.port,
+                          self._on_action)
 
     def _on_activated(self, reason):
         R = self._QSystemTrayIcon.ActivationReason
@@ -102,6 +97,9 @@ class _TrayImpl:
         elif key == "notes":
             from . import qt_notes
             qt_notes.open_notes(self.host, self.port)
+        elif key == "douyin":
+            from . import qt_douyin
+            qt_douyin.open_douyin(self.host, self.port)
         elif key == "toggle":
             if self.fab is not None:
                 try:

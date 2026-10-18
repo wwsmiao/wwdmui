@@ -457,9 +457,9 @@ class TestQtFabMenu:
     def test_required_entries(self):
         labels = self._labels({"autostart": False, "visible": True,
                                "theme_label": "切换到夜间"})
-        for need in ("打开管理器页面", "复制访问地址", "开机自动启动",
-                     "定时关机…", "切换到夜间", "笔记本…",
-                     "隐藏悬浮球", "退出管理器"):
+        for need in ("打开管理器页面", "复制访问地址", "切换到夜间",
+                     "打开笔记本…", "抖音提取…", "外观主题", "背景壁纸", "毛玻璃",
+                     "定时关机…", "开机自动启动", "隐藏悬浮球", "退出管理器"):
             assert need in labels
 
     def test_no_tasks_center(self):
@@ -475,8 +475,9 @@ class TestQtFabMenu:
 
     def test_keys_order(self):
         keys = [k for l, k in qt_fab.menu_entries({"autostart": False}) if l]
-        assert keys == ["open", "copy", "autostart", "shutdown",
-                        "theme", "notes", "toggle", "quit"]
+        assert keys == ["open", "copy", "theme", "notes", "douyin",
+                        "look_theme", "look_wall", "look_glass",
+                        "shutdown", "autostart", "toggle", "quit"]
 
 
 # ============================================================

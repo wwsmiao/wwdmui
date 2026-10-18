@@ -10,6 +10,10 @@
 // ============================================================
 
 function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+// 属性值转义（塞进 title=""/onclick='' 时必须用这个，而不是 esc）
+function escAttr(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+// 兼容别名：部分页面用 escHtml() 拼 HTML 文本
+function escHtml(s){return esc(s)}
 
 // ============================================================
 // 信息弹窗 (替代原生 alert，统一风格)

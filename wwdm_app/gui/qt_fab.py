@@ -32,55 +32,67 @@ def menu_entries(state):
     theme_label = state.get("theme_label") or "切换到夜间"
     vis_label = "隐藏悬浮球" if state.get("visible", True) else "显示悬浮球"
     return [
+        # 第一部分
         ("打开管理器页面", "open"),
         ("复制访问地址", "copy"),
-        (actions.autostart_label(state.get("autostart", False)), "autostart"),
         ("", ""),
-        ("定时关机…", "shutdown"),
+        # 第二部分
         (theme_label, "theme"),
-        ("笔记本…", "notes"),
+        ("打开笔记本…", "notes"),
+        ("抖音提取…", "douyin"),
+        ("外观主题", "look_theme"),
+        ("背景壁纸", "look_wall"),
+        ("毛玻璃", "look_glass"),
         ("", ""),
+        # 第三部分
+        ("定时关机…", "shutdown"),
+        (actions.autostart_label(state.get("autostart", False)), "autostart"),
         (vis_label, "toggle"),
         ("退出管理器", "quit"),
     ]
 
 
-def add_look_menu(menu, host, port):
-    """给右键菜单追加「外观主题 / 背景壁纸 / 毛玻璃」。
+def _set_setting(host, port, key, value):
+    """写单项设置并同步进程内 settings（右键菜单即时勾选状态用）。"""
+    if actions.set_setting(host, port, key, value):
+        try:
+            from ..core import config
+            config.settings[key] = value
+        except Exception:
+            pass
 
-    这三项已从网页「全局设置」移除，统一由悬浮球右键配置；写 server 后
-    网页经 SSE 即时跟随（init.js 会调 applyPreset / applyWallpaper）。
-    """
-    from PyQt6.QtWidgets import QFileDialog
 
+def add_theme_submenu(menu, host, port):
     from ..core import config
     from ..core.config import THEME_PRESETS
-
-    def _set(key, value):
-        if actions.set_setting(host, port, key, value):
-            try:
-                config.settings[key] = value
-            except Exception:
-                pass
-
     sub = menu.addMenu("外观主题")
     cur = str(config.settings.get("theme_preset", "watercolor"))
     for key, name in THEME_PRESETS.items():
         act = sub.addAction(("\u2713 " if key == cur else "\u3000") + name)
-        act.triggered.connect(lambda _=False, k=key: _set("theme_preset", k))
+        act.triggered.connect(
+            lambda _=False, k=key: _set_setting(host, port, "theme_preset", k))
 
+
+def add_wall_submenu(menu, host, port):
+    from PyQt6.QtWidgets import QFileDialog
+
+    from ..core import config
     wp = menu.addMenu("背景壁纸")
     if str(config.settings.get("wallpaper_path", "") or "").strip():
         wp.addAction("移除壁纸").triggered.connect(
-            lambda: _set("wallpaper_path", ""))
+            lambda: _set_setting(host, port, "wallpaper_path", ""))
+
     def _pick():
         path, _f = QFileDialog.getOpenFileName(
             None, "选择壁纸", "",
             "图片/视频 (*.png *.jpg *.jpeg *.webp *.gif *.mp4 *.webm);;所有文件 (*.*)")
         if path:
-            _set("wallpaper_path", path)
+            _set_setting(host, port, "wallpaper_path", path)
     wp.addAction("选择图片/视频…").triggered.connect(_pick)
 
+
+def add_glass_submenu(menu, host, port):
+    from ..core import config
     blur = menu.addMenu("毛玻璃")
     try:
         cur_b = int(config.settings.get("wallpaper_blur", 0) or 0)
@@ -88,7 +100,32 @@ def add_look_menu(menu, host, port):
         cur_b = 0
     for label, val in (("关", 0), ("弱", 2), ("中", 5), ("强", 8)):
         act = blur.addAction(("\u2713 " if val == cur_b else "\u3000") + label)
-        act.triggered.connect(lambda _=False, v=val: _set("wallpaper_blur", v))
+        act.triggered.connect(
+            lambda _=False, v=val: _set_setting(host, port, "wallpaper_blur", v))
+
+
+def add_look_menu(menu, host, port):
+    """兼容旧调用：一次性追加三个外观子菜单。"""
+    add_theme_submenu(menu, host, port)
+    add_wall_submenu(menu, host, port)
+    add_glass_submenu(menu, host, port)
+
+
+def build_menu(menu, state, host, port, on_action):
+    """按 menu_entries 渲染完整右键菜单（含三部分与外观子菜单）。"""
+    for label, key in menu_entries(state):
+        if not label:
+            menu.addSeparator()
+            continue
+        if key == "look_theme":
+            add_theme_submenu(menu, host, port)
+        elif key == "look_wall":
+            add_wall_submenu(menu, host, port)
+        elif key == "look_glass":
+            add_glass_submenu(menu, host, port)
+        else:
+            act = menu.addAction(label)
+            act.triggered.connect(lambda checked=False, k=key: on_action(k))
 
 
 _FAB_CLASS = None
@@ -246,14 +283,7 @@ def _fab_class():
 
         def _show_menu(self, gpos):
             m = QMenu(self)
-            for label, key in menu_entries(self._state()):
-                if not label:
-                    m.addSeparator()
-                    continue
-                act = m.addAction(label)
-                act.triggered.connect(
-                    lambda checked=False, k=key: self._on_action(k))
-            add_look_menu(m, self.host, self.port)
+            build_menu(m, self._state(), self.host, self.port, self._on_action)
             m.exec(gpos)
 
         def _on_action(self, key):
@@ -275,6 +305,9 @@ def _fab_class():
             elif key == "notes":
                 from . import qt_notes
                 qt_notes.open_notes(self.host, self.port)
+            elif key == "douyin":
+                from . import qt_douyin
+                qt_douyin.open_douyin(self.host, self.port)
             elif key == "toggle":
                 self.set_visible(False)
             elif key == "quit":

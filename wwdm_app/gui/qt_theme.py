@@ -132,6 +132,10 @@ def qss():
         border-radius: 13px; padding: 4px 13px; font-weight: 500;
     }
     QPushButton#Chip:hover { background: %(panel2)s; border-color: %(accent)s; }
+    QPushButton#Chip:checked { background: %(accent)s; color: #ffffff; border-color: %(accent)s; }
+    QPushButton#DyCard { background: transparent; border: 2px solid transparent; border-radius: 10px; padding: 2px; }
+    QPushButton#DyCard:hover { border-color: %(border)s; }
+    QPushButton#DyCard:checked { border-color: %(accent)s; }
     QTextBrowser#Preview { border: none; }
     QLabel#DlgTitle { font-size: 12pt; font-weight: 700; color: %(text)s; }
     QLabel#Hint { color: %(text2)s; font-size: 9pt; }
