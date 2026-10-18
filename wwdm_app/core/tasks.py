@@ -52,7 +52,6 @@ KIND_DOWNLOAD = "download"
 KIND_CLONE = "clone"
 KIND_REPAIR = "repair"
 KIND_BRANCHES = "branches"
-KIND_DOUYIN = "douyin"
 KIND_COMFYUI = "comfyui"
 KIND_ZIP = "zip"
 

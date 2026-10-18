@@ -458,7 +458,7 @@ class TestQtFabMenu:
         labels = self._labels({"autostart": False, "visible": True,
                                "theme_label": "切换到夜间"})
         for need in ("打开管理器页面", "复制访问地址", "切换到夜间",
-                     "打开笔记本…", "抖音提取…", "外观主题", "背景壁纸", "毛玻璃",
+                     "打开笔记本…", "外观主题", "背景壁纸", "毛玻璃",
                      "定时关机…", "开机自动启动", "隐藏悬浮球", "退出管理器"):
             assert need in labels
 
@@ -475,7 +475,7 @@ class TestQtFabMenu:
 
     def test_keys_order(self):
         keys = [k for l, k in qt_fab.menu_entries({"autostart": False}) if l]
-        assert keys == ["open", "copy", "theme", "notes", "douyin",
+        assert keys == ["open", "copy", "theme", "notes",
                         "look_theme", "look_wall", "look_glass",
                         "shutdown", "autostart", "toggle", "quit"]
 

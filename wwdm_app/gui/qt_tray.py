@@ -97,9 +97,6 @@ class _TrayImpl:
         elif key == "notes":
             from . import qt_notes
             qt_notes.open_notes(self.host, self.port)
-        elif key == "douyin":
-            from . import qt_douyin
-            qt_douyin.open_douyin(self.host, self.port)
         elif key == "toggle":
             if self.fab is not None:
                 try:

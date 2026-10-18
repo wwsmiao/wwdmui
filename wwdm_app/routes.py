@@ -2,7 +2,7 @@
 
 134 条 API 路由已分别搬进 ``wwdm_app/blueprints/`` 下的蓝图
 （models / download / plugins / clone / files / input / output / workflows /
-  notes / douyin / shutdown / settings / tools / comfyui / repair）。
+  notes / shutdown / settings / tools / comfyui / repair）。
 
 留在这里的三样东西是**多个蓝图共用**的：
   _zip_response         流式 zip 响应（files/output/input/workflows 用）

@@ -79,11 +79,6 @@ RELEASE_KEYS = (
     "fab_visible",
     "fab_pos",
     "autostart",
-    # —— 抖音素材提取 ——
-    "douyin_cookie_file",
-    "douyin_save_dir",
-    "douyin_format",
-    "douyin_name_template",
     # —— 关机 ——
     "shutdown_delay",
     # —— 管理器访问（**不含 access_token**）——
@@ -109,8 +104,6 @@ RELEASE_BLANK = (
     "workflow_dir",
     "workflow_backup_dir",
     "wallpaper_path",
-    "douyin_cookie_file",
-    "douyin_save_dir",
     # 开机自启：不能替买家决定「开机就启动管理器」，出包置空（=不开），
     # 买家想用自己在设置里勾（v6.0）。
     "autostart",

@@ -15,7 +15,7 @@
 (function () {
   var KIND_ICON = {
     download: 'bi-download', clone: 'bi-git', repair: 'bi-wrench',
-    branches: 'bi-diagram-3', douyin: 'bi-music-note-beamed',
+    branches: 'bi-diagram-3',
     comfyui: 'bi-cpu', zip: 'bi-file-zip'
   };
   var STATUS_TEXT = {
@@ -24,7 +24,7 @@
   // 点一行跳到对应页面（「快捷」：看到哪条异常直接过去处理）
   var KIND_PAGE = {
     download: 'models', clone: 'plugins', repair: 'repair',
-    branches: 'repair', comfyui: 'launcher', douyin: 'douyin', zip: 'models'
+    branches: 'repair', comfyui: 'launcher', zip: 'models'
   };
   var FINISHED = { done: 1, failed: 1, canceled: 1 };
 

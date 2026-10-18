@@ -76,11 +76,6 @@ DEFAULT_SETTINGS = {
     "fab_visible": True,   # 启动后是否显示悬浮球（False=只留托盘图标）
     "fab_pos": "",         # 悬浮球位置 "x,y"（空=默认右下角）；用户拖动后自动保存
     "autostart": False,    # 开机自启动（写 Windows 注册表 Run 键，卸载/退出不清理）
-    # 抖音提取
-    "douyin_cookie_file": "",    # dy_cookie.json 文件路径
-    "douyin_save_dir": "",       # 图片/视频保存目录
-    "douyin_format": "png",      # 图片格式: png / jpg
-    "douyin_name_template": "{index:02d}.{ext}",  # 命名模板
     # 关机功能
     "shutdown_delay": 60,  # 默认关机延迟秒数
     # ---- 管理器访问 ----

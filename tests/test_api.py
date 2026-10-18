@@ -48,7 +48,7 @@ class TestIndex:
             "/static/js/table.js", "/static/js/taskcenter.js"))
         first_page = min(html.index("/static/js/pages/%s.js" % n) for n in (
             "banner", "common", "output", "ctxmenu", "preview", "models",
-            "localfiles", "plugins", "clonelog", "launcher", "input", "douyin",
+            "localfiles", "plugins", "clonelog", "launcher", "input", "settings",
             "repair", "init", "workflows", "wfanalyze"))
         assert last_common < first_page
 

@@ -1713,16 +1713,6 @@ def cleanup_all():
 # 与拆分前完全一致：同一对象（`is` 判等）、可打桩、可 `from .services import X`。
 # ⚠️ 子域新增/改名符号时必须同步加这里；验证脚本用 AST 比对 HEAD 的符号集兜底。
 # ============================================================
-from .douyin import (                                     # noqa: E402,F401
-    douyin_fetch, douyin_download_images, douyin_download_video,
-    douyin_download_status, douyin_extract_image_urls,
-    douyin_load_cookie, douyin_get_cookie_string,
-    _DOUYIN_HEADERS,
-    _douyin_aria2_headers, _douyin_dedup_urls, _douyin_extract_aweme_id,
-    _douyin_extract_balanced_arr, _douyin_extract_links,
-    _douyin_extract_note_id, _douyin_extract_urls_by_key,
-)
-
 from .shutdown import (                                   # noqa: E402,F401
     shutdown_status, schedule_shutdown, cancel_shutdown,
     _SHUTDOWN_STATE,

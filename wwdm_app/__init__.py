@@ -29,8 +29,6 @@ def create_app():
 
     routes.register(app)
 
-    from .blueprints import douyin as bp_douyin   # v5.0 第 6 步：域 1/10
-    app.register_blueprint(bp_douyin.bp)
 
     from .blueprints import notes as bp_notes      # v5.0 第 6 步：域 2/10
     app.register_blueprint(bp_notes.bp)

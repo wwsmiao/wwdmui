@@ -39,7 +39,6 @@ def menu_entries(state):
         # 第二部分
         (theme_label, "theme"),
         ("打开笔记本…", "notes"),
-        ("抖音提取…", "douyin"),
         ("外观主题", "look_theme"),
         ("背景壁纸", "look_wall"),
         ("毛玻璃", "look_glass"),
@@ -305,9 +304,6 @@ def _fab_class():
             elif key == "notes":
                 from . import qt_notes
                 qt_notes.open_notes(self.host, self.port)
-            elif key == "douyin":
-                from . import qt_douyin
-                qt_douyin.open_douyin(self.host, self.port)
             elif key == "toggle":
                 self.set_visible(False)
             elif key == "quit":
