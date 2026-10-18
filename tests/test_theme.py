@@ -8,11 +8,14 @@
 漏一处就是**静默失效**：设置页能选但界面不变、或 CSS 写了却选不到，肉眼要等用户
 反馈才发现。这里全盯住。
 
-另外守两条回归：
+另外守三条回归：
   · 水彩硬编码不许回流改 —— 强调色字面量只能活在变量定义块里（否则换了预设，
     「文字/边框跟着预设走、底色不跟着走」会割裂）；
   · theme_preset 与 data-theme 正交 —— 明暗归 init.js 的 localStorage，配色归
-    服务端设置，两条线互不覆盖。
+    服务端设置，两条线互不覆盖；
+  · 模板与 JS 拼 HTML 同样不许硬编码（第三轮迁移守卫）：onmouseover 内联样式、
+    JS 拼的表格/信息条，写死水彩色一样不跟预设走；notes 配色板（用户数据）、
+    B站品牌粉（外部品牌色）、swatch 圆点（展示预设自身颜色）三类刻意放行。
 """
 import io
 import os
@@ -26,6 +29,8 @@ from wwdm_app.core import config
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSS_PATH = os.path.join(ROOT, "wwdm_app", "static", "style.css")
 SETTINGS_HTML = os.path.join(ROOT, "wwdm_app", "templates", "partials", "settings.html")
+TEMPLATE_DIR = os.path.join(ROOT, "wwdm_app", "templates")
+JS_DIR = os.path.join(ROOT, "wwdm_app", "static", "js")
 
 # 每个预设块必须给齐的变量。缺一个就会出现「部分表面跟随预设、部分不跟随」的割裂，
 # 而且这种割裂在 watercolor 下完全看不出来（基座本来就有一套），只有换预设才暴露。
@@ -188,7 +193,68 @@ class TestNoHardcodedAccent:
 
 
 # ============================================================
-# ④ 保存校验（与 github_mirror / hf_channel 同一套口径）
+# ⑥ 模板与 JS 拼 HTML 同样不许硬编码回流（第三轮迁移守卫）
+# ============================================================
+class TestNoHardcodedAccentInTemplates:
+    """style.css 变量化只是第一战场。
+
+    模板内联防（onmouseover 里的 this.style、拼在一行里的 background）和 JS 拼
+    HTML 字符串（镜像测速表头、预览信息条）**同样不跟 data-preset 走** —— 这些
+    地方写死水彩色，换预设时就是「文字边框跟得走、底色跟不走」的割裂。v5.1 第三轮
+    已把 about/help 两页 + 预览信息条 + 镜像/审计表头共 52 处变量化，这里守住别回流。
+    """
+
+    # 行级放行。这些行的水彩色是「用户数据 / 外部品牌色 / 预设自身展示」，
+    # 刻意不跟随预设（每条理由见右侧注释；新增放行必须连理由一起加）：
+    ALLOW_SUBSTR = (
+        "notes-color",       # notes.html 配色板：存进 notes 表 color 字段的用户数据
+        'data-c="#',         # 同上，配色板的 data-c 属性
+        "preset-chip",       # settings.html swatch：圆点展示的是预设自身颜色
+        "251,114,153",       # help.html 视频教程卡：B站品牌粉 #fb7299，外部品牌色
+        "color:'#",          # notes.js 新建笔记默认色（单引号，用户数据）
+        "var color='#",      # notes.js 新建笔记默认色（变量声明，用户数据）
+    )
+
+    def _iter_files(self):
+        for base in (TEMPLATE_DIR, JS_DIR):
+            for dirpath, _dirs, files in os.walk(base):
+                for fn in sorted(files):
+                    if fn.endswith((".html", ".js")):
+                        yield os.path.join(dirpath, fn)
+
+    def test_no_accent_literals_outside_allowlist(self):
+        bad = []
+        for path in self._iter_files():
+            rel = os.path.relpath(path, ROOT).replace("\\", "/")
+            with io.open(path, "rb") as f:
+                text = f.read().decode("utf-8")
+            for n, line in enumerate(text.splitlines(), 1):
+                if not any(lit in line for lit in ACCENT_LITERALS):
+                    continue
+                if any(sub in line for sub in self.ALLOW_SUBSTR):
+                    continue
+                bad.append("%s:%d" % (rel, n))
+        assert not bad, \
+            ("这些模板/JS 行又写死了水彩强调色，换了预设它们不跟着变：%s\n"
+             "（如果是新增的合理场景——用户数据/外部品牌色——请连同理由加进 "
+             "ALLOW_SUBSTR）" % bad)
+
+    def test_allowlist_entries_are_live(self):
+        """allowlist 每条都要真的在拦东西。
+
+        否则某天 notes 配色板被变量化了，allowlist 条目还挂着，测试会在一片
+        不存在的地方放行 —— 绿灯但毫无意义。
+        """
+        all_text = ""
+        for path in self._iter_files():
+            with io.open(path, "rb") as f:
+                all_text += f.read().decode("utf-8")
+        dead = [sub for sub in self.ALLOW_SUBSTR if sub not in all_text]
+        assert not dead, "allowlist 里有已不存在的条目，请删掉：%s" % dead
+
+
+# ============================================================
+# ⑦ 保存校验（与 github_mirror / hf_channel 同一套口径）
 # ============================================================
 class TestSettingsApi:
     def test_default_is_watercolor(self):

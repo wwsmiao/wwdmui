@@ -55,7 +55,7 @@ function _outBuildOverlay(overlay,st){
     content='<div class="out-fs-wrap" id="outFsWrap">'+
       '<img id="outFsImg" class="out-fs-nav-img" src="'+st.src+'" style="max-width:100%;max-height:100%;object-fit:contain;opacity:0;transition:opacity 0.2s" onload="outImgReady()">'+
       '</div>'+
-      '<div id="outInfoBar" style="display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 10px;background:rgba(74,111,165,0.06);border-radius:10px;font-size:12px;color:var(--text2);flex-shrink:0;flex-wrap:wrap">'+
+      '<div id="outInfoBar" style="display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 10px;background:color-mix(in srgb,var(--cyan) 6%,transparent);border-radius:10px;font-size:12px;color:var(--text2);flex-shrink:0;flex-wrap:wrap">'+
       '<span id="outInfoRes"></span>'+
       '<span>|</span><span>'+outFmtSize(st.info.size||0)+'</span>'+
       '<span>|</span><span>'+outFmtTime(st.info.modified||0)+'</span>'+
@@ -65,14 +65,14 @@ function _outBuildOverlay(overlay,st){
   }else if(st.type==='video'){
     content='<div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:0">'+
       '<video id="outVid" src="'+st.src+'" controls autoplay style="max-width:100%;max-height:100%" onplay="window._outVid=this" onpause="window._outVid=null"></video></div>'+
-      '<div id="outInfoBar" style="display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:rgba(74,111,165,0.06);border-radius:10px;font-size:12px;color:var(--text2);flex-shrink:0">'+
+      '<div id="outInfoBar" style="display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:color-mix(in srgb,var(--cyan) 6%,transparent);border-radius:10px;font-size:12px;color:var(--text2);flex-shrink:0">'+
       '<span>'+outFmtSize(st.info.size||0)+' '+outFmtTime(st.info.modified||0)+'</span>'+
       '<span style="margin-left:auto;opacity:0.5;font-size:10px" id="outTotalInfo">'+(st.curIdx+1)+'/'+st.browseList.length+'</span></div>';
   }else{
     content='<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0">'+
       '<audio id="outVid" src="'+st.src+'" controls autoplay style="max-width:100%" onplay="window._outVid=this" onpause="window._outVid=null"></audio>'+
       '<div style="font-size:64px;margin:16px">🎵</div></div>'+
-      '<div id="outInfoBar" style="display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:rgba(74,111,165,0.06);border-radius:10px;font-size:12px;color:var(--text2);flex-shrink:0">'+
+      '<div id="outInfoBar" style="display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:color-mix(in srgb,var(--cyan) 6%,transparent);border-radius:10px;font-size:12px;color:var(--text2);flex-shrink:0">'+
       '<span>'+outFmtSize(st.info.size||0)+' '+outFmtTime(st.info.modified||0)+'</span></div>';
   }
 
@@ -110,7 +110,7 @@ function _outUpdateContent(overlay,st){
       while(modal.children.length>1)modal.removeChild(modal.lastChild);
       var nc='<div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:0">'+
         '<video id="outVid" src="'+st.src+'" controls autoplay style="max-width:100%;max-height:100%" onplay="window._outVid=this" onpause="window._outVid=null"></video></div>'+
-        '<div id="outInfoBar" style="display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:rgba(74,111,165,0.06);border-radius:10px;font-size:12px;color:var(--text2);flex-shrink:0">'+
+        '<div id="outInfoBar" style="display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:color-mix(in srgb,var(--cyan) 6%,transparent);border-radius:10px;font-size:12px;color:var(--text2);flex-shrink:0">'+
         '<span>'+outFmtSize(st.info.size||0)+' '+outFmtTime(st.info.modified||0)+'</span>'+
         '<span style="margin-left:auto;opacity:0.5;font-size:10px">'+(st.curIdx+1)+'/'+st.browseList.length+'</span></div>';
       var tmpDiv=document.createElement('div');tmpDiv.innerHTML=nc;

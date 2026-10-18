@@ -439,13 +439,13 @@ function renderGhMirrorResult(list,current){
   var box=document.getElementById('ghmResult');
   var best=null;list.forEach(function(x){if((x.status==='ok'||x.status==='slow')&&(!best||x.ms<best.ms))best=x});
   var h='<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">';
-  h+='<div style="display:flex;gap:10px;padding:7px 12px;font-size:11px;color:var(--text3);background:rgba(74,111,165,0.04)"><span style="flex:0 0 140px">镜像</span><span style="flex:0 0 62px">类型</span><span style="flex:0 0 84px">状态</span><span style="flex:0 0 66px">延迟</span><span style="flex:1 1 auto">说明</span><span style="flex:0 0 50px;text-align:right">操作</span></div>';
+  h+='<div style="display:flex;gap:10px;padding:7px 12px;font-size:11px;color:var(--text3);background:color-mix(in srgb,var(--cyan) 4%,transparent)"><span style="flex:0 0 140px">镜像</span><span style="flex:0 0 62px">类型</span><span style="flex:0 0 84px">状态</span><span style="flex:0 0 66px">延迟</span><span style="flex:1 1 auto">说明</span><span style="flex:0 0 50px;text-align:right">操作</span></div>';
   list.forEach(function(x){
     var col=x.status==='ok'?'var(--green)':(x.status==='slow'?'var(--amber)':'var(--red)');
     var ico=x.status==='ok'?'bi-check-circle-fill':(x.status==='slow'?'bi-exclamation-triangle-fill':'bi-x-circle-fill');
     var txt=x.status==='ok'?'可用':(x.status==='slow'?'较慢':'不可用');
     var sel=x.key===current;
-    h+='<div style="display:flex;gap:10px;align-items:center;padding:8px 12px;font-size:12px;border-top:1px solid var(--border)'+(sel?';background:rgba(74,111,165,0.06)':'')+'">';
+    h+='<div style="display:flex;gap:10px;align-items:center;padding:8px 12px;font-size:12px;border-top:1px solid var(--border)'+(sel?';background:color-mix(in srgb,var(--cyan) 6%,transparent)':'')+'">';
     var rec=(best&&x.key===best.key&&list.length>1);
     h+='<span style="flex:0 0 140px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(x.label)+(rec?' <span style="font-size:10px;color:var(--green)">推荐</span>':'')+(sel?' <span style="font-size:10px;color:var(--cyan)">当前</span>':'')+'</span>';
     h+='<span style="flex:0 0 62px;color:var(--text3);font-size:11px">'+esc(x.group)+'</span>';
@@ -533,7 +533,7 @@ function renderAudit(list,labels){
   var box=document.getElementById('auditBox');
   if(!list.length){box.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 2px">暂无记录</div>';return}
   var h='<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">';
-  h+='<div style="display:flex;gap:10px;padding:6px 12px;font-size:11px;color:var(--text3);background:rgba(74,111,165,0.04)"><span style="flex:0 0 138px">时间</span><span style="flex:0 0 96px">动作</span><span style="flex:0 0 260px">对象</span><span style="flex:1 1 auto">详情</span><span style="flex:0 0 92px;text-align:right">来源</span></div>';
+  h+='<div style="display:flex;gap:10px;padding:6px 12px;font-size:11px;color:var(--text3);background:color-mix(in srgb,var(--cyan) 4%,transparent)"><span style="flex:0 0 138px">时间</span><span style="flex:0 0 96px">动作</span><span style="flex:0 0 260px">对象</span><span style="flex:1 1 auto">详情</span><span style="flex:0 0 92px;text-align:right">来源</span></div>';
   list.forEach(function(x){
     var lab=labels[x.action]||x.action;
     var col=x.ok?'var(--green)':'var(--red)';
