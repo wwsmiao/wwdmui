@@ -125,8 +125,11 @@ else{cuiCheckStatus()}
   var themeBtn=document.getElementById('fabBtnTheme');
   // v6.1：明暗以**服务端 ui_theme 为准**（base.html 直出），localStorage 仅作缓存；
   // 网页里点切换时同步 POST 回服务端，悬浮球/托盘才读得到同一个值。
-  var _themeLocalAt=0;
+  // 只在 POST 在途时忽略「旧值」回声；另一端（悬浮球/托盘）的新值立即应用，
+  // 不再用 5s 时间窗压住所有远端变更（那会导致必须手动刷新）。
+  var _posting=false, _postFrom=null;
   function applyTheme(t,persist){
+    var prev=document.documentElement.getAttribute('data-theme')||currentTheme();
     document.documentElement.setAttribute('data-theme',t);
     document.documentElement.setAttribute('data-ui-theme',t);
     try{localStorage.setItem('wwdm_theme',t)}catch(e){}
@@ -135,11 +138,13 @@ else{cuiCheckStatus()}
     if(sun)sun.style.display=t==='dark'?'none':'';
     if(moon)moon.style.display=t==='dark'?'':'none';
     if(persist){
-      _themeLocalAt=Date.now();
+      _postFrom=prev; _posting=true;
+      var done=function(){_posting=false};
       try{
         fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ui_theme:t})}).catch(function(){});
-      }catch(e){}
+          body:JSON.stringify({ui_theme:t})}).then(done).catch(done);
+      }catch(e){done()}
+      setTimeout(done,3000);   // 兜底：网络异常时别永久压住
     }
   }
   function currentTheme(){
@@ -158,10 +163,11 @@ else{cuiCheckStatus()}
   // v6.3：SSE 即时推送（服务端一变就推，延迟 <0.3s）；
   // EventSource 不可用/断开时，低频轮询兜底。
   function _applyRemoteTheme(s){
-    if(Date.now()-_themeLocalAt<5000)return;          // 刚本地切换，等服务端落盘
     if(s!=='dark'&&s!=='light')return;
     var cur=document.documentElement.getAttribute('data-theme')||currentTheme();
-    if(s!==cur)applyTheme(s,false);
+    if(s===cur)return;                                // 已是目标值（含自己 POST 的回声）
+    if(_posting && s===_postFrom)return;              // 只压 POST 在途时的旧值
+    applyTheme(s,false);                              // 球/托盘的新值：立刻生效
   }
   var _wpSig='';
   function _applyRemoteState(d){
@@ -189,7 +195,6 @@ else{cuiCheckStatus()}
   }catch(e){}
 
   function pollTheme(){
-    if(Date.now()-_themeLocalAt<5000)return;
     fetch('/api/settings',{cache:'no-store'}).then(function(r){return r.json()})
       .then(function(d){_applyRemoteState(d);}).catch(function(){});
   }

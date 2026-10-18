@@ -333,6 +333,29 @@ class TestReleaseWhitelist:
 # ============================================================
 # ⑦ ui_theme 设置键
 # ============================================================
+class TestThemeSync:
+    """v6.4+：网页 ↔ 悬浮球日夜切换必须双向即时（不再有 5s 抑制窗）。"""
+
+    def test_init_js_removed_5s_guard(self):
+        p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         "wwdm_app", "static", "js", "pages", "init.js")
+        src = io.open(p, encoding="utf-8").read()
+        assert "_themeLocalAt" not in src          # 旧 5s 抑制已删
+        assert "_posting" in src                   # 只压 POST 在途的旧值
+        assert "EventSource('/api/theme/stream')" in src
+        assert "data-theme" in src and "data-ui-theme" in src
+
+    def test_get_ui_theme_prefers_server(self, monkeypatch):
+        monkeypatch.setattr(actions, "http_json",
+                            lambda *a, **k: {"ui_theme": "dark"})
+        assert actions.get_ui_theme("127.0.0.1", 7862) == "dark"
+
+    def test_get_ui_theme_falls_back_to_settings(self, monkeypatch):
+        monkeypatch.setattr(actions, "http_json", lambda *a, **k: None)
+        monkeypatch.setitem(config.settings, "ui_theme", "dark")
+        assert actions.get_ui_theme("127.0.0.1", 7862) == "dark"
+
+
 class TestUiThemeSetting:
     def test_default_present(self):
         assert config.DEFAULT_SETTINGS["ui_theme"] == "light"

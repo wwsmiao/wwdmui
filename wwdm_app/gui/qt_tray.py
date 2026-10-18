@@ -110,7 +110,9 @@ class _TrayImpl:
     def _toggle_theme(self):
         from ..core import config
         from PyQt6.QtWidgets import QApplication
-        cur = str(config.settings.get("ui_theme", "light")).strip().lower()
+        cur = actions.get_ui_theme(self.host, self.port)
+        if cur not in ("light", "dark"):
+            cur = "light"
         nxt = "dark" if cur != "dark" else "light"
         got = actions.set_ui_theme(self.host, self.port, nxt)
         if got:

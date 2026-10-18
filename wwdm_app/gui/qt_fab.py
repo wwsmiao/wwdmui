@@ -311,7 +311,10 @@ def _fab_class():
 
         def _toggle_theme(self):
             from ..core import config
-            cur = str(config.settings.get("ui_theme", "light")).strip().lower()
+            # 以服务端为准：网页刚切过时，进程内 settings 也应以服务端为准
+            cur = actions.get_ui_theme(self.host, self.port)
+            if cur not in ("light", "dark"):
+                cur = "light"
             nxt = "dark" if cur != "dark" else "light"
             got = actions.set_ui_theme(self.host, self.port, nxt)
             if got:

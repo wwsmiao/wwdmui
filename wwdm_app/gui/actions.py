@@ -168,6 +168,15 @@ def set_ui_theme(host, port, theme):
     return None
 
 
+def get_ui_theme(host, port):
+    """读服务端当前 ui_theme（网页可能刚改过）；失败回退进程内 settings。"""
+    r = http_json(host, port, "/api/settings")
+    if isinstance(r, dict) and r.get("ui_theme") in ("light", "dark"):
+        return str(r["ui_theme"])
+    from ..core import config
+    return str(config.settings.get("ui_theme", "light")).strip().lower()
+
+
 def ui_theme_label():
     """菜单文案：按当前 ui_theme 反转为下一动作（"切换到夜间"/"切换到日间"）。"""
     from ..core import config

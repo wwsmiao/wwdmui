@@ -9,7 +9,7 @@ import pytest
 from wwdm_app.core import tasks as T
 
 PAGES = ["launcher", "models", "plugins", "workflows",
-         "help", "output", "input", "settings", "repair", "about"]
+         "output", "input", "settings", "repair", "about"]
 # v5.1 起「笔记本」不再是页面：partials/notes.html 改为 FAB 唤出的 .lgmodal
 # 大弹窗（#notesModal），断言从 PAGES 挪到下面的骨架锚点里。
 
@@ -223,3 +223,18 @@ class TestErrorPayload:
     def test_trace_id_in_response_header(self, client):
         r = client.get("/api/definitely-not-exist")
         assert r.headers.get("X-Trace-Id")
+
+
+class TestAboutPage:
+    """v6.4：帮助页并入「关于和更新」单页，必要内容必须在。"""
+
+    def test_help_merged_into_about(self):
+        import io
+        import os
+        base = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            "wwdm_app", "templates", "partials")
+        html = io.open(os.path.join(base, "about.html"), encoding="utf-8").read()
+        for s in ("关于和更新", "使用指南", "视频教程", "帮助文档",
+                  "支持作者", "版本更新"):
+            assert s in html, s
+        assert not os.path.exists(os.path.join(base, "help.html"))
