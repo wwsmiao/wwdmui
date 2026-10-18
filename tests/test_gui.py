@@ -25,7 +25,7 @@ import pytest
 
 import wwdm_app.services as svc
 from wwdm_app.core import config
-from wwdm_app.gui import actions, autostart, pos, tray, tasks_win, theme
+from wwdm_app.gui import actions, autostart, notes_win, pos, tray, tasks_win, theme
 
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -1232,3 +1232,134 @@ class TestTheme:
                     assert "tkinter" not in a.name
             elif isinstance(node, ast.ImportFrom):
                 assert "tkinter" not in (node.module or "")
+
+
+# ⑬ 笔记迷你编辑器（gui.notes_win）—— 仅测逻辑，不建真 Tk
+# ============================================================
+class TestNotesWin:
+    def test_open_notes_none_root_noop(self):
+        notes_win.open_notes("127.0.0.1", 7862, None)
+        assert "127.0.0.1:7862" not in notes_win._WINS
+
+    def test_note_label_pin_and_tag(self):
+        assert notes_win._note_label(
+            {"title": "A", "pinned": 1, "tag": "x"}).startswith("\U0001F4CC ")
+        assert "[x]" in notes_win._note_label(
+            {"title": "A", "pinned": 0, "tag": "x"})
+        assert notes_win._note_label({"title": ""}) == "未命名笔记"
+
+    def test_http_json_posts_payload(self, monkeypatch):
+        import urllib.request as ureq
+        captured = {}
+
+        class _Resp:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def read(self):
+                return b'{"ok":true,"id":7}'
+
+        class _Opener:
+            def open(self, req, timeout=4):
+                captured["method"] = req.get_method()
+                captured["data"] = req.data
+                return _Resp()
+
+        monkeypatch.setattr(ureq, "build_opener", lambda *a, **k: _Opener())
+        out = notes_win._http_json("h", 1, "/api/notes", method="POST",
+                                   payload={"title": "t"})
+        assert out == {"ok": True, "id": 7}
+        assert captured["method"] == "POST"
+        assert b"title" in captured["data"]
+
+    def test_http_json_failure_returns_none(self, monkeypatch):
+        import urllib.request as ureq
+
+        class _Boom:
+            def open(self, req, timeout=4):
+                raise OSError("x")
+
+        monkeypatch.setattr(ureq, "build_opener", lambda *a, **k: _Boom())
+        assert notes_win._http_json("h", 1, "/api/notes") is None
+
+    def test_render_list_maps_and_autoloads(self):
+        class _LB:
+            def __init__(self):
+                self.rows = []
+                self.sel = None
+
+            def delete(self, *a):
+                self.rows = []
+
+            def insert(self, idx, val):
+                self.rows.append(val)
+
+            def selection_clear(self, *a):
+                pass
+
+            def selection_set(self, i):
+                self.sel = i
+
+            def activate(self, i):
+                pass
+
+            def see(self, i):
+                pass
+
+        w = notes_win._NotesWindow("127.0.0.1", 7862, None)
+        w.win = type("W", (), {"winfo_exists": lambda self: True})()
+        w._listbox = _LB()
+        w._cur_id = 2
+        loaded = []
+        w._load_note = lambda rid: loaded.append(rid)
+        data = {"items": [
+            {"id": 1, "title": "甲", "pinned": 0, "tag": ""},
+            {"id": 2, "title": "乙", "pinned": 1, "tag": "t"},
+        ]}
+        w._render_list(data, autoload=True)
+        assert w._items[0]["id"] == 1
+        assert len(w._listbox.rows) == 2
+        assert w._listbox.sel == 1          # cur_id=2 → 选中第二行
+        assert loaded == [2]                # autoload 载入当前笔记
+
+    def test_render_list_no_data(self):
+        class _LB:
+            def __init__(self):
+                self.rows = []
+
+            def delete(self, *a):
+                self.rows = []
+
+            def insert(self, idx, val):
+                self.rows.append(val)
+
+        w = notes_win._NotesWindow("127.0.0.1", 7862, None)
+        w.win = type("W", (), {"winfo_exists": lambda self: True})()
+        w._listbox = _LB()
+        w._status_var = type("V", (), {"set": lambda self, v: None})()
+        w._render_list(None, autoload=True)
+        assert w._listbox.rows == ["服务未启动或无法连接"]
+
+    def test_notes_win_defers_tkinter(self):
+        path = os.path.join(GUI_DIR, "notes_win.py")
+        with io.open(path, "rb") as f:
+            tree = ast.parse(f.read().decode("utf-8"))
+        for node in tree.body:
+            if isinstance(node, ast.Import):
+                for a in node.names:
+                    assert "tkinter" not in a.name
+            elif isinstance(node, ast.ImportFrom):
+                assert "tkinter" not in (node.module or "")
+
+
+class TestTrayNotesWiring:
+    def test_tray_open_notes_wired(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(notes_win, "open_notes",
+                            lambda h, p, root: calls.append((h, p, root)))
+        ic = tray.TrayIcon(7862)
+        ic._open_notes()
+        assert calls == [("127.0.0.1", 7862, None)]

@@ -36,7 +36,9 @@ from ctypes import wintypes
 
 from . import actions
 from . import fab as _fab        # 只用 enable_dpi_awareness；fab 顶层不碰 tkinter
+from . import notes_win
 from . import tasks_win
+from . import theme
 
 # ---------------- Win32 常量 ----------------
 WM_APP = 0x8000
@@ -414,11 +416,16 @@ class TrayIcon:
         # 任务中心：与球共用 tasks_win（按 host:port 单实例）。
         tasks_win.open_tasks(self.host, self.port, self._root)
 
+    def _open_notes(self):
+        # 笔记本迷你编辑器：notes_win（按 host:port 单实例）。
+        notes_win.open_notes(self.host, self.port, self._root)
+
     def _schedule_shutdown(self):
-        import tkinter.simpledialog as sd
         try:
-            mins = sd.askinteger("定时关机", "多少分钟后关机？（0=立即）",
-                                 initialvalue=1, minvalue=0, maxvalue=1440)
+            mins = theme.ask_minutes(
+                self._root, "定时关机",
+                "多少分钟后关机？（0 = 立即，最多 1440）", initial=1, minvalue=0,
+                maxvalue=1440)
         except Exception:
             return
         if mins is None:
@@ -447,12 +454,17 @@ class TrayIcon:
         import tkinter as tk
         pt = POINT()
         ctypes.windll.user32.GetCursorPos(ctypes.byref(pt))
-        m = tk.Menu(self._root, tearoff=0, font=("Microsoft YaHei", 10))
+        m = tk.Menu(self._root, tearoff=0)
+        try:
+            m.configure(**theme.menu_options())   # 跟随网页明暗/强调色
+        except Exception:
+            pass
         m.add_command(label="打开管理器界面", command=self._open_ui)
         m.add_command(label="复制访问地址", command=self._copy_url)
         m.add_command(label=actions.autostart_label(actions.autostart_enabled()),
                       command=self._toggle_autostart)
         m.add_separator()
+        m.add_command(label="笔记本…", command=self._open_notes)
         m.add_command(label="任务中心", command=self._open_tasks)
         m.add_command(label="定时关机…", command=self._schedule_shutdown)
         m.add_command(label=actions.ui_theme_label(), command=self._toggle_ui_theme)
