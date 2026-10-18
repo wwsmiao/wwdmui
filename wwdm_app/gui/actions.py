@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
-"""gui 公共动作（v6.0(2)）—— 悬浮球与托盘菜单共用。
+"""gui 公共动作（v6.0(2)，v6.1 改 PyQt6）—— 悬浮球与托盘菜单共用。
 
-为什么单独一个模块：托盘（ctypes 消息窗）与悬浮球（tkinter 窗）是两套窗口
-机制，但菜单动作完全一样（打开界面 / 复制地址 / 自启切换 / 退出）。放这里
-两边 import，避免复制第二份、改一处漏一处。
+为什么单独一个模块：悬浮球与托盘是两套窗口，但菜单动作完全一样（打开界面 /
+复制地址 / 自启切换 / 定时关机 / 日夜间 / 退出）。放这里两边 import，
+避免复制第二份、改一处漏一处。
 
-铁律（同 fab.py）：
+铁律：
   * 不 import services/blueprints —— 业务走**回环 HTTP** 打自己的 API
     （``comfyui_proc`` 等 global 重绑定，非线程安全）；
-  * 本模块顶层不碰 tkinter —— :func:`copy_url` 的 root 由调用方传入，
-    import 本包（含 pytest / 无头环境）不需要 Tk。
+  * 本模块顶层不碰 PyQt6 —— :func:`copy_url` 内部懒导入
+    ``QApplication.clipboard()``，import 本包（含 pytest / 无头环境）不需要 Qt。
 """
 import os
 
@@ -34,16 +34,18 @@ def open_ui(host, port, token=""):
         return False
 
 
-def copy_url(root, host, port, token=""):
-    """复制访问地址到剪贴板。root 为 tkinter 根；None 时跳过（单测用）。"""
-    if root is None:
-        return False
+def copy_url(host, port, token=""):
+    """复制访问地址到剪贴板（PyQt6 QClipboard；无 Qt 环境返回 False）。"""
+    text = ui_url(host, port, token)
     try:
-        root.clipboard_clear()
-        root.clipboard_append(ui_url(host, port, token))
-        return True
+        from PyQt6.QtWidgets import QApplication
+        app = QApplication.instance()
+        if app is not None:
+            app.clipboard().setText(text)
+            return True
     except Exception:
-        return False
+        pass
+    return False
 
 
 def save_flag(key, value):

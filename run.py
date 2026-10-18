@@ -117,7 +117,7 @@ if __name__ == "__main__":
         threading.Thread(target=_open_browser, daemon=True).start()
 
     # ---- 路径 A：GUI 悬浮球 + 托盘（exe 双击的正常形态）----
-    # Flask 挪到子线程，主线程留给 tkinter mainloop（tkinter 必须主线程）。
+    # Flask 挪到子线程，主线程留给 Qt 事件循环（QApplication.exec 必须主线程）。
     # 服务起不来时 server_dead 事件置位，球会弹提示后自行消失、托盘 tooltip
     # 变「服务已停止」—— GUI 模式下没有控制台，它们是唯一反馈渠道。
     # fab_visible=False（设置里关掉悬浮球）→ 只剩托盘，入口不丢。
@@ -150,7 +150,7 @@ if __name__ == "__main__":
                 _on_exit()
             sys.exit(0)
 
-    # ---- 路径 B：降级（--no-gui / 无显示 / tkinter 缺失）：主线程直接跑 Flask ----
+    # ---- 路径 B：降级（--no-gui / 无显示 / PyQt6 缺失）：主线程直接跑 Flask ----
     try:
         # threaded=True：Werkzeug 默认单线程串行，一个慢请求（扫盘统计 / 上传大模型 /
         # 拉取 ComfyUI 日志）会把其它请求一起掐断，浏览器表现为偶发 ERR_CONNECTION_RESET。
